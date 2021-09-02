@@ -202,7 +202,7 @@ void AliAnalysisTaskJPsi_DG::UserCreateOutputObjects()
     fTreeJPsi->Branch("fZNA_energy", &fZNA_energy, "fZNA_energy/D");
     fTreeJPsi->Branch("fZNC_energy", &fZNC_energy, "fZNC_energy/D");
     fTreeJPsi->Branch("fZNA_time", &fZNA_time[0], "fZNA_TDC[4]/D");
-    fTreeJPsi->Branch("fZNA_time", &fZNC_time[0], "fZNC_TDC[4]/D");
+    fTreeJPsi->Branch("fZNC_time", &fZNC_time[0], "fZNC_TDC[4]/D");
     // V0:
     fTreeJPsi->Branch("fV0A_dec", &fV0A_dec, "fV0A_dec/I");
     fTreeJPsi->Branch("fV0C_dec", &fV0C_dec, "fV0C_dec/I");
