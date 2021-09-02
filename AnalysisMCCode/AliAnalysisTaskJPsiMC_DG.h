@@ -2,8 +2,8 @@
 /* See cxx source for full Copyright notice */
 /* $Id$ */
 
-#ifndef AliAnalysisTaskJPsi_DG_H
-#define AliAnalysisTaskJPsi_DG_H
+#ifndef AliAnalysisTaskJPsiMC_DG_H
+#define AliAnalysisTaskJPsiMC_DG_H
 
 class TH1;
 class TTree;
@@ -17,12 +17,12 @@ class AliESDtrackCuts;
 class AliPIDResponse;
 class AliTOFTriggerMask;
 
-class AliAnalysisTaskJPsi_DG : public AliAnalysisTaskSE
+class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
 {
     public:
-                AliAnalysisTaskJPsi_DG(); // a constructor
-                AliAnalysisTaskJPsi_DG(const char *name);
-        virtual ~AliAnalysisTaskJPsi_DG();	// a destructor
+                AliAnalysisTaskJPsiMC_DG(); // a constructor
+                AliAnalysisTaskJPsiMC_DG(const char *name);
+        virtual ~AliAnalysisTaskJPsiMC_DG();	// a destructor
 
         virtual void    UserCreateOutputObjects(); // here one can define output objects
         virtual void    UserExec(Option_t* option);	// called for each single event
@@ -40,7 +40,8 @@ class AliAnalysisTaskJPsi_DG : public AliAnalysisTaskSE
 
         AliVEvent   *fEvent;
         TList       *fOutputList;   //! output list
-        TTree       *fTreeJPsi;     //! analysis tree
+        TTree       *fTreeJPsiMCRec;//! analysis tree on MC rec level
+        TTree       *fTreeJPsiMCGen;//! analysis tree on MC gen level
         Int_t       fRunNumber;
         TString     fTriggerName;
         // Histograms:
@@ -85,11 +86,19 @@ class AliAnalysisTaskJPsi_DG : public AliAnalysisTaskSE
         // Matching SPD clusters with FOhits
         Bool_t fMatchingSPD;
         TBits fFOCrossFiredChips;
+        // Trigger inputs for MC data
+        Bool_t  fTriggerInputsMC[11];
+        TFile   *fSPDfile;
+        TFile   *fTOFfile;
+        Int_t   fLoadedRun;
+        TH2F    *hTOFeff;
+        TH1D    *hSPDeff;
+        AliTOFTriggerMask *fTOFmask;
 
-        AliAnalysisTaskJPsi_DG(const AliAnalysisTaskJPsi_DG&); // not implemented
-        AliAnalysisTaskJPsi_DG& operator=(const AliAnalysisTaskJPsi_DG&); // not implemented
+        AliAnalysisTaskJPsiMC_DG(const AliAnalysisTaskJPsiMC_DG&); // not implemented
+        AliAnalysisTaskJPsiMC_DG& operator=(const AliAnalysisTaskJPsiMC_DG&); // not implemented
 
-        ClassDef(AliAnalysisTaskJPsi_DG, 1);
+        ClassDef(AliAnalysisTaskJPsiMC_DG, 1);
 };
 
 #endif
