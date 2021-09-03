@@ -13,6 +13,9 @@ AliAnalysisTaskJPsiMC_DG *AddTaskJPsiMC_DG()
     if (!mgr->GetInputEventHandler()) {
         return 0x0; //again return zero if the input is a null pointer
     }
+    if (!mgr->GetMCtruthEventHandler()) {
+        return 0x0;
+    }
     // by default, a file is open for writing. here, we get the filename
     TString fileName = AliAnalysisManager::GetCommonFileName();
     fileName += ":AnalysisOutput";      // create a subfolder in the file

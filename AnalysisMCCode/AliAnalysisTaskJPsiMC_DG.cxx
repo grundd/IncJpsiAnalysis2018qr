@@ -45,6 +45,7 @@
 #include "AliAnalysisTask.h"
 #include "AliAnalysisManager.h"
 #include "AliInputEventHandler.h"
+#include "AliMCEventHandler.h"
 #include "AliPIDResponse.h"
 #include "AliTimeRangeCut.h"
 #include "AliDataFile.h"
@@ -611,7 +612,10 @@ void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
     vGenerated.SetPtEtaPhiM(0.,0.,0.,0.);
 
     AliMCEvent *mc = MCEvent();
-    if(!mc) return;
+    if(!mc){
+        Printf("Not found");
+        return;
+    } 
 
     for(Int_t imc = 0; imc < mc->GetNumberOfTracks(); imc++) {
         AliMCParticle *mcPart = (AliMCParticle*) mc->GetTrack(imc);
