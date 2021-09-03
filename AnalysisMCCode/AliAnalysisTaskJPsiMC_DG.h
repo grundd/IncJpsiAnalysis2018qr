@@ -8,14 +8,14 @@
 class TH1;
 class TTree;
 class TList;
+class TFile;
 class TBits;
 class AliESDtrackCuts;
+class AliPIDResponse;
+class AliTOFTriggerMask;
 
 #include "AliTimeRangeCut.h"
 #include "AliAnalysisTaskSE.h"
-
-class AliPIDResponse;
-class AliTOFTriggerMask;
 
 class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
 {
@@ -26,9 +26,12 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
 
         virtual void    UserCreateOutputObjects(); // here one can define output objects
         virtual void    UserExec(Option_t* option);	// called for each single event
+        virtual void    ReplayTriggersMC(AliVEvent *fEvent);
+        virtual void    RunMCGenerated();
         virtual void    Terminate(Option_t* option); // usually empty, called at the end
 
         void    TrkTrkKinematics(Int_t *fIndicesOfGoodTrks, Double_t fTrkMass);
+        void    FillTree(TTree *t, TLorentzVector v);
         void    SetCrossed(Int_t spd[4], TBits &crossed);
         Int_t   GetChipId(Int_t index, Int_t &chipId2, Bool_t debug = 0);
         Bool_t  IsSTGFired(TBits bits, Int_t dphiMin = 4, Int_t dphiMax = 10, Bool_t tolerance = 1);
@@ -43,10 +46,8 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
         TTree       *fTreeJPsiMCRec;//! analysis tree on MC rec level
         TTree       *fTreeJPsiMCGen;//! analysis tree on MC gen level
         Int_t       fRunNumber;
-        TString     fTriggerName;
         // Histograms:
         TH1F        *hCounterCuts;      //! to count the number of events passing each of the cuts
-        TH1F        *hCounterTrigger;   //! to count the number of events per run passing trigger conditions
         // PID, sigmas:
         Double_t    fTrk1SigIfMu;
         Double_t    fTrk1SigIfEl;

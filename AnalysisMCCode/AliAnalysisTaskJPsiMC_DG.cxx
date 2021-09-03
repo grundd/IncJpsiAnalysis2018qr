@@ -22,38 +22,24 @@
 // C++ headers:
 #include <iostream>
 #include <fstream>
+#include <string.h>
 
 // Root headers
-#include <TMath.h>
+#include "TROOT.h"
 #include "TH1I.h"
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TH1D.h"
-#include "TH2D.h"
-#include <TFile.h>
-#include <TF2.h>
-#include <TF1.h>
-#include <TRandom.h>
-#include <TGraph.h>
-#include <TLegend.h>
-#include <TGraphErrors.h>
-#include <TPad.h>
-#include <TCanvas.h>
-#include <TStyle.h>
-#include <TTree.h>
-#include <TGraph2D.h>
-#include <TStopwatch.h>
-#include <TMatrixDSym.h>
-#include <TFitResult.h>
-#include <TLatex.h>
+#include "TTree.h"
 #include "TClonesArray.h"
+#include "TFile.h"
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
-#include "TParticle.h"
-#include "TObjString.h"
+#include "TColor.h"
+#include "TRandom.h"
 #include "TList.h"
+#include "TObjArray.h"
+#include "TString.h"
 #include "TChain.h"
-#include "TRandom3.h"
+#include "TMath.h"
+#include "TParticle.h"
 
 // AliRoot headers:
 #include "AliAnalysisTask.h"
@@ -63,10 +49,17 @@
 #include "AliTimeRangeCut.h"
 #include "AliDataFile.h"
 #include "AliOADBContainer.h"
+#include "AliVVertex.h"
+#include "AliVVZERO.h"
+#include "AliVAD.h"
+#include "AliESDZDC.h"
+#include "AliTOFTriggerMask.h"
 
+// Other AliRoot headers
 #include "AliESDEvent.h" 
 #include "AliESDtrack.h" 
 #include "AliESDtrackCuts.h"
+#include "AliMCEvent.h"
 
 // My headers:
 #include "AliAnalysisTaskJPsiMC_DG.h"
@@ -86,10 +79,8 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG() : // initializer list
     fTreeJPsiMCRec(0),
     fTreeJPsiMCGen(0),
     fRunNumber(0),
-    fTriggerName(0),
     // Histograms:
     hCounterCuts(0),
-    hCounterTrigger(0),
     // PID, sigmas:
     fTrk1SigIfMu(0),
     fTrk1SigIfEl(0),
@@ -109,7 +100,7 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG() : // initializer list
     // Matching SPD clusters with FOhits
     fMatchingSPD(0),
     // Trigger inputs for MC data
-    fSPDfile(0), fTOFfile(0), fLoadedRun(0), hTOFeff(0), hSPDeff(0), fTOFmask(0)
+    fSPDfile(0), fTOFfile(0), fLoadedRun(-1), hTOFeff(0), hSPDeff(0), fTOFmask(0)
 {
     // default constructor
 }
@@ -123,10 +114,8 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG(const char* name) : // initia
     fTreeJPsiMCRec(0),
     fTreeJPsiMCGen(0),
     fRunNumber(0),
-    fTriggerName(0),
     // Histograms:
     hCounterCuts(0),
-    hCounterTrigger(0),
     // PID, sigmas:
     fTrk1SigIfMu(0),
     fTrk1SigIfEl(0),
@@ -146,7 +135,7 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG(const char* name) : // initia
     // Matching SPD clusters with FOhits
     fMatchingSPD(0),
     // Trigger inputs for MC data
-    fSPDfile(0), fTOFfile(0), fLoadedRun(0), hTOFeff(0), hSPDeff(0), fTOFmask(0)
+    fSPDfile(0), fTOFfile(0), fLoadedRun(-1), hTOFeff(0), hSPDeff(0), fTOFmask(0)
 { 
     // constructor
     for(Int_t i = 0; i < 11; i++) fTriggerInputsMC[i] = kFALSE;
@@ -169,7 +158,8 @@ AliAnalysisTaskJPsiMC_DG::~AliAnalysisTaskJPsiMC_DG()
     if (AliAnalysisManager::GetAnalysisManager()->GetAnalysisType() != AliAnalysisManager::kProofAnalysis){
         delete fOutputList;
         fOutputList = 0x0;
-  }
+    }
+    // delete the other things as well ??
 }
 //_____________________________________________________________________________
 void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
@@ -186,7 +176,6 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     fTreeJPsiMCRec = new TTree("fTreeJPsiMCRec", "fTreeJPsiMCRec");
     // Basic things:
     fTreeJPsiMCRec->Branch("fRunNumber", &fRunNumber, "fRunNumber/I");
-    fTreeJPsiMCRec->Branch("fTriggerName", &fTriggerName);
     // PID, sigmas:
     fTreeJPsiMCRec->Branch("fTrk1SigIfMu", &fTrk1SigIfMu, "fTrk1SigIfMu/D");
     fTreeJPsiMCRec->Branch("fTrk1SigIfEl", &fTrk1SigIfEl, "fTrk1SigIfEl/D");
@@ -211,7 +200,7 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     fTreeJPsiMCRec->Branch("fZNA_energy", &fZNA_energy, "fZNA_energy/D");
     fTreeJPsiMCRec->Branch("fZNC_energy", &fZNC_energy, "fZNC_energy/D");
     fTreeJPsiMCRec->Branch("fZNA_time", &fZNA_time[0], "fZNA_TDC[4]/D");
-    fTreeJPsiMCRec->Branch("fZNA_time", &fZNC_time[0], "fZNC_TDC[4]/D");
+    fTreeJPsiMCRec->Branch("fZNC_time", &fZNC_time[0], "fZNC_TDC[4]/D");
     // V0:
     fTreeJPsiMCRec->Branch("fV0A_dec", &fV0A_dec, "fV0A_dec/I");
     fTreeJPsiMCRec->Branch("fV0C_dec", &fV0C_dec, "fV0C_dec/I");
@@ -223,7 +212,9 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     fTreeJPsiMCRec->Branch("fADA_time", &fADA_time, "fADA_time/D");
     fTreeJPsiMCRec->Branch("fADC_time", &fADC_time, "fADC_time/D");
     // Matching SPD clusters with FOhits:
-    fTreeJPsiMCRec->Branch("fMatchingSPD", &fMatchingSPD, "fMatchingSPD/O");
+    fTreeJPsiMCRec->Branch("fMatchingSPD", &fMatchingSPD, "fMatchingSPD/O"); // O is for bool
+    // Replayed trigger inputs
+    fTreeJPsiMCRec->Branch("fTriggerInputsMC", &fTriggerInputsMC[0], "fTriggerInputsMC[11]/O"); 
     
     PostData(1, fTreeJPsiMCRec);
 
@@ -253,20 +244,9 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     hCounterCuts->GetXaxis()->SetBinLabel(2,"1: vrtx contrib");
     hCounterCuts->GetXaxis()->SetBinLabel(3,"2: vrtx Z dist");
     hCounterCuts->GetXaxis()->SetBinLabel(4,"3: two good trks");
-    hCounterCuts->GetXaxis()->SetBinLabel(5,"4: CCUP31 trigg");
+    //hCounterCuts->GetXaxis()->SetBinLabel(5,"4: CCUP31 trigg");
 
     fOutputList->Add(hCounterCuts);
-
-    // Number of triggered events per each run
-    // For 2018q: first run = 295585, last run = 296623
-    // For 2018r: first run = 296690, last run = 297595
-
-    Int_t nFirstRun = 295585;
-    Int_t nLastRun = 297595;
-    Int_t nRuns = nLastRun - nFirstRun + 1;
-
-    hCounterTrigger = new TH1F("hCounterTrigger", "# of events per run passing central triggers", nRuns, nFirstRun-0.5, nLastRun+0.5);
-    fOutputList->Add(hCounterTrigger);
 
     PostData(3, fOutputList); 
 
@@ -274,32 +254,32 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
 //_____________________________________________________________________________
 void AliAnalysisTaskJPsiMC_DG::TrkTrkKinematics(Int_t *fIndicesOfGoodTrks, Double_t fTrkMass)
 {
-  // Get the first track
-  TLorentzVector fTrk1LorVec;
-  AliESDtrack *trk1 = dynamic_cast<AliESDtrack*>(fEvent->GetTrack(fIndicesOfGoodTrks[0]));
-  // Fill its 4-vector in the form: pt, eta, phi, mass
-  fTrk1LorVec.SetPtEtaPhiM(trk1->Pt(), trk1->Eta(), trk1->Phi(), fTrkMass);
-  // Get the second track
-  TLorentzVector fTrk2LorVec;
-  AliESDtrack *trk2 = dynamic_cast<AliESDtrack*>(fEvent->GetTrack(fIndicesOfGoodTrks[1]));
-  // Fill its 4-vector
-  fTrk2LorVec.SetPtEtaPhiM(trk2->Pt(), trk2->Eta(), trk2->Phi(), fTrkMass);
-  // Vector of Trk+Trk: we add up the two
-  TLorentzVector TrkTrk = fTrk1LorVec + fTrk2LorVec;
+    // Get the first track
+    TLorentzVector fTrk1LorVec;
+    AliESDtrack *trk1 = dynamic_cast<AliESDtrack*>(fEvent->GetTrack(fIndicesOfGoodTrks[0]));
+    // Fill its 4-vector in the form: pt, eta, phi, mass
+    fTrk1LorVec.SetPtEtaPhiM(trk1->Pt(), trk1->Eta(), trk1->Phi(), fTrkMass);
+    // Get the second track
+    TLorentzVector fTrk2LorVec;
+    AliESDtrack *trk2 = dynamic_cast<AliESDtrack*>(fEvent->GetTrack(fIndicesOfGoodTrks[1]));
+    // Fill its 4-vector
+    fTrk2LorVec.SetPtEtaPhiM(trk2->Pt(), trk2->Eta(), trk2->Phi(), fTrkMass);
+    // Vector of Trk+Trk: we add up the two
+    TLorentzVector TrkTrk = fTrk1LorVec + fTrk2LorVec;
 
-  // Set tree variables
-  fPt = TrkTrk.Pt(); 
-  fPhi = TrkTrk.Phi();
-  fY = TrkTrk.Rapidity(); 
-  fM = TrkTrk.M();
-  fPt1 = trk1->Pt(); 
-  fPt2 = trk2->Pt();
-  fEta1 = trk1->Eta(); 
-  fEta2 = trk2->Eta();
-  fPhi1 = trk1->Phi();
-  fPhi2 = trk2->Phi();
-  fQ1 = trk1->Charge(); 
-  fQ2 = trk2->Charge();
+    // Set tree variables
+    fPt = TrkTrk.Pt(); 
+    fPhi = TrkTrk.Phi();
+    fY = TrkTrk.Rapidity(); 
+    fM = TrkTrk.M();
+    fPt1 = trk1->Pt(); 
+    fPt2 = trk2->Pt();
+    fEta1 = trk1->Eta(); 
+    fEta2 = trk2->Eta();
+    fPhi1 = trk1->Phi();
+    fPhi2 = trk2->Phi();
+    fQ1 = trk1->Charge(); 
+    fQ2 = trk2->Charge();
 }
 //_____________________________________________________________________________
 void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
@@ -317,6 +297,7 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
         if(!fEvent)
         {                                          
             PostData(1, fTreeJPsiMCRec);
+            PostData(2, fTreeJPsiMCGen);
             PostData(3, fOutputList);
             return;
         }                               
@@ -331,6 +312,26 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
     fTimeRangeCut.InitFromEvent(InputEvent());
     if(fTimeRangeCut.CutEvent(InputEvent())) return;
 
+    // Replay triggers
+    if(fRunNumber != fLoadedRun){
+      if(!fSPDfile) fSPDfile = AliDataFile::OpenOADB("PWGUD/UPC/SPDEfficiency18qr.root");
+      if(!fTOFfile) fTOFfile = AliDataFile::OpenOADB("PWGUD/TOFTriggerEfficiency.root");
+      AliOADBContainer* fTOFcont = (AliOADBContainer*)fTOFfile->Get("TOFTriggerEfficiency");
+      hTOFeff  = (TH2F*)fTOFcont->GetObject(fRunNumber,"Default");
+      
+      if(fSPDfile->Get(Form("eff%i",fRunNumber))) hSPDeff  = (TH1D*) fSPDfile->Get(Form("eff%i",fRunNumber));
+      Int_t tempRun = fRunNumber;
+      while(!hSPDeff){
+        tempRun--;
+        hSPDeff = (TH1D*) fSPDfile->Get(Form("eff%i",tempRun));
+      }
+      fLoadedRun = fRunNumber;
+      }
+    ReplayTriggersMC(fEvent); 
+
+    // Run analysis on the generated level
+    RunMCGenerated();
+
     // ##########################################################
         // CUT 1 & 2
         // Check if each event has at maximum 1 vertex within 15 cm from the IP in beam direction
@@ -339,6 +340,7 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
         if(fVertex->GetNContributors()<2)
         {                                          
             PostData(1, fTreeJPsiMCRec);
+            PostData(2, fTreeJPsiMCGen);
             PostData(3, fOutputList);
             return;
         }
@@ -348,6 +350,7 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
         if(TMath::Abs(fVertex->GetZ())>15)
         {                                          
             PostData(1, fTreeJPsiMCRec);
+            PostData(2, fTreeJPsiMCGen);
             PostData(3, fOutputList);
             return;
         }
@@ -366,6 +369,20 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
             // If the track is empty
             if(!trk) continue;
 
+            // *********************************************************************
+            // FD correction for neutral pions: skip pion tracks to simulate FD with neutral pions (!)
+            Bool_t isNeutral = kFALSE;
+            if(isNeutral){
+                if(trk->GetLabel() >= 0){
+                    TDatabasePDG *pdgdat = TDatabasePDG::Instance();
+                    AliMCEvent *mc = MCEvent();
+                    if(!mc) return;
+                    AliMCParticle *mcPart = (AliMCParticle*) mc->GetTrack(trk->GetLabel());
+                    if(TMath::Abs(mcPart->PdgCode()) == 211) continue;
+                }
+            }
+            // *********************************************************************
+
             // Count good TPC tracks:
             if(fTrackCutsBit4->AcceptTrack(trk)){
                 nGoodTracksTPC++;
@@ -381,6 +398,7 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
         // Continue only if two good central tracks are found
         if(!(nGoodTracksSPD == 2 && nGoodTracksTPC == 2)){                                          
             PostData(1, fTreeJPsiMCRec);
+            PostData(2, fTreeJPsiMCGen);
             PostData(3, fOutputList);
             delete [] fIndicesOfGoodTracks; 
             return;
@@ -390,30 +408,7 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
     // ##########################################################
         // CUT 4
         // Central UPC trigger CCUP31
-        // Filling the histograms for the purposes of luminosity calculation
-        fTriggerName = fEvent->GetFiredTriggerClasses();
-        Bool_t triggered = kFALSE;
-        if(fRunNumber < 295881){
-            if(fTriggerName.Contains("CCUP31-B-NOPF-CENTNOTRD")){
-                triggered = kTRUE;
-                hCounterTrigger->Fill(fRunNumber);
-            } 
-        }
-        if(fRunNumber >= 295881){
-            if(fTriggerName.Contains("CCUP31-B-SPD2-CENTNOTRD")){
-                triggered = kTRUE;
-                hCounterTrigger->Fill(fRunNumber);
-            }
-        }
-        if(!triggered)
-        {
-            PostData(1, fTreeJPsiMCRec);
-            PostData(3, fOutputList);
-            delete [] fIndicesOfGoodTracks; 
-            return;        
-        }
-        hCounterCuts->Fill(iSelectionCounter);
-        iSelectionCounter++;
+        // skipped for MC
     // ##########################################################
     // Two track loop
 
@@ -498,10 +493,170 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
 
     // Finally post the data
     PostData(1, fTreeJPsiMCRec);
+    PostData(2, fTreeJPsiMCGen);
     PostData(3, fOutputList);
 }
 //_____________________________________________________________________________
-void AliAnalysisTaskJPsiMC_DG::SetCrossed(Int_t spd[4], TBits &crossed){ 
+void AliAnalysisTaskJPsiMC_DG::ReplayTriggersMC(AliVEvent *fEvent)
+{
+    // First set all triggers to kFALSE state, then we check them
+    for(Int_t i = 0; i < 11; i++) fTriggerInputsMC[i] = kFALSE;
+    UShort_t fTriggerAD = fEvent->GetADData()->GetTriggerBits();
+    UShort_t fTriggerVZERO = fEvent->GetVZEROData()->GetTriggerBits();
+    UInt_t fL0inputs = fEvent->GetHeader()->GetL0TriggerInputs();
+
+    fTriggerInputsMC[0] = fTriggerVZERO & (1 << 12);// 0VBA VZERO A
+    fTriggerInputsMC[1] = fTriggerVZERO & (1 << 13);// 0VBC VZERO C
+    fTriggerInputsMC[2] = fTriggerAD & (1 << 12);   // 0UBA ADA
+    fTriggerInputsMC[3] = fTriggerAD & (1 << 13);   // 0UBC ADC
+
+    // ------------------------
+    // TOF trigger input
+    // ------------------------
+    const AliTOFHeader *tofH = fEvent->GetTOFHeader();
+    fTOFmask = tofH->GetTriggerMask();
+  
+    Bool_t firedMaxiPhi[36] = {0};
+    Int_t NfiredMaxiPads = 0;
+ 
+    for(Int_t ltm = 0; ltm < 72; ltm++){
+        Int_t ip = ltm % 36;
+        for(Int_t cttm = 0; cttm < 23; cttm++){
+            if(fTOFmask->IsON(ltm,cttm) && gRandom->Rndm(1.0) < hTOFeff->GetBinContent(ltm+1,cttm+1)){
+                firedMaxiPhi[ip] = kTRUE;
+                NfiredMaxiPads++;
+            }
+        }
+    }
+    Bool_t offlineOMU = kFALSE;
+    for(Int_t ip = 0;ip < 36; ip++){
+        if(!firedMaxiPhi[ip]) continue;
+        for(Int_t jp = ip + 1;jp < 36; jp++){
+            if(!firedMaxiPhi[jp]) continue;
+            Int_t DeSlots = jp - ip;
+            Int_t AntiDeSlots = 36 - DeSlots;
+            if(DeSlots >= 15 && DeSlots <= 18) offlineOMU = kTRUE;
+            else if(AntiDeSlots >= 15 && AntiDeSlots <= 18) offlineOMU = kTRUE;
+        }
+    }
+    if(NfiredMaxiPads>6)offlineOMU = kFALSE;
+    if(offlineOMU)fTriggerInputsMC[4] = kTRUE;          //0OMU TOF two hits with topology
+    if(NfiredMaxiPads >= 2)fTriggerInputsMC[5] = kTRUE;	//0OM2 TOF two hits	
+
+    // ------------------------
+    // STG trigger input
+    // ------------------------
+    //SPD inputs
+    const AliVMultiplicity *mult = fEvent->GetMultiplicity();
+    Bool_t vPhiInner[20]; for (Int_t i=0; i<20; ++i) vPhiInner[i]=kFALSE;
+    Bool_t vPhiOuter[40]; for (Int_t i=0; i<40; ++i) vPhiOuter[i]=kFALSE;
+
+    Int_t nInner(0), nOuter(0);
+    for (Int_t i(0); i<1200; ++i){
+        Bool_t isFired = (mult->TestFastOrFiredChips(i)) && (gRandom->Rndm(1.0) < hSPDeff->GetBinContent(i+1));
+        if (i<400){
+            if(isFired)vPhiInner[i/20] = kTRUE;
+            nInner += isFired;
+        } else {
+            if(isFired)vPhiOuter[(i-400)/20] = kTRUE;
+            nOuter += isFired;
+        }
+    }
+
+    // STG input
+    Int_t dphiMax = 10; 
+    Int_t dphiMin = 9;
+    Bool_t tolerance = 1;
+    Bool_t firedSTG = 0;
+    Bool_t phi[20] = { 0 };
+    if(fRunNumber < 295753){ dphiMin = 3; }
+
+    for (Int_t i = 0; i < 20; ++i) {
+        if (tolerance) phi[i] = vPhiInner[i] & (vPhiOuter[(2*i)%40] | vPhiOuter[(2*i+1)%40] | vPhiOuter[(2*i+2)%40] | vPhiOuter[(2*i+39)%40]);
+        else           phi[i] = vPhiInner[i] & (vPhiOuter[(2*i)%40] | vPhiOuter[(2*i+1)%40]);
+    }
+    for (Int_t dphi=dphiMin;dphi<=dphiMax;dphi++)
+    for (Int_t i=0; i<20; ++i) firedSTG |= phi[i] & phi[(i+dphi)%20];
+
+    // STP input
+    Int_t fired = 0;
+    for (Int_t i(0); i<10; ++i) {
+        for (Int_t j(0); j<2; ++j) {
+        const Int_t k(2*i+j);
+        fired += (( vPhiOuter[k]    || vPhiOuter[k+1]       ||
+                    vPhiOuter[k+2]      )
+                && (vPhiOuter[k+20] || vPhiOuter[(k+21)%40] ||
+                    vPhiOuter[(k+22)%40])
+                && (vPhiInner[i]    || vPhiInner[i+1]       )
+                && (vPhiInner[i+10] || vPhiInner[(i+11)%20]));
+        }
+    }
+    //0SMB - At least one hit in SPD
+    if (nOuter > 0 || nInner > 0) fTriggerInputsMC[6] = kTRUE;
+    //0SM2 - Two hits on outer layer
+    if (nOuter > 1) fTriggerInputsMC[7] = kTRUE;
+    //0STP - Topological SPD trigger (two pairs)
+    if (fired != 0) fTriggerInputsMC[8] = kTRUE;
+    //0SH1 - More then 6 hits on outer layer
+    if (nOuter >= 7) fTriggerInputsMC[9] = kTRUE;
+    if (firedSTG) fTriggerInputsMC[10] = kTRUE;
+
+}
+//_____________________________________________________________________________
+void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
+{
+    TLorentzVector vGenerated, vDecayProduct;
+    TDatabasePDG *pdgdat = TDatabasePDG::Instance();
+
+    vGenerated.SetPtEtaPhiM(0.,0.,0.,0.);
+
+    AliMCEvent *mc = MCEvent();
+    if(!mc) return;
+
+    for(Int_t imc = 0; imc < mc->GetNumberOfTracks(); imc++) {
+        AliMCParticle *mcPart = (AliMCParticle*) mc->GetTrack(imc);
+        if(!mcPart) continue;
+    
+        if(TMath::Abs(mcPart->PdgCode()) == 13){ 
+            // if mu+ or mu-
+
+            if(mcPart->GetMother() == -1){
+                // without mother particle
+                TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
+                vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
+                vGenerated += vDecayProduct;
+            } else { 
+                // without this else branch for kTwoGammaToMuMedium
+                // with J/psi mother particle
+                AliMCParticle *mcMother = (AliMCParticle*) mc->GetTrack(mcPart->GetMother());
+                // Original code (manually selected):
+                    // if(TMath::Abs(mcMother->PdgCode()) != 443) continue;     // for kCohJpsiToMu and kIncohJpsiToMu
+                    // if(TMath::Abs(mcMother->PdgCode()) != 100443) continue;  // for kCohPsi2sToMuPi and kIncohPsi2sToMuPi
+                // Previous two conditions merged (they cannot happen at the same time):
+                    if(TMath::Abs(mcMother->PdgCode()) != 443 && TMath::Abs(mcMother->PdgCode()) != 100443) continue;
+                TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
+                vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
+                vGenerated += vDecayProduct;
+            }
+        }
+    } // loop over mc particles
+
+    FillTree(fTreeJPsiMCGen,vGenerated);
+}
+//_____________________________________________________________________________
+void AliAnalysisTaskJPsiMC_DG::FillTree(TTree *t, TLorentzVector v)
+{
+    fPt      = v.Pt();
+    if(v.E() != v.Pz()) fY = v.Rapidity();
+    else fY = -999; // when E = Pz, rapidity goes to infty
+    fM       = v.M();
+    fPhi     = v.Phi();
+
+    t->Fill();
+}
+//_____________________________________________________________________________
+void AliAnalysisTaskJPsiMC_DG::SetCrossed(Int_t spd[4], TBits &crossed)
+{ 
     // from the macro by MB
     Int_t chipId2;
     for(Int_t iLayer = 0; iLayer < 4; iLayer++)
@@ -511,7 +666,8 @@ void AliAnalysisTaskJPsiMC_DG::SetCrossed(Int_t spd[4], TBits &crossed){
     }
 }
 //_____________________________________________________________________________
-Int_t AliAnalysisTaskJPsiMC_DG::GetChipId(Int_t index, Int_t &chipId2, Bool_t debug){
+Int_t AliAnalysisTaskJPsiMC_DG::GetChipId(Int_t index, Int_t &chipId2, Bool_t debug)
+{
     // from the macro by MB
     Int_t status   = (index%1000000)/100000;
     Int_t iModule  = index/1000000;           // 0 - 239
@@ -552,7 +708,8 @@ Int_t AliAnalysisTaskJPsiMC_DG::GetChipId(Int_t index, Int_t &chipId2, Bool_t de
     return chipId;
 }
 //_____________________________________________________________________________
-Bool_t AliAnalysisTaskJPsiMC_DG::IsSTGFired(TBits bits, Int_t dphiMin, Int_t dphiMax, Bool_t tolerance){
+Bool_t AliAnalysisTaskJPsiMC_DG::IsSTGFired(TBits bits, Int_t dphiMin, Int_t dphiMax, Bool_t tolerance)
+{
     // from the macro by MB
     Int_t n1 = bits.CountBits(400);
     Int_t n0 = bits.CountBits() - n1;
@@ -571,8 +728,8 @@ Bool_t AliAnalysisTaskJPsiMC_DG::IsSTGFired(TBits bits, Int_t dphiMin, Int_t dph
     for (Int_t dphi=dphiMin;dphi<=dphiMax;dphi++) for (Int_t i=0; i<20; ++i) stg |= phi[i] & phi[(i+dphi)%20];
     return stg;
 }
-void AliAnalysisTaskJPsiMC_DG::Terminate(Option_t *)
 //_____________________________________________________________________________
+void AliAnalysisTaskJPsiMC_DG::Terminate(Option_t *)
 {
     // the end
 }

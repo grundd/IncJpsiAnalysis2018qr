@@ -7,9 +7,9 @@
 void runAnalysis()
 {
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
-    Bool_t local = kFALSE;
+    Bool_t local = kTRUE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
-    Bool_t gridTest = kFALSE;
+    Bool_t gridTest = kTRUE;
 
     // since we will compile a class, tell root where to look for headers  
 #if !defined (__CINT__) || defined (__CLING__)
@@ -51,10 +51,7 @@ void runAnalysis()
         // if you want to run locally, we need to define some input
         TChain* chain = new TChain("esdTree"); // !!!
         // add a few files to the chain (change this so that your local files are added)
-        chain->Add("Data/000296623_100_AliESDs.root");
-        chain->Add("Data/000296623_101_AliESDs.root");
-        chain->Add("Data/000296623_102_AliESDs.root");
-        chain->Add("Data/000296623_109_AliESDs.root");
+        chain->Add("Data/AliESDs_kIncohJpsiToMu_295937_001.root");
 
         // start the analysis locally, reading the events from the tchain
         mgr->StartAnalysis("local", chain);
@@ -79,13 +76,23 @@ void runAnalysis()
         alienHandler->SetAPIVersion("V1.1x");
         // select the input data
 
-        alienHandler->SetGridDataDir("/alice/data/2018/LHC18q");   
-        alienHandler->SetDataPattern("/*pass1/*AliESDs.root");
-        alienHandler->SetRunPrefix("000");
-        alienHandler->AddRunNumber(295937); 
-        //alienHandler->AddRunNumber(296623); 
+        Bool_t isMC = kTRUE;
+        if(!isMC){
+            alienHandler->SetGridDataDir("/alice/data/2018/LHC18q");   
+            alienHandler->SetDataPattern("/*pass1/*AliESDs.root");
+            alienHandler->SetRunPrefix("000");
+            alienHandler->AddRunNumber(295937); 
+            //alienHandler->AddRunNumber(296623); 
+        } else {
+            alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kIncohJpsiToMu");
+            alienHandler->SetDataPattern("/*AliESDs.root");
+            // no run prefix for MC!
+            //alienHandler->AddRunNumber(295937); 
+            alienHandler->AddRunNumber(296623); 
+        }
+
         // working directory
-        alienHandler->SetGridWorkingDir("analysis_trial_ESDs_v3");
+        alienHandler->SetGridWorkingDir("analysis_trial_ESDs_v4");
         alienHandler->SetExecutable("analysis_trial_ESDs.sh");
         alienHandler->SetJDLName("analysis_trial_ESDs.jdl");
 
