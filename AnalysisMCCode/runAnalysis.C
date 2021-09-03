@@ -21,7 +21,7 @@ void runAnalysis()
 #endif
      
     // create the analysis manager
-    AliAnalysisManager *mgr = new AliAnalysisManager("AnalysisTaskJPsi_DG");
+    AliAnalysisManager *mgr = new AliAnalysisManager("AnalysisTaskJPsiMC_DG");
     AliESDInputHandler *esdH = new AliESDInputHandler();
     mgr->SetInputEventHandler(esdH);
 
