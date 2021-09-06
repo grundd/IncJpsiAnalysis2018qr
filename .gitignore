@@ -1,0 +1,12 @@
+# Ignore the results folder
+Results/
+
+# Ignore the data folder 
+Data/
+
+# Ignore any temporary files from a local/GRID analysis
+*.d
+*.so
+*.pcm
+*.root
+
