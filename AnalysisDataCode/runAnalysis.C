@@ -7,9 +7,9 @@
 void runAnalysis()
 {
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
-    Bool_t local = kFALSE;
+    Bool_t local = kTRUE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
-    Bool_t gridTest = kFALSE;
+    Bool_t gridTest = kTRUE;
 
     // since we will compile a class, tell root where to look for headers  
 #if !defined (__CINT__) || defined (__CLING__)
@@ -51,10 +51,7 @@ void runAnalysis()
         // if you want to run locally, we need to define some input
         TChain* chain = new TChain("esdTree"); // !!!
         // add a few files to the chain (change this so that your local files are added)
-        chain->Add("Data/000296623_100_AliESDs.root");
-        chain->Add("Data/000296623_101_AliESDs.root");
-        chain->Add("Data/000296623_102_AliESDs.root");
-        chain->Add("Data/000296623_109_AliESDs.root");
+        chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/Data_000296623/101_AliESDs.root");
 
         // start the analysis locally, reading the events from the tchain
         mgr->StartAnalysis("local", chain);
