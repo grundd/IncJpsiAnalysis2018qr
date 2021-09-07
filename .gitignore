@@ -9,4 +9,7 @@ Data/
 *.so
 *.pcm
 *.root
+*.sh
+*.xml
+*.jdl
 

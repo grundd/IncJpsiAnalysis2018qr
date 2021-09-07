@@ -160,7 +160,11 @@ AliAnalysisTaskJPsiMC_DG::~AliAnalysisTaskJPsiMC_DG()
         delete fOutputList;
         fOutputList = 0x0;
     }
-    // delete the other things as well ??
+    if(fOutputList) {delete fOutputList;}
+    if(fTreeJPsiMCRec) {delete fTreeJPsiMCRec;}
+    if(fTreeJPsiMCGen) {delete fTreeJPsiMCGen;} 
+    if(fPIDResponse) {delete fPIDResponse;} 
+    // delete other things as well ??
 }
 //_____________________________________________________________________________
 void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
