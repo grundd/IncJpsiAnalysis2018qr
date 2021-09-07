@@ -91,7 +91,7 @@ void ESDs_MC_07-09-2021_test_merge(const char *dir, Int_t stage=0)
    mgr->SetRunFromPath(mgr->GetRunFromAlienPath(dir));
    mgr->SetSkipTerminate(kFALSE);
    mgr->PrintStatus();
-   AliLog::SetGlobalLogLevel(AliLog::kError);
+   AliLog::SetGlobalLogLevel(AliLog::kWarning);
    TTree *tree = NULL;
    mgr->StartAnalysis("gridterminate", tree);
 }

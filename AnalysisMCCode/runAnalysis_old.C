@@ -9,7 +9,7 @@ void runAnalysis_old()
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
     Bool_t local = kFALSE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
-    Bool_t gridTest = kFALSE;
+    Bool_t gridTest = kTRUE;
 
     // since we will compile a class, tell root where to look for headers  
 #if !defined (__CINT__) || defined (__CLING__)
@@ -56,7 +56,9 @@ void runAnalysis_old()
         // if you want to run locally, we need to define some input
         TChain* chain = new TChain("esdTree"); // !!!
         // add a few files to the chain (change this so that your local files are added)
-        chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohJpsiToMu_295585_001/AliESDs.root"); 
+        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohJpsiToMu_295585_001/AliESDs.root"); 
+        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohPsi2sToMuPi_295585_001/AliESDs.root"); 
+        chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kTwoGammaToMuMedium_295585_001/AliESDs.root"); 
 
         // start the analysis locally, reading the events from the tchain
         mgr->StartAnalysis("local", chain);
@@ -81,7 +83,8 @@ void runAnalysis_old()
         alienHandler->SetAPIVersion("V1.1x");
         // select the input data
 
-        alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kIncohJpsiToMu");
+        //alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kIncohJpsiToMu");
+        alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kTwoGammaToMuMedium");
         alienHandler->SetDataPattern("/*AliESDs.root");
         // no run prefix for MC!
         //alienHandler->AddRunNumber(295937); 

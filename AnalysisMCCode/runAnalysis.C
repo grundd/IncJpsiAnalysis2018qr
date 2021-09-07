@@ -30,6 +30,9 @@ void runAnalysis() {
     //chain->Add("Data/AliESDs_kIncohJpsiToMu_295937_001.root"); 
     //chain->Add("Data/AliESDs_kIncohPsi2sToMuPi_295585_001.root");
     chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohJpsiToMu_295585_001/AliESDs.root"); 
+    //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohPsi2sToMuPi_295585_001/AliESDs.root"); 
+    //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kTwoGammaToMuMedium_295585_001/AliESDs.root"); 
+    
     // Print the number of entries
     Printf("Number of events: %lld", chain->GetEntries());
     

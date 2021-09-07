@@ -175,7 +175,7 @@ void AliAnalysisTaskJPsi_DG::UserCreateOutputObjects()
     // OUTPUT TREE:
 
     fTreeJPsi = new TTree("fTreeJPsi", "fTreeJPsi");
-    // Basic things
+    // Basic things:
     fTreeJPsi->Branch("fRunNumber", &fRunNumber, "fRunNumber/I");
     fTreeJPsi->Branch("fTriggerName", &fTriggerName);
     // PID, sigmas:
@@ -198,7 +198,7 @@ void AliAnalysisTaskJPsi_DG::UserCreateOutputObjects()
     fTreeJPsi->Branch("fQ1", &fQ1, "fQ1/D");
     fTreeJPsi->Branch("fQ2", &fQ2, "fQ2/D");
     // Info from the detectors:
-    // ZDC
+    // ZDC:
     fTreeJPsi->Branch("fZNA_energy", &fZNA_energy, "fZNA_energy/D");
     fTreeJPsi->Branch("fZNC_energy", &fZNC_energy, "fZNC_energy/D");
     fTreeJPsi->Branch("fZNA_time", &fZNA_time[0], "fZNA_TDC[4]/D");
@@ -213,7 +213,7 @@ void AliAnalysisTaskJPsi_DG::UserCreateOutputObjects()
     fTreeJPsi->Branch("fADC_dec", &fADC_dec, "fADC_dec/I");
     fTreeJPsi->Branch("fADA_time", &fADA_time, "fADA_time/D");
     fTreeJPsi->Branch("fADC_time", &fADC_time, "fADC_time/D");
-    // Matching SPD clusters with FOhits
+    // Matching SPD clusters with FOhits:
     fTreeJPsi->Branch("fMatchingSPD", &fMatchingSPD, "fMatchingSPD/O");
     
     PostData(1, fTreeJPsi);

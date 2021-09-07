@@ -642,8 +642,8 @@ void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
                 TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
                 vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
                 vGenerated += vDecayProduct;
-            } else { 
-                // without this else branch for kTwoGammaToMuMedium
+            } else { // without this else branch for kTwoGammaToMuMedium
+                ///*
                 // with J/psi mother particle
                 AliMCParticle *mcMother = (AliMCParticle*) mc->GetTrack(mcPart->GetMother());
                 // Original code (manually selected):
@@ -654,6 +654,7 @@ void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
                 TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
                 vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
                 vGenerated += vDecayProduct;
+                //*/
             }
         }
     } // loop over mc particles

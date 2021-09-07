@@ -61,7 +61,7 @@ void myAnalysis()
    AliAnalysisManager *mgr = AliAnalysisAlien::LoadAnalysisManager("ESDs_MC_07-09-2021_test.root");
    if (!mgr) return;
    mgr->PrintStatus();
-   AliLog::SetGlobalLogLevel(AliLog::kError);
+   AliLog::SetGlobalLogLevel(AliLog::kWarning);
    TChain *chain = CreateChain("wn.xml", anatype);
 
    mgr->StartAnalysis("localfile", chain, 1234567890, 0);
