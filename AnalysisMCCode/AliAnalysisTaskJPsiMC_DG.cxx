@@ -101,7 +101,9 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG() : // initializer list
     // Matching SPD clusters with FOhits
     fMatchingSPD(0),
     // Trigger inputs for MC data
-    fSPDfile(0), fTOFfile(0), fLoadedRun(-1), hTOFeff(0), hSPDeff(0), fTOFmask(0)
+    fSPDfile(0), fTOFfile(0), fLoadedRun(-1), hTOFeff(0), hSPDeff(0), fTOFmask(0),
+    // MC kinematics on generated level
+    fPtGen(0), fMGen(0), fYGen(0), fPhiGen(0)
 {
     // default constructor
 }
@@ -136,7 +138,9 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG(const char* name) : // initia
     // Matching SPD clusters with FOhits
     fMatchingSPD(0),
     // Trigger inputs for MC data
-    fSPDfile(0), fTOFfile(0), fLoadedRun(-1), hTOFeff(0), hSPDeff(0), fTOFmask(0)
+    fSPDfile(0), fTOFfile(0), fLoadedRun(-1), hTOFeff(0), hSPDeff(0), fTOFmask(0),
+    // MC kinematics on generated level
+    fPtGen(0), fMGen(0), fYGen(0), fPhiGen(0)
 { 
     // constructor
     for(Int_t i = 0; i < 11; i++) fTriggerInputsMC[i] = kFALSE;
@@ -188,9 +192,9 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     fTreeJPsiMCRec->Branch("fTrk2SigIfEl", &fTrk2SigIfEl, "fTrk2SigIfEl/D");
     // Kinematics:
     fTreeJPsiMCRec->Branch("fPt", &fPt, "fPt/D");
-    fTreeJPsiMCRec->Branch("fPhi", &fPhi, "fPhi/D");
-    fTreeJPsiMCRec->Branch("fY", &fY, "fY/D");
     fTreeJPsiMCRec->Branch("fM", &fM, "fM/D");
+    fTreeJPsiMCRec->Branch("fY", &fY, "fY/D");
+    fTreeJPsiMCRec->Branch("fPhi", &fPhi, "fPhi/D");
     // Two tracks:
     fTreeJPsiMCRec->Branch("fPt1", &fPt1, "fPt1/D");
     fTreeJPsiMCRec->Branch("fPt2", &fPt2, "fPt2/D");
@@ -204,8 +208,8 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     // ZDC:
     fTreeJPsiMCRec->Branch("fZNA_energy", &fZNA_energy, "fZNA_energy/D");
     fTreeJPsiMCRec->Branch("fZNC_energy", &fZNC_energy, "fZNC_energy/D");
-    fTreeJPsiMCRec->Branch("fZNA_time", &fZNA_time[0], "fZNA_TDC[4]/D");
-    fTreeJPsiMCRec->Branch("fZNC_time", &fZNC_time[0], "fZNC_TDC[4]/D");
+    fTreeJPsiMCRec->Branch("fZNA_time", &fZNA_time[0], "fZNA_time[4]/D");
+    fTreeJPsiMCRec->Branch("fZNC_time", &fZNC_time[0], "fZNC_time[4]/D");
     // V0:
     fTreeJPsiMCRec->Branch("fV0A_dec", &fV0A_dec, "fV0A_dec/I");
     fTreeJPsiMCRec->Branch("fV0C_dec", &fV0C_dec, "fV0C_dec/I");
@@ -218,9 +222,14 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     fTreeJPsiMCRec->Branch("fADC_time", &fADC_time, "fADC_time/D");
     // Matching SPD clusters with FOhits:
     fTreeJPsiMCRec->Branch("fMatchingSPD", &fMatchingSPD, "fMatchingSPD/O"); // O is for bool
-    // Replayed trigger inputs
+    // Replayed trigger inputs:
     fTreeJPsiMCRec->Branch("fTriggerInputsMC", &fTriggerInputsMC[0], "fTriggerInputsMC[11]/O"); 
-    
+    // Kinematics, MC gen:
+    fTreeJPsiMCRec->Branch("fPtGen", &fPtGen, "fPtGen/D");
+    fTreeJPsiMCRec->Branch("fMGen", &fMGen, "fMGen/D");
+    fTreeJPsiMCRec->Branch("fYGen", &fYGen, "fYGen/D");
+    fTreeJPsiMCRec->Branch("fPhiGen", &fPhiGen, "fPhiGen/D");    
+
     PostData(1, fTreeJPsiMCRec);
 
     // ##########################################################
@@ -230,10 +239,10 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     // Run number:
     fTreeJPsiMCGen->Branch("fRunNumber", &fRunNumber, "fRunNumber/I");
     // Kinematics:
-    fTreeJPsiMCGen->Branch("fPt", &fPt, "fPt/D");
-    fTreeJPsiMCGen->Branch("fPhi", &fPhi, "fPhi/D");
-    fTreeJPsiMCGen->Branch("fY", &fY, "fY/D");
-    fTreeJPsiMCGen->Branch("fM", &fM, "fM/D");
+    fTreeJPsiMCGen->Branch("fPtGen", &fPtGen, "fPtGen/D");
+    fTreeJPsiMCGen->Branch("fMGen", &fMGen, "fMGen/D");
+    fTreeJPsiMCGen->Branch("fYGen", &fYGen, "fYGen/D");
+    fTreeJPsiMCGen->Branch("fPhiGen", &fPhiGen, "fPhiGen/D");
 
     PostData(2, fTreeJPsiMCGen);
 
@@ -617,7 +626,7 @@ void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
 
     AliMCEvent *mc = MCEvent();
     if(!mc){
-        Printf("Not found");
+        //Printf("Not found");
         return;
     } 
 
@@ -649,18 +658,18 @@ void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
         }
     } // loop over mc particles
 
-    FillTree(fTreeJPsiMCGen,vGenerated);
+    FillMCGenTree(vGenerated);
 }
 //_____________________________________________________________________________
-void AliAnalysisTaskJPsiMC_DG::FillTree(TTree *t, TLorentzVector v)
+void AliAnalysisTaskJPsiMC_DG::FillMCGenTree(TLorentzVector v)
 {
-    fPt      = v.Pt();
-    if(v.E() != v.Pz()) fY = v.Rapidity();
-    else fY = -999; // when E = Pz, rapidity goes to infty
-    fM       = v.M();
-    fPhi     = v.Phi();
+    fPtGen      = v.Pt();
+    if(v.E() != v.Pz()) fYGen = v.Rapidity();
+    else fYGen  = -999; // when E = Pz, rapidity goes to infty
+    fMGen       = v.M();
+    fPhiGen     = v.Phi();
 
-    t->Fill();
+    fTreeJPsiMCGen->Fill();
 }
 //_____________________________________________________________________________
 void AliAnalysisTaskJPsiMC_DG::SetCrossed(Int_t spd[4], TBits &crossed)

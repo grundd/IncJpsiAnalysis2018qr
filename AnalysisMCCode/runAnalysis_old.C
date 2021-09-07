@@ -9,7 +9,7 @@ void runAnalysis_old()
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
     Bool_t local = kFALSE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
-    Bool_t gridTest = kTRUE;
+    Bool_t gridTest = kFALSE;
 
     // since we will compile a class, tell root where to look for headers  
 #if !defined (__CINT__) || defined (__CLING__)
@@ -88,9 +88,9 @@ void runAnalysis_old()
         alienHandler->AddRunNumber(296623); 
 
         // working directory
-        alienHandler->SetGridWorkingDir("analysis_trial_ESDs_v4");
-        alienHandler->SetExecutable("analysis_trial_ESDs.sh");
-        alienHandler->SetJDLName("analysis_trial_ESDs.jdl");
+        alienHandler->SetGridWorkingDir("ESDs_MC_07-09-2021_test");
+        alienHandler->SetExecutable(    "ESDs_MC_07-09-2021_test.sh");
+        alienHandler->SetJDLName(       "ESDs_MC_07-09-2021_test.jdl");
 
         // number of files per subjob
         alienHandler->SetSplitMaxInputFileNumber(40);

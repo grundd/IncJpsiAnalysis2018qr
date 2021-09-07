@@ -31,7 +31,7 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
         virtual void    Terminate(Option_t* option); // usually empty, called at the end
 
         void    TrkTrkKinematics(Int_t *fIndicesOfGoodTrks, Double_t fTrkMass);
-        void    FillTree(TTree *t, TLorentzVector v);
+        void    FillMCGenTree(TLorentzVector v);
         void    SetCrossed(Int_t spd[4], TBits &crossed);
         Int_t   GetChipId(Int_t index, Int_t &chipId2, Bool_t debug = 0);
         Bool_t  IsSTGFired(TBits bits, Int_t dphiMin = 4, Int_t dphiMax = 10, Bool_t tolerance = 1);
@@ -95,6 +95,11 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
         TH2F    *hTOFeff;
         TH1D    *hSPDeff;
         AliTOFTriggerMask *fTOFmask;
+        // MC kinematics on generated level
+        Double_t    fPtGen;
+        Double_t    fYGen;
+        Double_t    fMGen;
+        Double_t    fPhiGen;
 
         AliAnalysisTaskJPsiMC_DG(const AliAnalysisTaskJPsiMC_DG&); // not implemented
         AliAnalysisTaskJPsiMC_DG& operator=(const AliAnalysisTaskJPsiMC_DG&); // not implemented

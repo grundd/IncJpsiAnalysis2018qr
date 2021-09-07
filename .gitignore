@@ -1,6 +1,9 @@
 # Ignore the results folder
 Results/
 
+# Ignore the folder with data trees
+Trees/
+
 # Ignore the data folder 
 Data/
 
