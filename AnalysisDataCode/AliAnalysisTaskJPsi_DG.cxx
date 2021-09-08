@@ -301,12 +301,30 @@ void AliAnalysisTaskJPsi_DG::UserExec(Option_t *)
         iSelectionCounter++;
     // ##########################################################
 
-    // Get the run number associated to the ESD event
+    // Get the run number associated with the ESD event
     fRunNumber = fEvent->GetRunNumber(); 
 
     // Time range cuts: https://twiki.cern.ch/twiki/bin/view/ALICE/AliDPGRunList18r 
     fTimeRangeCut.InitFromEvent(InputEvent());
     if(fTimeRangeCut.CutEvent(InputEvent())) return;
+
+    // Check the central UPC trigger CCUP31
+    // Fill the hCounterTrigger (to calculate the integrated lumi of the analysed sample)
+    // Cut on trigger will be performed later (# 4)
+    fTriggerName = fEvent->GetFiredTriggerClasses();
+    Bool_t triggered = kFALSE;
+    if(fRunNumber < 295881){
+        if(fTriggerName.Contains("CCUP31-B-NOPF-CENTNOTRD")){
+            triggered = kTRUE;
+            hCounterTrigger->Fill(fRunNumber);
+        } 
+    }
+    if(fRunNumber >= 295881){
+        if(fTriggerName.Contains("CCUP31-B-SPD2-CENTNOTRD")){
+            triggered = kTRUE;
+            hCounterTrigger->Fill(fRunNumber);
+        }
+    }
 
     // ##########################################################
         // CUT 1 & 2
@@ -367,21 +385,6 @@ void AliAnalysisTaskJPsi_DG::UserExec(Option_t *)
     // ##########################################################
         // CUT 4
         // Central UPC trigger CCUP31
-        // Filling the histograms for the purposes of luminosity calculation
-        fTriggerName = fEvent->GetFiredTriggerClasses();
-        Bool_t triggered = kFALSE;
-        if(fRunNumber < 295881){
-            if(fTriggerName.Contains("CCUP31-B-NOPF-CENTNOTRD")){
-                triggered = kTRUE;
-                hCounterTrigger->Fill(fRunNumber);
-            } 
-        }
-        if(fRunNumber >= 295881){
-            if(fTriggerName.Contains("CCUP31-B-SPD2-CENTNOTRD")){
-                triggered = kTRUE;
-                hCounterTrigger->Fill(fRunNumber);
-            }
-        }
         if(!triggered)
         {
             PostData(1, fTreeJPsi);

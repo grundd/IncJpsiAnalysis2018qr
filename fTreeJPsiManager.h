@@ -63,8 +63,7 @@ void ConnectTreeVariables(TTree *t){
     return;
 }
 
-Bool_t EventPassed(){
-    // To do (!!)
+Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0){
 
     // 0) Selections applied on the GRID:
     // 0a) fEvent non-empty
@@ -82,7 +81,13 @@ Bool_t EventPassed(){
     if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
 
     // 3) Invariant mass between 2.2 and 4.5 GeV/c^2
-    if(!(fM > 2.2 && fM < 4.5)) return kFALSE;
+    Bool_t bMassCut = kFALSE;
+    switch(iMassCut){
+        case 0:
+            if(fM > 2.2 && fM < 4.5) bMassCut = kTRUE;
+            break;
+    }
+    if(!bMassCut) return kFALSE;
 
     // 4a) ADA offline veto (no effect on MC)
     if(!(fADA_dec == 0)) return kFALSE;
@@ -106,11 +111,20 @@ Bool_t EventPassed(){
     if(!(fQ1 * fQ2 < 0)) return kFALSE;
 
     // 9) Transverse momentum cut
-    if(!(fPt < 0.11)) return kFALSE;
+    Bool_t bPtCut = kFALSE;
+    switch(iPtCut){
+        case 0: // Incoherent-enriched sample
+            if(fPt > 0.20) bPtCut = kTRUE;
+            break;
+        case 1: // Coherent-enriched sample
+            if(fPt < 0.11) bPtCut = kTRUE;
+            break;
+        case 2: // Total sample (pt < 2.0 GeV/c)
+            if(fPt < 2.00) bPtCut = kTRUE;
+            break;
+    }
+    if(!bPtCut) return kFALSE;
 
-    // 10) Invariant mass between 3.0 and 3.2 GeV/c^2
-    if(!(fM > 3.9 && fM < 3.2)) return kFALSE;
-    
     // Event passed all the selections =>
     return kTRUE;
 }
