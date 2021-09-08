@@ -53,10 +53,13 @@ Int_t RunList18qr[219] = {
 
 Bool_t FoundRunNumbers[219] = { kFALSE };
 
+void SortRunNumbers();
 void PrepareTotalRunList();
 void DoRunListCheck();
 
 void RunListCheck(){
+
+    //SortRunNumbers();
 
     //PrepareTotalRunList();
 
@@ -99,7 +102,7 @@ void DoRunListCheck(){
         } 
         RunNumberFound = kFALSE;
 
-        if((iEntry+1) % 100000 == 0){ // 1e6 = 10^5
+        if((iEntry+1) % 100000 == 0){
             nEntriesAnalysed += 100000;
             Printf("%i entries analysed.", nEntriesAnalysed);
         }
@@ -152,6 +155,49 @@ void PrepareTotalRunList(){
             outfile << RunList18qr[i] << ", ";
         }
     }
+    outfile.close();
+    Printf("*** Results printed to %s.***", name.Data());
+
+    return;
+}
+
+void SortRunNumbers(){
+
+    Int_t nq = sizeof(RunList18q) / sizeof(RunList18q[0]);
+    std::sort(RunList18q, RunList18q + nq);
+
+    Int_t nr = sizeof(RunList18r) / sizeof(RunList18r[0]);
+    std::sort(RunList18r, RunList18r + nr);
+
+    // Print the results:
+    TString name = "Results/RunListCheck/18qrRunLists.txt";
+    ofstream outfile (name.Data());
+    Int_t RunsPerLine = 13;
+
+    // LHC18q
+    outfile << "LHC18q (" << nq << " runs):\n";
+    for(Int_t i = 0; i < nq; i++){
+        if((i+1) % RunsPerLine == 0){
+            outfile << RunList18q[i] << ", \n";
+        } else if(i == nq-1){
+            outfile << RunList18q[i] << "\n\n";
+        } else {
+            outfile << RunList18q[i] << ", ";
+        }
+    }
+
+    // LHC18r
+    outfile << "LHC18r (" << nr << " runs):\n"; 
+    for(Int_t i = 0; i < nr; i++){
+        if((i+1) % RunsPerLine == 0){
+            outfile << RunList18r[i] << ", \n";
+        } else if(i == nr-1){
+            outfile << RunList18r[i] << "\n\n";
+        } else {
+            outfile << RunList18r[i] << ", ";
+        }
+    }    
+
     outfile.close();
     Printf("*** Results printed to %s.***", name.Data());
 
