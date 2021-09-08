@@ -18,7 +18,7 @@ Int_t fV0A_dec, fV0C_dec, fADA_dec, fADC_dec;
 Bool_t fMatchingSPD;
 
 void ConnectTreeVariables(TTree *t){
-    // Set Branch Addresses
+    // Set branch addresses
     // Basic things:
     t->SetBranchAddress("fRunNumber", &fRunNumber);
     t->SetBranchAddress("fTriggerName", &fTriggerName);
@@ -64,6 +64,53 @@ void ConnectTreeVariables(TTree *t){
 }
 
 Bool_t EventPassed(){
+    // To do (!!)
 
+    // 0) Selections applied on the GRID:
+    // 0a) fEvent non-empty
+    // 0b) At least two tracks associated with the vertex
+    // 0c) Distance from the IP lower than 15 cm
+    // 0d) nGoodTracksTPC == 2 && nGoodTracksSPD == 2
+    // 0d) Central UPC trigger CCUP31:
+    // for fRunNumber < 295881: CCUP31-B-NOPF-CENTNOTRD
+    // for fRunNumber >= 295881: CCUP31-B-SPD2-CENTNOTRD
+
+    // 1) SPD cluster matches FOhits
+    if(!(fMatchingSPD == kTRUE)) return kFALSE;
+
+    // 2) Muon pairs only
+    if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
+
+    // 3) Invariant mass between 2.2 and 4.5 GeV/c^2
+    if(!(fM > 2.2 && fM < 4.5)) return kFALSE;
+
+    // 4a) ADA offline veto (no effect on MC)
+    if(!(fADA_dec == 0)) return kFALSE;
+
+    // 4b) ADC offline veto (no effect on MC)
+    if(!(fADC_dec == 0)) return kFALSE;
+
+    // 5a) V0A offline veto (no effect on MC)
+    if(!(fV0A_dec == 0)) return kFALSE;
+
+    // 5b) V0C offline veto (no effect on MC)
+    if(!(fV0C_dec == 0)) return kFALSE;
+
+    // 6) Dilepton rapidity |y| < 0.8
+    if(!(abs(fY) < 0.8)) return kFALSE;
+
+    // 7) Pseudorapidity of both tracks |eta| < 0.8
+    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
+
+    // 8) Tracks have opposite charges
+    if(!(fQ1 * fQ2 < 0)) return kFALSE;
+
+    // 9) Transverse momentum cut
+    if(!(fPt < 0.11)) return kFALSE;
+
+    // 10) Invariant mass between 3.0 and 3.2 GeV/c^2
+    if(!(fM > 3.9 && fM < 3.2)) return kFALSE;
+    
+    // Event passed all the selections =>
     return kTRUE;
 }
