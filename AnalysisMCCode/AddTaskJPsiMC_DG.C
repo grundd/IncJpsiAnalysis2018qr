@@ -1,4 +1,4 @@
-AliAnalysisTaskJPsiMC_DG *AddTaskJPsiMC_DG()
+AliAnalysisTaskJPsiMC_DG *AddTaskJPsiMC_DG(Bool_t Neutral = kFALSE)
 {
     TString name = "CentralJPsi2018";
     // get the manager via the static access member. since it's static, you don't need
@@ -13,15 +13,17 @@ AliAnalysisTaskJPsiMC_DG *AddTaskJPsiMC_DG()
     if (!mgr->GetInputEventHandler()) {
         return 0x0; //again return zero if the input is a null pointer
     }
-    if (!mgr->GetMCtruthEventHandler()) {
-        return 0x0;
-    }
+    //if (!mgr->GetMCtruthEventHandler()) {
+    //    return 0x0;
+    //}
     // by default, a file is open for writing. here, we get the filename
     TString fileName = AliAnalysisManager::GetCommonFileName();
     fileName += ":AnalysisOutput";      // create a subfolder in the file
     // now we create an instance of your task
     AliAnalysisTaskJPsiMC_DG* task = new AliAnalysisTaskJPsiMC_DG(name.Data());   
     if(!task) return 0x0;
+    // set if neutral pions or not
+    task->SetNeutralPions(Neutral);
 
     //task->SelectCollisionCandidates(AliVEvent::kAnyINT);
     // add your task to the manager

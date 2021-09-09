@@ -27,11 +27,12 @@ void runAnalysis() {
     AliAnalysisTaskJPsiMC_DG *task = reinterpret_cast<AliAnalysisTaskJPsiMC_DG*>(gInterpreter->ExecuteMacro("AddTaskJPsiMC_DG.C()"));
     // if you want to run locally, we need to define some input
     TChain* chain = new TChain("esdTree");
-    //chain->Add("Data/AliESDs_kIncohJpsiToMu_295937_001.root"); 
-    //chain->Add("Data/AliESDs_kIncohPsi2sToMuPi_295585_001.root");
-    chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohJpsiToMu_295585_001/AliESDs.root"); 
+    
+    //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohJpsiToMu_295585_001/AliESDs.root"); 
     //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohPsi2sToMuPi_295585_001/AliESDs.root"); 
-    //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kTwoGammaToMuMedium_295585_001/AliESDs.root"); 
+    //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohJpsiToMu_295585_001/AliESDs.root"); 
+    //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohPsi2sToMuPi_295585_001/AliESDs.root"); 
+    chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kTwoGammaToMuMedium_295585_001/AliESDs.root"); 
     
     // Print the number of entries
     Printf("Number of events: %lld", chain->GetEntries());

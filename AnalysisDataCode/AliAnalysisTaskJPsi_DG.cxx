@@ -201,8 +201,8 @@ void AliAnalysisTaskJPsi_DG::UserCreateOutputObjects()
     // ZDC:
     fTreeJPsi->Branch("fZNA_energy", &fZNA_energy, "fZNA_energy/D");
     fTreeJPsi->Branch("fZNC_energy", &fZNC_energy, "fZNC_energy/D");
-    fTreeJPsi->Branch("fZNA_time", &fZNA_time[0], "fZNA_TDC[4]/D");
-    fTreeJPsi->Branch("fZNC_time", &fZNC_time[0], "fZNC_TDC[4]/D");
+    fTreeJPsi->Branch("fZNA_time", &fZNA_time[0], "fZNA_time[4]/D");
+    fTreeJPsi->Branch("fZNC_time", &fZNC_time[0], "fZNC_time[4]/D");
     // V0:
     fTreeJPsi->Branch("fV0A_dec", &fV0A_dec, "fV0A_dec/I");
     fTreeJPsi->Branch("fV0C_dec", &fV0C_dec, "fV0C_dec/I");
@@ -551,8 +551,8 @@ Bool_t AliAnalysisTaskJPsi_DG::IsSTGFired(TBits bits, Int_t dphiMin, Int_t dphiM
     for (Int_t dphi=dphiMin;dphi<=dphiMax;dphi++) for (Int_t i=0; i<20; ++i) stg |= phi[i] & phi[(i+dphi)%20];
     return stg;
 }
-void AliAnalysisTaskJPsi_DG::Terminate(Option_t *)
 //_____________________________________________________________________________
+void AliAnalysisTaskJPsi_DG::Terminate(Option_t *)
 {
     // the end
 }

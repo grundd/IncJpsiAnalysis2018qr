@@ -4,7 +4,7 @@
 // pcm file, so we need to include it explicitly
 #include "AliAnalysisTaskJPsiMC_DG.h"
 
-void runAnalysis_old()
+void runAnalysis_old(Bool_t Neutral = kFALSE)
 {
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
     Bool_t local = kFALSE;
@@ -37,14 +37,14 @@ void runAnalysis_old()
     gInterpreter->ExecuteMacro("$ALICE_ROOT/ANALYSIS/macros/AddTaskPIDResponse.C");
     gInterpreter->LoadMacro("AliAnalysisTaskJPsiMC_DG.cxx++g");
     char txt_cmd[120];
-    sprintf(txt_cmd,"AddTaskJPsiMC_DG.C()");
+    sprintf(txt_cmd,"AddTaskJPsiMC_DG.C(%d)", Neutral);
     AliAnalysisTaskJPsiMC_DG *task = reinterpret_cast<AliAnalysisTaskJPsiMC_DG*>(gInterpreter->ExecuteMacro(txt_cmd));
 #else
     gROOT->LoadMacro("$ALICE_ROOT/ANALYSIS/macros/AddTaskPIDResponse.C");
     AddTaskPIDResponse();
     gROOT->LoadMacro("AliAnalysisTaskJPsiMC_DG.cxx++g");
     gROOT->LoadMacro("AddTaskJPsiMC_DG.C");
-    AliAnalysisTaskJPsiMC_DG *task = AddTaskJPsiMC_DG();
+    AliAnalysisTaskJPsiMC_DG *task = AddTaskJPsiMC_DG(Neutral);
 #endif
 
     if(!mgr->InitAnalysis()) return;
@@ -58,7 +58,9 @@ void runAnalysis_old()
         // add a few files to the chain (change this so that your local files are added)
         //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohJpsiToMu_295585_001/AliESDs.root"); 
         //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohPsi2sToMuPi_295585_001/AliESDs.root"); 
-        chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kTwoGammaToMuMedium_295585_001/AliESDs.root"); 
+        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohJpsiToMu_295585_001/AliESDs.root"); 
+        chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohPsi2sToMuPi_295585_001/AliESDs.root"); 
+        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kTwoGammaToMuMedium_295585_001/AliESDs.root"); 
 
         // start the analysis locally, reading the events from the tchain
         mgr->StartAnalysis("local", chain);
@@ -84,7 +86,10 @@ void runAnalysis_old()
         // select the input data
 
         //alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kIncohJpsiToMu");
-        alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kTwoGammaToMuMedium");
+        //alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kCohJpsiToMu");
+        alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kIncohPsi2sToMuPi");
+        //alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kCohPsi2sToMuPi");
+        //alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kTwoGammaToMuMedium");
         alienHandler->SetDataPattern("/*AliESDs.root");
         // no run prefix for MC!
         //alienHandler->AddRunNumber(295937); 

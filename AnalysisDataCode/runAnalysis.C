@@ -7,7 +7,7 @@
 void runAnalysis()
 {
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
-    Bool_t local = kTRUE;
+    Bool_t local = kFALSE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
     Bool_t gridTest = kTRUE;
 
@@ -79,6 +79,7 @@ void runAnalysis()
         alienHandler->SetGridDataDir("/alice/data/2018/LHC18q");   
         alienHandler->SetDataPattern("/*pass1/*AliESDs.root");
         alienHandler->SetRunPrefix("000");
+        //alienHandler->AddRunNumber(295585); 
         alienHandler->AddRunNumber(295937); 
         //alienHandler->AddRunNumber(296623); 
         // working directory

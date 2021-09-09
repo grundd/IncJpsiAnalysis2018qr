@@ -75,6 +75,7 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG() : // initializer list
     AliAnalysisTaskSE(),
     fPIDResponse(0),
     fTrackCutsBit4(0),
+    isNeutralPions(kFALSE),
     fEvent(0),
     fOutputList(0),
     fTreeJPsiMCRec(0),
@@ -112,6 +113,7 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG(const char* name) : // initia
     AliAnalysisTaskSE(name),
     fPIDResponse(0),
     fTrackCutsBit4(0),
+    isNeutralPions(kFALSE),
     fEvent(0),
     fOutputList(0),
     fTreeJPsiMCRec(0),
@@ -266,6 +268,11 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
 
 }
 //_____________________________________________________________________________
+void AliAnalysisTaskJPsiMC_DG::SetNeutralPions(Bool_t Neutral)
+{
+    isNeutralPions = Neutral;
+}
+//_____________________________________________________________________________
 void AliAnalysisTaskJPsiMC_DG::TrkTrkKinematics(Int_t *fIndicesOfGoodTrks, Double_t fTrkMass)
 {
     // Get the first track
@@ -384,9 +391,8 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
             if(!trk) continue;
 
             // *********************************************************************
-            // FD correction for neutral pions: skip pion tracks to simulate FD with neutral pions (!)
-            Bool_t isNeutral = kFALSE;
-            if(isNeutral){
+            // FD correction for neutral pions: skip pion tracks to simulate FD with neutral pions
+            if(isNeutralPions){
                 if(trk->GetLabel() >= 0){
                     TDatabasePDG *pdgdat = TDatabasePDG::Instance();
                     AliMCEvent *mc = MCEvent();
@@ -642,8 +648,7 @@ void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
                 TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
                 vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
                 vGenerated += vDecayProduct;
-            } else { // without this else branch for kTwoGammaToMuMedium
-                ///*
+            } else { // this branch not needed for kTwoGammaToMuMedium
                 // with J/psi mother particle
                 AliMCParticle *mcMother = (AliMCParticle*) mc->GetTrack(mcPart->GetMother());
                 // Original code (manually selected):
@@ -654,7 +659,6 @@ void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
                 TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
                 vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
                 vGenerated += vDecayProduct;
-                //*/
             }
         }
     } // loop over mc particles

@@ -30,6 +30,7 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
         virtual void    RunMCGenerated();
         virtual void    Terminate(Option_t* option); // usually empty, called at the end
 
+        void    SetNeutralPions(Bool_t Neutral);
         void    TrkTrkKinematics(Int_t *fIndicesOfGoodTrks, Double_t fTrkMass);
         void    FillMCGenTree(TLorentzVector v);
         void    SetCrossed(Int_t spd[4], TBits &crossed);
@@ -40,6 +41,7 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
         AliPIDResponse  *fPIDResponse;
         AliTimeRangeCut fTimeRangeCut;
         AliESDtrackCuts *fTrackCutsBit4;
+        Bool_t          isNeutralPions;
 
         AliVEvent   *fEvent;
         TList       *fOutputList;   //! output list
