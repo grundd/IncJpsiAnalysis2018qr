@@ -17,7 +17,7 @@ void InvMassFit(){
 
     //PrepareDataTree();
 
-    DoInvMassFitMain(2);
+    DoInvMassFitMain(0);
 
     return;
 }

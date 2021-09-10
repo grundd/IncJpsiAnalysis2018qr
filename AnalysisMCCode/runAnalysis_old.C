@@ -57,9 +57,9 @@ void runAnalysis_old(Bool_t Neutral = kFALSE)
         TChain* chain = new TChain("esdTree"); // !!!
         // add a few files to the chain (change this so that your local files are added)
         //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohJpsiToMu_295585_001/AliESDs.root"); 
-        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohPsi2sToMuPi_295585_001/AliESDs.root"); 
+        chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohPsi2sToMuPi_295585_001/AliESDs.root"); 
         //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohJpsiToMu_295585_001/AliESDs.root"); 
-        chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohPsi2sToMuPi_295585_001/AliESDs.root"); 
+        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohPsi2sToMuPi_295585_001/AliESDs.root"); 
         //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kTwoGammaToMuMedium_295585_001/AliESDs.root"); 
 
         // start the analysis locally, reading the events from the tchain
@@ -87,9 +87,9 @@ void runAnalysis_old(Bool_t Neutral = kFALSE)
 
         //alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kIncohJpsiToMu");
         //alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kCohJpsiToMu");
-        alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kIncohPsi2sToMuPi");
+        //alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kIncohPsi2sToMuPi");
         //alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kCohPsi2sToMuPi");
-        //alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kTwoGammaToMuMedium");
+        alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kTwoGammaToMuMedium");
         alienHandler->SetDataPattern("/*AliESDs.root");
         // no run prefix for MC!
         //alienHandler->AddRunNumber(295937); 

@@ -83,6 +83,9 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0){
     // 3) Invariant mass between 2.2 and 4.5 GeV/c^2
     Bool_t bMassCut = kFALSE;
     switch(iMassCut){
+        case -1: // No inv mass cut
+            bMassCut = kTRUE;
+            break;
         case 0:
             if(fM > 2.2 && fM < 4.5) bMassCut = kTRUE;
             break;
@@ -113,6 +116,9 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0){
     // 9) Transverse momentum cut
     Bool_t bPtCut = kFALSE;
     switch(iPtCut){
+        case -1: // No pt cut
+            bPtCut = kTRUE;
+            break;
         case 0: // Incoherent-enriched sample
             if(fPt > 0.20) bPtCut = kTRUE;
             break;
