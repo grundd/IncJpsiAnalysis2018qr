@@ -16,3 +16,7 @@ Data/
 *.xml
 *.jdl
 
+# Ignore also any pictures
+*.pdf
+*.png
+

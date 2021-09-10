@@ -1,0 +1,33 @@
+Hi David
+
+ a small program to play with potential bin ranges.
+ It assumes an exponantial distribution in |t|.
+ It takes the number of bins you want and the slope of the |t| distribution.
+ (optionally the lowest and highest pt values, the macro uses default values of 0.2 and 1.0 resp)
+
+ To run:
+
+root [0] .L ptBinning.C+
+root [1] ptBinning(4,5)
+ bin 1 = (0.2,0.31143)
+ bin 2 = (0.31143,0.420702)
+ bin 3 = (0.420702,0.558911)
+ bin 4 = (0.558911,1)
+
+here 4 is the number of bins and 5 the slope. Using data you can use a first idea of a slope.
+ (just plot the pt*pt distribution and fit to a exp ... but remember that afterwards we will need to subtract in the first bins coherent contribution and in all of them feed-down, so the real slope will be probably smaller:)
+
+ Then, using this macro and a given number of bins, you get the pt ranges for your chosen slope.
+ For each range, you plot the mass distribution within the pt range.
+ You check also the same-sign distribution. Your goal is to have some 100 j/psi candidates per bin ...
+
+have fun
+
+guillermo
+
+ps the macro has just few lines ... it integrates the exponantial PDF between the given ranges such that each bin has the same fraction of the total integral ...if you do not understand it, let me know
+
+#############################################################
+
+From Daniel: https://root-forum.cern.ch/t/how-to-define-a-log10-binning/11393
+
