@@ -89,6 +89,9 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0){
         case 0:
             if(fM > 2.2 && fM < 4.5) bMassCut = kTRUE;
             break;
+        case 1:
+            if(fM > 3.0 && fM < 3.2) bMassCut = kTRUE;
+            break;
     }
     if(!bMassCut) return kFALSE;
 
