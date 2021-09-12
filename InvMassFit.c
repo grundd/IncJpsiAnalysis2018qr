@@ -2,12 +2,32 @@
 // David Grund, Sep 8, 2021
 // To perform fit of the invariant mass distribution of measured data
 
+// cpp headers
+#include <fstream> // print output to txt file
+// root headers
+#include "TH2.h"
+#include "TFile.h"
+#include "TCanvas.h"
+#include "TAxis.h"
+#include "TLegend.h"
+#include "TStyle.h" // gStyle
+// roofit headers
+#include "RooRealVar.h"
+#include "RooDataSet.h"
+#include "RooFitResult.h"
+#include "RooPlot.h"
+#include "RooGenericPdf.h"
+#include "RooBinning.h"
+#include "RooCBShape.h"
+#include "RooAddPdf.h"
+
 using namespace RooFit;
 
 #include "fTreeJPsiManager.h"
+#include "PtBinsManager.h"
 
 // Main functions
-void DoInvMassFitMain(Int_t opt = 0);
+void DoInvMassFitMain(Int_t opt);
 // Support functions
 void DrawCorrelationMatrix(TCanvas *cCorrMat, RooFitResult* fResFit);
 void SetCanvas(TCanvas *c, Bool_t bLogScale);
@@ -18,6 +38,17 @@ void InvMassFit(){
     //PrepareDataTree();
 
     DoInvMassFitMain(0);
+    DoInvMassFitMain(1);
+    DoInvMassFitMain(2);
+    DoInvMassFitMain(3);
+    // bins:
+    Bool_t bins = kTRUE;
+    if(bins){
+        DoInvMassFitMain(4);
+        DoInvMassFitMain(5);
+        DoInvMassFitMain(6);
+        DoInvMassFitMain(7);
+    }
 
     return;
 }
@@ -29,12 +60,12 @@ void DoInvMassFitMain(Int_t opt = 0){
 
     // Cuts:
     char fStrReduce[120];
-    Double_t fPtCut;
-    Double_t fPtCutLow;
-    Double_t fPtCutUpp;
-    Double_t fYCut = 0.80;
-    Double_t fMCutLow = 2.2;
-    Double_t fMCutUpp = 4.5;
+    Double_t fPtCut     = -999;
+    Double_t fPtCutLow  = -999;
+    Double_t fPtCutUpp  = -999;
+    Double_t fYCut      = 0.80;
+    Double_t fMCutLow   = 2.2;
+    Double_t fMCutUpp   = 4.5;
 
     switch(opt){
         case 0: // Incoherent-enriched sample
@@ -49,13 +80,30 @@ void DoInvMassFitMain(Int_t opt = 0){
             fPtCut = 2.00;
             sprintf(fStrReduce,"abs(fY)<%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCut,fMCutLow,fMCutUpp);
             break;
-        case 3: // pt bin 1
+        case 3: // Sample with pt from 0.2 to 1 GeV/c 
+            fPtCutLow = 0.20;
+            fPtCutUpp = 1.00;
+            sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
             break;
-        case 4: // pt bin 2
+        case 4: // pt bin 1
+            fPtCutLow = ptBoundaries[0];
+            fPtCutUpp = ptBoundaries[1];
+            sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
             break;
-        case 5: // pt bin 3
+        case 5: // pt bin 2
+            fPtCutLow = ptBoundaries[1];
+            fPtCutUpp = ptBoundaries[2];
+            sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
             break;
-        case 6: // pt bin 4
+        case 6: // pt bin 3
+            fPtCutLow = ptBoundaries[2];
+            fPtCutUpp = ptBoundaries[3];
+            sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
+            break;
+        case 7: // pt bin 4
+            fPtCutLow = ptBoundaries[3];
+            fPtCutUpp = ptBoundaries[4];
+            sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
             break;
     }
 
@@ -81,7 +129,7 @@ void DoInvMassFitMain(Int_t opt = 0){
     // Get the data trees
     TFile *fFileIn = new TFile("Trees/InvMassFit/InvMassFit.root"); 
     TTree *fTreeIn = NULL;
-    if(opt == 0 || opt == 3 || opt == 4 || opt == 5 || opt == 6){
+    if(opt == 0 || opt == 3 || opt == 4 || opt == 5 || opt == 6 || opt == 7){
         fFileIn->GetObject("tIncEnrSample",fTreeIn);
     } else if(opt == 1){
         fFileIn->GetObject("tCohEnrSample",fTreeIn);
@@ -118,13 +166,20 @@ void DoInvMassFitMain(Int_t opt = 0){
         case 2: // Total sample (pt < 2.0 GeV/c)
             path->Append("all_doubleCB.txt");
             break;
-        case 3: // pt bin 1
+        case 3: // Sample with pt from 0.2 to 1 GeV/c 
+            path->Append("inc_doubleCB.txt");
             break;
-        case 4: // pt bin 2
+        case 4: // pt bin 1
+            path->Append("inc_doubleCB.txt");
             break;
-        case 5: // pt bin 3
+        case 5: // pt bin 2
+            path->Append("inc_doubleCB.txt");
             break;
-        case 6: // pt bin 4
+        case 6: // pt bin 3
+            path->Append("inc_doubleCB.txt");
+            break;
+        case 7: // pt bin 4
+            path->Append("inc_doubleCB.txt");
             break;
     }
 
@@ -221,10 +276,6 @@ void DoInvMassFitMain(Int_t opt = 0){
     fFrameM->GetXaxis()->SetTitleSize(0.05);
     fFrameM->GetXaxis()->SetLabelSize(0.05);
     fFrameM->GetXaxis()->SetDecimals(1);
-    if(opt == 1 || opt == 2){
-        //cHist->SetRightMargin(0.02);
-        fFrameM->GetYaxis()->SetTitleOffset(1.12);
-    }
     fFrameM->Draw();
 
     // Get chi2 
@@ -232,13 +283,7 @@ void DoInvMassFitMain(Int_t opt = 0){
 
     // -------------------------------------------------------------------------------- 
     // Legend1
-    Double_t x_pos;
-    if(opt == 0 || opt == 1 || opt == 2){
-        x_pos = 0.12;
-    } else if(opt == 3 || opt == 4 || opt == 5 || opt == 6){
-        x_pos = 0.09;
-    }
-    TLegend *l1 = new TLegend(x_pos,0.76,x_pos+0.2,0.935);
+    TLegend *l1 = new TLegend(0.09,0.76,0.3,0.935);
     //l1->SetHeader("ALICE, PbPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
     l1->AddEntry((TObject*)0,Form("J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
     l1->AddEntry((TObject*)0,Form("|#it{y}| < %.1f", fYCut),"");
@@ -247,16 +292,10 @@ void DoInvMassFitMain(Int_t opt = 0){
         l1->AddEntry((TObject*)0,Form("#it{p}_{T} > %.2f GeV/#it{c}", fPtCut),"");
     } else if(opt == 1 || opt == 2){
         l1->AddEntry((TObject*)0,Form("#it{p}_{T} < %.2f GeV/#it{c}", fPtCut),"");
-    } else if(opt == 3 || opt == 4 || opt == 5 || opt == 6){
+    } else if(opt == 3 || opt == 4 || opt == 5 || opt == 6 || opt == 7){
         l1->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.2f,%.2f) GeV/#it{c}", fPtCutLow,fPtCutUpp),"");
     }
-    // Text size    
-    if(opt == 0 || opt == 1 || opt == 2){
-        l1->SetTextSize(0.05);
-    } else if(opt == 3 || opt == 4 || opt == 5 || opt == 6){
-        l1->SetTextSize(0.042);
-    }
-    
+    l1->SetTextSize(0.042);
     l1->SetBorderSize(0); // no border
     l1->SetFillStyle(0);  // legend is transparent
     l1->Draw();
@@ -275,9 +314,11 @@ void DoInvMassFitMain(Int_t opt = 0){
     //l2->AddEntry((TObject*)0,Form("#chi^{2}/NDF = %.3f",chi2),"");
     l2->AddEntry("DoubleSidedCB","J/#psi signal","L");
     l2->AddEntry((TObject*)0,Form("#it{N}_{J/#psi} = %.0f #pm %.0f",N_Jpsi_out[0],N_Jpsi_out[1]),"");
-    if(opt == 0 || opt == 3 || opt == 4 || opt == 5 || opt == 6){
+    // Incoherent: lower precision:
+    if(opt == 0 || opt == 3 || opt == 4 || opt == 5 || opt == 6 || opt == 7){
         l2->AddEntry((TObject*)0,Form("#it{M}_{J/#psi} = %.3f #pm %.3f GeV/#it{c}^{2}", mass_Jpsi.getVal(), mass_Jpsi.getError()),"");
         l2->AddEntry((TObject*)0,Form("#sigma = %.3f #pm %.3f GeV/#it{c}^{2}", sigma_Jpsi.getVal(), sigma_Jpsi.getError()),"");
+    // No incoherent: higher precision:
     } else if(opt == 1 || opt == 2){
         l2->AddEntry((TObject*)0,Form("#it{M}_{J/#psi} = %.4f #pm %.4f GeV/#it{c}^{2}", mass_Jpsi.getVal(), mass_Jpsi.getError()),"");
         l2->AddEntry((TObject*)0,Form("#sigma = %.4f #pm %.4f GeV/#it{c}^{2}", sigma_Jpsi.getVal(), sigma_Jpsi.getError()),"");
@@ -286,58 +327,49 @@ void DoInvMassFitMain(Int_t opt = 0){
     l2->AddEntry((TObject*)0,Form("#alpha_{R} = %.3f", (-1)*(alpha_R.getVal())),"");
     l2->AddEntry((TObject*)0,Form("#it{n}_{L} = %.2f", n_L.getVal()),"");
     l2->AddEntry((TObject*)0,Form("#it{n}_{R} = %.2f", n_R.getVal()),"");
-
     l2->AddEntry("BkgPdf","background","L");
     l2->AddEntry((TObject*)0,Form("#lambda = %.3f #pm %.3f GeV^{-1}#it{c}^{2}",lambda.getVal(), lambda.getError()),"");
-    l2->SetTextSize(0.041);
+    l2->SetTextSize(0.042);
     l2->SetBorderSize(0);
     l2->SetFillStyle(0);
     l2->Draw();
 
-    // Legend3
-    Double_t y_pos;
-    if(opt == 0 || opt == 1 || opt == 2){
-        y_pos = 0.66;
-    } else if(opt == 3 || opt == 4 || opt == 5 || opt == 6){
-        y_pos = 0.65;
-    }
-    TLegend *l3 = new TLegend(0.12,y_pos,0.3,y_pos + 0.1);
-    l3->AddEntry((TObject*)0,"#bf{This thesis}","");
-    l3->SetTextSize(0.05);
-    l3->SetBorderSize(0);
-    l3->SetFillStyle(0); //legend is transparent
-    l3->Draw();
+    // Prepare path
+    TString *str = NULL;
 
-    // Print results
     switch(opt){
         case 0:
-            cHist->Print("Results/InvMassFit/inc/inc_DoubleCB_noPsi.pdf"); 
-            cHist->Print("Results/InvMassFit/inc/inc_DoubleCB_noPsi.png"); 
-            cCorrMat->Print("Results/InvMassFit/inc/inc_DoubleCB_noPsi_CorrM.pdf");
-            cCorrMat->Print("Results/InvMassFit/inc/inc_DoubleCB_noPsi_CorrM.png");
+            str = new TString("Results/InvMassFit/inc/inc_DCSB");
             break;
         case 1:
-            cHist->Print("Results/InvMassFit/coh/coh_DoubleCB_noPsi.pdf"); 
-            cHist->Print("Results/InvMassFit/coh/coh_DoubleCB_noPsi.png"); 
-            cCorrMat->Print("Results/InvMassFit/coh/coh_DoubleCB_noPsi_CorrM.pdf");
-            cCorrMat->Print("Results/InvMassFit/coh/coh_DoubleCB_noPsi_CorrM.png");
+            str = new TString("Results/InvMassFit/coh/coh_DSCB");
             break;
         case 2:
-            cHist->Print("Results/InvMassFit/all/all_DoubleCB_noPsi.pdf"); 
-            cHist->Print("Results/InvMassFit/all/all_DoubleCB_noPsi.png"); 
-            cCorrMat->Print("Results/InvMassFit/all/all_DoubleCB_noPsi_CorrM.pdf");
-            cCorrMat->Print("Results/InvMassFit/all/all_DoubleCB_noPsi_CorrM.png");
+            str = new TString("Results/InvMassFit/all/all_DSCB");
             break;
         case 3:
+            str = new TString("Results/InvMassFit/.bins/allbins_DSCB");
             break;
         case 4:
+            str = new TString("Results/InvMassFit/.bins/bin1_DSCB");
             break;
         case 5:
+            str = new TString("Results/InvMassFit/.bins/bin2_DSCB");
             break;
         case 6:
+            str = new TString("Results/InvMassFit/.bins/bin3_DSCB");
+            break;
+        case 7:
+            str = new TString("Results/InvMassFit/.bins/bin4_DSCB");
             break;
     }
+    // Print the plots
+    cHist->Print((*str + ".pdf").Data());
+    cHist->Print((*str + ".png").Data());
+    cCorrMat->Print((*str + "_cm.pdf").Data());
+    cCorrMat->Print((*str + "_cm.png").Data());    
 
+    // ............................. Dodelat: pro vsechny pripady nekam ulozit pocty eventu............................
     // Number of background events in the mass range 3.0 to 3.2 GeV/c^2
     // For the transverse momentum fit
     if(opt == 0 || opt == 2){
