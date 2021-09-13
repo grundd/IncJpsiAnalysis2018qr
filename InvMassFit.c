@@ -37,10 +37,10 @@ void InvMassFit(){
 
     //PrepareDataTree();
 
-    DoInvMassFitMain(0);
-    DoInvMassFitMain(1);
-    DoInvMassFitMain(2);
-    DoInvMassFitMain(3);
+    //DoInvMassFitMain(0);
+    //DoInvMassFitMain(1);
+    //DoInvMassFitMain(2);
+    //DoInvMassFitMain(3);
     // bins:
     Bool_t bins = kTRUE;
     if(bins){
