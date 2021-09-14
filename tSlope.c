@@ -23,7 +23,7 @@
 #include "RooGenericPdf.h"
 #include "RooBinning.h"
 // my headers
-#include "fTreeJPsiManager.h"
+#include "TreesManager.h"
 
 using namespace RooFit;
 

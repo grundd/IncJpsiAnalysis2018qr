@@ -5,7 +5,7 @@
 #include "TFile.h"
 #include "TLorentzVector.h"
 
-#include "fTreeJPsiManager.h"
+#include "TreesManager.h"
 
 Double_t fPx1, fPy1, fPz1, fPx2, fPy2, fPz2;
 Double_t fMuonMass = 0.105658; // GeV/c^2

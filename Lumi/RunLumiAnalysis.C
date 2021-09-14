@@ -1,8 +1,10 @@
 void RunLumiAnalysis()
 {
-  gROOT->ProcessLine(".include $ALICE_ROOT/include");
+    gROOT->ProcessLine(".L LuminosityCalculationStandAlone.C+");
 
-  gROOT->ProcessLine(".x LuminosityCalculationStandAlone.C+g");
+    gROOT->ProcessLine(".x LuminosityCalculationStandAlone.C\(0\)");
 
-  Printf("Lumi calculation finished.");
+    gROOT->ProcessLine(".x LuminosityCalculationStandAlone.C\(1\)");
+
+    Printf("Lumi calculation finished.");
 }

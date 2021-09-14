@@ -23,7 +23,7 @@
 
 using namespace RooFit;
 
-#include "fTreeJPsiManager.h"
+#include "TreesManager.h"
 #include "PtBinsManager.h"
 
 // Main functions
@@ -35,14 +35,14 @@ void PrepareDataTree();
 
 void InvMassFit(){
 
-    //PrepareDataTree();
+    PrepareDataTree();
 
-    //DoInvMassFitMain(0);
+    DoInvMassFitMain(0);
     //DoInvMassFitMain(1);
     //DoInvMassFitMain(2);
     //DoInvMassFitMain(3);
     // bins:
-    Bool_t bins = kTRUE;
+    Bool_t bins = kFALSE;
     if(bins){
         DoInvMassFitMain(4);
         DoInvMassFitMain(5);
@@ -142,7 +142,6 @@ void DoInvMassFitMain(Int_t opt = 0){
 
     // Print the number of entries in the dataset
     Int_t nEvents = fDataSet->numEntries();
-    Printf("\n");
     Printf("*** Number of events in the dataset: %i ***\n", nEvents);
 
     // Crystal Ball parameters from MC (to be fixed)
@@ -462,11 +461,19 @@ void PrepareDataTree(){
     tMixedSample->Branch("fM", &fM, "fM/D");
     tMixedSample->Branch("fY", &fY, "fY/D");
 
+    Printf("%lli entries found in the tree.", fTreeIn->GetEntries());
+    Int_t nEntriesAnalysed = 0;
+
     for(Int_t iEntry = 0; iEntry < fTreeIn->GetEntries(); iEntry++){
         fTreeIn->GetEntry(iEntry);
         if(EventPassed(0,0)) tIncEnrSample->Fill();
         if(EventPassed(0,1)) tCohEnrSample->Fill();
         if(EventPassed(0,2)) tMixedSample->Fill();
+
+        if((iEntry+1) % 100000 == 0){
+            nEntriesAnalysed += 100000;
+            Printf("%i entries analysed.", nEntriesAnalysed);
+        }
     }
 
     fFileOut.Write("",TObject::kWriteDelete);
