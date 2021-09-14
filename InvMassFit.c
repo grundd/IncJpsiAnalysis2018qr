@@ -4,6 +4,7 @@
 
 // cpp headers
 #include <fstream> // print output to txt file
+#include <iomanip> // std::setprecision()
 // root headers
 #include "TH2.h"
 #include "TFile.h"
@@ -26,7 +27,7 @@ using namespace RooFit;
 #include "TreesManager.h"
 #include "PtBinsManager.h"
 
-// Main functions
+// Main function
 void DoInvMassFitMain(Int_t opt);
 // Support functions
 void DrawCorrelationMatrix(TCanvas *cCorrMat, RooFitResult* fResFit);
@@ -35,14 +36,14 @@ void PrepareDataTree();
 
 void InvMassFit(){
 
-    PrepareDataTree();
+    //PrepareDataTree();
 
-    DoInvMassFitMain(0);
+    //DoInvMassFitMain(0);
     //DoInvMassFitMain(1);
     //DoInvMassFitMain(2);
     //DoInvMassFitMain(3);
     // bins:
-    Bool_t bins = kFALSE;
+    Bool_t bins = kTRUE;
     if(bins){
         DoInvMassFitMain(4);
         DoInvMassFitMain(5);
@@ -368,20 +369,20 @@ void DoInvMassFitMain(Int_t opt = 0){
     cCorrMat->Print((*str + "_cm.pdf").Data());
     cCorrMat->Print((*str + "_cm.png").Data());    
 
-    // ............................. Dodelat: pro vsechny pripady nekam ulozit pocty eventu............................
-    // Number of background events in the mass range 3.0 to 3.2 GeV/c^2
-    // For the transverse momentum fit
-    if(opt == 0 || opt == 2){
-        Double_t N_bkg_out[2];
-        RooAbsReal *iBkg = BkgPdf.createIntegral(fM,NormSet(fM),Range("JpsiMassRange"));
+    // Calculate the number of bkg events with mass in 3.0 to 3.2 GeV/c^2
+    Double_t N_bkg_out[2];
+    RooAbsReal *iBkg = BkgPdf.createIntegral(fM,NormSet(fM),Range("JpsiMassRange"));
 
-        N_bkg_out[0] = iBkg->getVal()*N_bkg.getVal();
-        N_bkg_out[1] = iBkg->getVal()*N_bkg.getError();
+    N_bkg_out[0] = iBkg->getVal()*N_bkg.getVal();
+    N_bkg_out[1] = iBkg->getVal()*N_bkg.getError();
 
-        Printf("\n*** Number of background events for pt fit (if opt == 2): ***");
-        Printf("*** N_bkg = %f pm %f \n",N_bkg_out[0],N_bkg_out[1]);
-        Printf("*** Finished.");
-    }
+    // Print the number of events to text file
+    ofstream outfile((*str + ".txt").Data());
+    outfile << "Mass region 3.0 < m < 3.2 GeV:" << endl;
+    outfile << "N_J/psi:\t" << N_Jpsi_out[0] << " pm " << N_Jpsi_out[1] << endl;
+    outfile << "N_bkg:  \t" << N_bkg_out[0] << " pm " << N_bkg_out[1] << endl;
+    outfile.close();
+    Printf("*** Results printed to %s.***", (*str + ".txt").Data());
 
     return;
 }
