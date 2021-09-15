@@ -30,7 +30,7 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFAL
 // Support functions
 void SetCanvas(TCanvas *c, Bool_t bLogScale);
 
-Double_t ptBoundariesNew[nPtBins+1] = {0.2, 0., 0., 0., 0.};
+Double_t ptBoundariesNew[nPtBins+1] = {0.2, 0., 0., 0., 1.0};
 Double_t YieldJpsi = 0;
 // there are 508 J/psi candidates with 0.2 < pt < 1.0 GeV
 // 508/4 = 127 ~ 125
@@ -49,18 +49,22 @@ void BinsThroughMassFit(){
         while(YieldJpsi <= EvPerBin){
             CurrPtCutUpp += ptStep;
             DoInvMassFitMain(ptBoundariesNew[i], CurrPtCutUpp);
-            outfile << Form("Bin (%.3f, %.3f): %.0f\n", ptBoundariesNew[i], CurrPtCutUpp, YieldJpsi);
+            outfile << Form("(%.3f, %.3f): %.0f\n", ptBoundariesNew[i], CurrPtCutUpp, YieldJpsi);
         }
         ptBoundariesNew[i+1] = CurrPtCutUpp;
-        outfile << Form("Bin %i defined as (%.3f, %.3f)\n", i, ptBoundariesNew[i], ptBoundariesNew[i+1]);
+        outfile << Form("Bin %i defined as (%.3f, %.3f)\n", (i+1), ptBoundariesNew[i], ptBoundariesNew[i+1]);
         outfile << Form("Going to next bin...\n");
         YieldJpsi = 0;
     }
+    outfile << Form("Bin 4 defined as (%.3f, %.3f)\n", ptBoundariesNew[3], ptBoundariesNew[4]);
 
     outfile.close();
     Printf("*** Results printed to %s.***", name.Data());
 
     // Do fits in the four calculated bins
+    for(Int_t i = 0; i < 4; i++){
+        DoInvMassFitMain(ptBoundariesNew[i], ptBoundariesNew[i+1], kTRUE, i+1);
+    }
         
     return;
 }
