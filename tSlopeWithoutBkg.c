@@ -1,18 +1,20 @@
-// BinsThroughMassFit.c
-// David Grund, Sep 14, 2021
+// tSlopeWithoutBkg.c
+// David Grund, Sep 15, 2021
 
 // cpp headers
 #include <fstream> // print output to txt file
 // root headers
-#include "TH2.h"
+#include "TH1.h"
 #include "TFile.h"
 #include "TCanvas.h"
 #include "TAxis.h"
 #include "TLegend.h"
 #include "TStyle.h" // gStyle
+#include "TMath.h"
 // roofit headers
 #include "RooRealVar.h"
 #include "RooDataSet.h"
+#include "RooDataHist.h"
 #include "RooFitResult.h"
 #include "RooPlot.h"
 #include "RooGenericPdf.h"
@@ -23,49 +25,133 @@
 using namespace RooFit;
 
 #include "TreesManager.h"
-#include "PtBinsManager.h"
 
 // Main function
 void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFALSE, Int_t bin = -1);
 // Support functions
 void SetCanvas(TCanvas *c, Bool_t bLogScale);
 
-Double_t ptBoundariesNew[nPtBins+1] = {0.2, 0., 0., 0., 1.0};
 Double_t YieldJpsi = 0;
-// there are 508 J/psi candidates with 0.2 < pt < 1.0 GeV
-// 508/4 = 127 ~ 125
 
-void BinsThroughMassFit(){
+void tSlopeWithoutBkg(){
 
-    Double_t ptStep = 0.001;
-    Double_t CurrPtCutUpp = 0.2;
-    Double_t EvPerBin = 125.;
+    const Double_t pt_step = 0.08;
+    const Double_t pt_min = 0.20;
+    const Double_t pt_max = 1.00;
+    Int_t n_bins = (pt_max - pt_min) / pt_step;
+    Printf("Number of bins: %i", n_bins);
+    Int_t iBin = 1;
 
     //Print the results
-    TString name = "PtBinning/BinsThroughMassFit/output.txt";
+    TString name = "PtBinning/tSlopeWithoutBkg/output.txt";
     ofstream outfile(name.Data());
 
-    for(Int_t i = 0; i < 3; i++){
-        while(YieldJpsi <= EvPerBin){
-            CurrPtCutUpp += ptStep;
-            DoInvMassFitMain(ptBoundariesNew[i], CurrPtCutUpp);
-            outfile << Form("(%.3f, %.3f): %.0f\n", ptBoundariesNew[i], CurrPtCutUpp, YieldJpsi);
-        }
-        ptBoundariesNew[i+1] = CurrPtCutUpp;
-        outfile << Form("Bin %i defined as (%.3f, %.3f)\n", (i+1), ptBoundariesNew[i], ptBoundariesNew[i+1]);
-        outfile << Form("Going to next bin...\n");
-        YieldJpsi = 0;
+    TH1D *hYieldJpsi = new TH1D("hYieldJpsi", "hYieldJpsi", n_bins, pt_min, pt_max);
+
+    Double_t pt = pt_min;
+    while(iBin <= n_bins){
+        DoInvMassFitMain(pt, pt + pt_step, kTRUE, iBin);
+        outfile << Form("Bin %i: (%.3f, %.3f), %.3f\n", iBin, pt, pt + pt_step, YieldJpsi);
+        hYieldJpsi->SetBinContent(iBin, YieldJpsi);
+        pt += pt_step;
+        iBin++;
     }
-    outfile << Form("Bin 4 defined as (%.3f, %.3f)\n", ptBoundariesNew[3], ptBoundariesNew[4]);
 
     outfile.close();
     Printf("*** Results printed to %s.***", name.Data());
 
-    // Do fits in the four calculated bins
-    for(Int_t i = 0; i < 4; i++){
-        DoInvMassFitMain(ptBoundariesNew[i], ptBoundariesNew[i+1], kTRUE, i+1);
+    TCanvas *cHist = new TCanvas("cHist", "cHist", 900, 600);
+    cHist->SetLogy();    
+    // Vertical axis
+    hYieldJpsi->GetYaxis()->SetTitle(Form("Counts per %.0f MeV/#it{c}^{2}", pt_step*1000));
+    // Horizontal axis
+    hYieldJpsi->GetXaxis()->SetTitle("#it{m}_{#mu#mu} (GeV/#it{c}^{2})");
+    hYieldJpsi->GetXaxis()->SetDecimals(1);
+    // Draw the histogram
+    hYieldJpsi->Draw("E0");
+
+    // Fit the histogram with an exponential
+    RooRealVar fPt("fPt", "fPt", pt_min, pt_max);
+    RooRealVar slope("slope","slope",2.,1.,10.); // positive (extra minus in the exp)
+    // Define RooFit datasets
+    RooDataHist data("data","data",fPt,hYieldJpsi);
+    // Define RooFit PDF
+    RooGenericPdf ExpPdf("ExpPdf","exp(-fPt*slope)",RooArgSet(fPt,slope));
+    RooFitResult* fResFit = ExpPdf.fitTo(data,Extended(kTRUE),Range(pt_min,pt_max),Save());
+
+    TCanvas *cFit = new TCanvas("cFit","cFit",900,600);
+    cFit->SetTopMargin(0.055);
+    cFit->SetBottomMargin(0.12);
+    cFit->SetRightMargin(0.03);
+    cFit->SetLeftMargin(0.11);    
+    cFit->SetLogy();
+
+    // Roo frame
+    RooPlot* fFrame = fPt.frame(Title("Fit of |p_T| distribution")); 
+    data.plotOn(fFrame,Name("data"),MarkerStyle(20),MarkerSize(1.));
+    ExpPdf.plotOn(fFrame,Name("ExpPdf"),Components(ExpPdf),LineColor(kBlue),LineStyle(kDashed),LineWidth(3));
+    // Vertical axis
+    fFrame->GetYaxis()->SetTitle(Form("Counts per %.0f MeV/#it{c}",pt_step*1000));
+    fFrame->GetYaxis()->SetTitleOffset(1.0);
+    fFrame->GetYaxis()->SetTitleSize(0.05);
+    fFrame->GetYaxis()->SetLabelSize(0.05);
+    // Horizontal axis
+    fFrame->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
+    fFrame->GetXaxis()->SetTitleSize(0.05);
+    fFrame->GetXaxis()->SetLabelSize(0.05);
+    // Finally plot it
+    fFrame->Draw();
+    // Legend
+    TLegend *l = new TLegend(0.14,0.18,0.5,0.38);  
+    l->AddEntry("ExpPdf","fit: exp(-#it{b}#it{p}_{T})","L");
+    l->AddEntry((TObject*)0,Form("#it{b} = %.3f GeV^{-1}#it{c}", slope.getVal()),"");  
+    l->AddEntry("data","data","P");
+    l->SetTextSize(0.048);
+    l->SetBorderSize(0);
+    l->SetFillStyle(0);
+    l->Draw();
+
+    // Calculate the pt binning
+    Double_t b = slope.getVal(); // slope
+    Double_t ptBoundaries[5] = { 0 };
+    ptBoundaries[0] = pt_min;
+    
+    // Initialise
+    Double_t pt_1 = pt_min;
+    
+    // Fraction of the integral occupied by each bin
+    Double_t f = 1.0/4;
+
+    // Go over the bins
+    for(Int_t i = 1; i <= 4; i++){
+        // Exponentials
+        Double_t e_i = TMath::Exp(-b*pt_min);
+        Double_t e_f = TMath::Exp(-b*pt_max);
+        // Current pt boundary
+        Double_t e_1 = TMath::Exp(-b*pt_1);
+
+        // Integral in the full range
+        Double_t e_int = e_i - e_f; // the exact integral has an extra 1/b
+    
+        // New value of t
+        Double_t pt_n = -TMath::Log(e_1-f*e_int)/b;
+
+        ptBoundaries[i] = pt_n;
+
+        // Prepare for the next bin
+        pt_1 = pt_n;
     }
-        
+
+    // Make inv mass fits in defined bins
+    for(Int_t i = 1; i <= 4; i++){
+        DoInvMassFitMain(ptBoundaries[i-1], ptBoundaries[i], kTRUE, 100+i);
+    }    
+
+    // Print the values
+    for(Int_t i = 1; i <= 4; i++){
+        Printf("Bin %i: (%.3f, %.3f)", i, ptBoundaries[i-1], ptBoundaries[i]);
+    }
+
     return;
 }
 
@@ -264,9 +350,9 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     if(save){
         // Prepare path
         TString *str = NULL;
-        str = new TString(Form("PtBinning/BinsThroughMassFit/bin%i", bin));
+        str = new TString(Form("PtBinning/tSlopeWithoutBkg/bin%i", bin));
         // Print the plots
-        cHist->Print((*str + ".pdf").Data());
+        //cHist->Print((*str + ".pdf").Data());
         cHist->Print((*str + ".png").Data()); 
     }
 

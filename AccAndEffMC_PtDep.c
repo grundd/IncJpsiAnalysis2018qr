@@ -1,4 +1,4 @@
-// AccAndEffMC.c
+// AccAndEffMC_PtDep.c
 // David Grund, 14-09-2021
 // To calculate the acceptance x efficiency from MC data
 
@@ -62,7 +62,7 @@ Bool_t AxE = kTRUE;
 Bool_t ratios = kFALSE;
 Bool_t AxE_both = kFALSE;
 
-void AccAndEff_new(){
+void AccAndEffMC_PtDep(){
     Printf("*** This is AccAndEff_new.c ***");
 
     if(AxE == kTRUE){
@@ -504,126 +504,3 @@ TString ConvertCutsToString(Bool_t *cuts){
     //cout << s << endl;
     return s;
 }
-
-void ConnectTreeVariables(TTree *t){
-    // Set Branch Addresses
-    // Triggers
-    t->SetBranchAddress("runNumber", &runNumber);
-    t->SetBranchAddress("triggerInputsMC", &triggerInputsMC[0]);
-    // Kinematics
-    t->SetBranchAddress("fPt", &xPt);
-    t->SetBranchAddress("fM", &xM);
-    t->SetBranchAddress("fY", &xY);
-    t->SetBranchAddress("Eta_1", &xEta1);
-    t->SetBranchAddress("Eta_2", &xEta2);
-    t->SetBranchAddress("Q_1", &xQ1);
-    t->SetBranchAddress("Q_2", &xQ2);
-    // Generated values
-    t->SetBranchAddress("fPtGen", &xPtGen);
-    // Forward detectors
-    t->SetBranchAddress("ADA_decision", &xADA_dec);
-    t->SetBranchAddress("ADC_decision", &xADC_dec);
-    t->SetBranchAddress("V0A_decision", &xV0A_dec);
-    t->SetBranchAddress("V0C_decision", &xV0C_dec);
-    // PID
-    t->SetBranchAddress("trk1SigIfEl", &xSigIfEl1);
-    t->SetBranchAddress("trk2SigIfEl", &xSigIfEl2);
-    t->SetBranchAddress("trk1SigIfMu", &xSigIfMu1);
-    t->SetBranchAddress("trk2SigIfMu", &xSigIfMu2);
-
-    //Printf("MC rec tree variables connected.");
-    return;
-}
-
-void ConnectTreeVariablesMCgen(TTree *t){
-    // Set Branch Addresses
-    t->SetBranchAddress("runNumber", &runNumber);
-    // Kinematics
-    t->SetBranchAddress("fPtGen", &xPtGen);
-    t->SetBranchAddress("fMGen", &xMGen);
-    t->SetBranchAddress("fYGen", &xYGen);
-
-    //Printf("MC gen tree variables connected.");
-    return;
-}
-
-Bool_t EventPassedMCrec(Int_t pt_bin, Bool_t *cuts){
-    // 0) Two good central tracks: applied in the primary analysis
-
-    // 1) CCUP31 trigger
-    if(cuts[1] == kTRUE){
-        Bool_t CCUP31 = kFALSE;
-        if(
-            //!triggerInputsMC[0] &&  // !0VBA (no signal in the V0A)
-            //!triggerInputsMC[1] &&  // !0VBC (no signal in the V0C)
-            //!triggerInputsMC[2] &&  // !0UBA (no signal in the ADA)
-            //!triggerInputsMC[3] &&  // !0UBC (no signal in the ADC)
-            triggerInputsMC[10] //&&  // 0STG (SPD topological)
-            //triggerInputsMC[4]      // 0OMU (TOF two hits topology)
-        ) CCUP31 = kTRUE;
-
-        if(!CCUP31) return kFALSE;
-    }
-    // 2) AD offline veto (negligible effect)
-    if(cuts[2] == kTRUE){
-        if(!(xADA_dec == 0 && xADC_dec == 0)) return kFALSE;
-    }
-    // 3) V0 offline veto (negligible effect)
-    if(cuts[3] == kTRUE){
-        if(!(xV0A_dec == 0 && xV0C_dec == 0)) return kFALSE;
-    }
-    // 4) Dilepton ("Jpsi") rapidity
-    if(cuts[4] == kTRUE){
-        if(!(abs(xY) < 0.8)) return kFALSE;
-    }
-    // 5) Pseudorapidity of both tracks |eta| < 0.8
-    if(cuts[5] == kTRUE){
-        if(!(abs(xEta1) < 0.8 && abs(xEta2) < 0.8)) return kFALSE;
-    }
-    // 6) Tracks have opposite charges
-    if(cuts[6] == kTRUE){
-        if(!(xQ1 * xQ2 < 0)) return kFALSE;
-    }
-    // 7) Muon pairs only
-    if(cuts[7] == kTRUE){
-        if(!(xSigIfMu1*xSigIfMu1 + xSigIfMu2*xSigIfMu2 < xSigIfEl1*xSigIfEl1 + xSigIfEl2*xSigIfEl2)) return kFALSE;
-    }
-    // 8) Invariant mass cut
-    if(cuts[8] == kTRUE){
-        if(!(xM > 3.0 && xM < 3.2)) return kFALSE;
-        //if(!(xM > 2.2 && xM < 4.5)) return kFALSE;
-    }
-    // 9) Transverse momentum cut 
-    if(cuts[9] == kTRUE){
-        if(cuts[0] == kFALSE){
-            if(!(xPt > edges[pt_bin-1] && xPt < edges[pt_bin])) return kFALSE;
-        } else if(cuts[0] == kTRUE){
-            if(!(xPtGen > edges[pt_bin-1] && xPtGen < edges[pt_bin])) return kFALSE;
-        }
-    }
-    // Event passed all the selections =>
-    return kTRUE;
-}
-
-Bool_t EventPassedMCgen(Int_t pt_bin){
-    // 1) J/psi rapidity |y| < 0.8
-    if(!(abs(xYGen) < 0.8)) return kFALSE;
-
-    // 2) Transverse momentum cut 
-    if(!(xPtGen > edges[pt_bin-1] && xPtGen < edges[pt_bin])) return kFALSE; 
-
-    // Event passed the selection =>
-    return kTRUE;
-}
-
-//******************************************
-// Backup:
-
-/*
-// Fill the AxE histogram - loop over all bins:
-Printf("*** AxE histogram: ***");
-for(Int_t i_bin = 1; i_bin <= n_bins; i_bin++){
-    hist_AxE->SetBinContent(i_bin, hist_Nrec->GetBinContent(i_bin)/hist_Ngen->GetBinContent(i_bin));
-    Printf("%.0f %.0f %.4f", hist_Nrec->GetBinContent(i_bin), hist_Ngen->GetBinContent(i_bin), hist_AxE->GetBinContent(i_bin));
-} 
-*/

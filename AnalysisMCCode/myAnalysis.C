@@ -58,7 +58,7 @@ void myAnalysis()
    gROOT->ProcessLine(".L AliAnalysisTaskJPsiMC_DG.cxx+g");
 
 // read the analysis manager from file
-   AliAnalysisManager *mgr = AliAnalysisAlien::LoadAnalysisManager("ESDs_MC_kIncohJpsiToMu.root");
+   AliAnalysisManager *mgr = AliAnalysisAlien::LoadAnalysisManager("ESDs_MC_kTwoGammaToMuMedium.root");
    if (!mgr) return;
    mgr->PrintStatus();
    AliLog::SetGlobalLogLevel(AliLog::kError);
