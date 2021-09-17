@@ -3,6 +3,9 @@
 
 // cpp headers
 #include <fstream> // print output to txt file
+#include <chrono> // sleep_for, sleep_until
+#include <thread> // nanoseconds, system_clock, seconds
+// https://stackoverflow.com/questions/158585/how-do-you-add-a-timed-delay-to-a-c-program 
 // root headers
 #include "TH2.h"
 #include "TFile.h"
@@ -19,51 +22,79 @@
 #include "RooBinning.h"
 #include "RooCBShape.h"
 #include "RooAddPdf.h"
+// my headers
+#include "TreesManager.h"
 
 using namespace RooFit;
-
-#include "TreesManager.h"
-#include "PtBinsManager.h"
+using namespace std::this_thread;
+using namespace std::chrono; 
 
 // Main function
 void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFALSE, Int_t bin = -1);
 // Support functions
 void SetCanvas(TCanvas *c, Bool_t bLogScale);
 
-Double_t ptBoundariesNew[nPtBins+1] = {0.2, 0., 0., 0., 1.0};
+const Int_t nPtBins = 4;
 Double_t YieldJpsi = 0;
-// there are 508 J/psi candidates with 0.2 < pt < 1.0 GeV
-// 508/4 = 127 ~ 125
+
+Double_t *ptBoundaries = NULL;
+Double_t ptBoundaries_5[5] = {0.2, 0., 0., 0., 1.0};
+Double_t ptBoundaries_6[6] = {0.2, 0., 0., 0., 0., 1.0};
 
 void BinsThroughMassFit(){
 
-    Double_t ptStep = 0.001;
+    // PtBinning "Method 3"
+    // Adding ptStep = 0.01 GeV/c until a bin with sufficient signal (EvPerBin) is found
+
+    if(nPtBins == 4){
+        ptBoundaries = ptBoundaries_5;
+    } else if(nPtBins == 5){
+        ptBoundaries = ptBoundaries_6;
+    }
+
+    Double_t ptStep = 0.01;
     Double_t CurrPtCutUpp = 0.2;
-    Double_t EvPerBin = 125.;
+
+    Double_t EvTotal = 0;
+    // Load the total number of signal events
+    ifstream infile;
+    infile.open("Results/InvMassFit/.bins/allbins_signal.txt");   
+    while(!infile.eof()){
+        infile >> EvTotal;
+    }
+    infile.close();
+    Printf("Total number of events loaded: %.3f", EvTotal);
+
+    Double_t EvPerBin = (EvTotal / (Double_t)nPtBins) - 1;
+    Printf("Optimal number of ev per bin: %.3f", EvPerBin);
+
+    // Small delay to be able to read the console
+    sleep_until(system_clock::now() + seconds(2));
 
     //Print the results
     TString name = "PtBinning/BinsThroughMassFit/output.txt";
     ofstream outfile(name.Data());
 
-    for(Int_t i = 0; i < 3; i++){
+    outfile << Form("Using pt step %.3f GeV/c.\n", ptStep);
+    for(Int_t i = 0; i < nPtBins-1; i++){
         while(YieldJpsi <= EvPerBin){
             CurrPtCutUpp += ptStep;
-            DoInvMassFitMain(ptBoundariesNew[i], CurrPtCutUpp);
-            outfile << Form("(%.3f, %.3f): %.0f\n", ptBoundariesNew[i], CurrPtCutUpp, YieldJpsi);
+            DoInvMassFitMain(ptBoundaries[i], CurrPtCutUpp);
+            outfile << Form("(%.3f, %.3f): %.0f\n", ptBoundaries[i], CurrPtCutUpp, YieldJpsi);
         }
-        ptBoundariesNew[i+1] = CurrPtCutUpp;
-        outfile << Form("Bin %i defined as (%.3f, %.3f)\n", (i+1), ptBoundariesNew[i], ptBoundariesNew[i+1]);
+        ptBoundaries[i+1] = CurrPtCutUpp;
+        outfile << Form("Bin %i defined as (%.3f, %.3f)\n", (i+1), ptBoundaries[i], ptBoundaries[i+1]);
         outfile << Form("Going to next bin...\n");
         YieldJpsi = 0;
     }
-    outfile << Form("Bin 4 defined as (%.3f, %.3f)\n", ptBoundariesNew[3], ptBoundariesNew[4]);
+    outfile << Form("Bin %i defined as (%.3f, %.3f)\n", nPtBins, ptBoundaries[nPtBins-1], ptBoundaries[nPtBins]);
 
     outfile.close();
     Printf("*** Results printed to %s.***", name.Data());
 
     // Do fits in the four calculated bins
-    for(Int_t i = 0; i < 4; i++){
-        DoInvMassFitMain(ptBoundariesNew[i], ptBoundariesNew[i+1], kTRUE, i+1);
+    for(Int_t i = 0; i < nPtBins; i++){
+        DoInvMassFitMain(ptBoundaries[i], ptBoundaries[i+1], kTRUE, i+1);
     }
         
     return;
@@ -102,7 +133,7 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     //fM.setBinning(binM);
 
     // Get the data trees
-    TFile *fFileIn = new TFile("Trees/InvMassFit/InvMassFit.root"); 
+    TFile *fFileIn = new TFile("Trees/InvMassFit/InvMassFit.root"); // created in InvMassFit.c
     TTree *fTreeIn = NULL;
     fFileIn->GetObject("tIncEnrSample",fTreeIn);
         
@@ -185,8 +216,8 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
 
     // Calculate the number of J/psi events
     Double_t N_Jpsi_out[2];
-    fM.setRange("JpsiMassRange",3.0,3.2);
-    RooAbsReal *intDSCB = DoubleSidedCB.createIntegral(fM,NormSet(fM),Range("JpsiMassRange"));
+    fM.setRange("WholeMassRange",fMCutLow,fMCutUpp);
+    RooAbsReal *intDSCB = DoubleSidedCB.createIntegral(fM,NormSet(fM),Range("WholeMassRange"));
     // Integral of the normalized PDF, DSCB => will range from 0 to 1
 
     N_Jpsi_out[0] = intDSCB->getVal()*N_Jpsi.getVal();

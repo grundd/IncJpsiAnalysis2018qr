@@ -61,6 +61,10 @@ void tSlope(){
 
 void CalcSlope(){
 
+    // PtBinning "Method 1"
+    // In this way, background is not subtracted!
+    // Better way is implemented in tSlopeWithoutBkg.c
+
     TFile *fFileIn = TFile::Open("Trees/tSlope/tSlope.root", "read");
     if(fFileIn) Printf("Input data loaded.");
 
@@ -243,7 +247,7 @@ void CalcBinning(){
     Printf("Total # of events = %i", nEvTotal);
 
     // Print the boundaries to the txt file
-    TString name = "PtBinning/bin_boundaries.txt";
+    TString name = "PtBinning/bin_boundaries1.txt";
     ofstream outfile (name.Data());
     outfile << std::fixed << std::setprecision(3) << "t:\t"; // Set the precision to 3 dec places
     for(Int_t i = 0; i <= nPtBins; i++){
@@ -290,6 +294,12 @@ Int_t FindBinIndex(TH1D *h, Double_t x){
 }
 
 void CalcBinning2(){
+
+    // PtBinning "Method 2"
+    // Finer binning (n_bins = 200)
+    // Simply add up the number of events until optimal value is reached
+    // Then go to next bin
+    // Note: in this method, background is also not subtracted
 
     TFile *fFileIn = TFile::Open("Trees/tSlope/tSlope.root", "read");
     if(fFileIn) Printf("Input data loaded.");

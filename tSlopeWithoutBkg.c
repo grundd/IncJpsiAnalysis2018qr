@@ -21,10 +21,10 @@
 #include "RooBinning.h"
 #include "RooCBShape.h"
 #include "RooAddPdf.h"
+// my headers
+#include "TreesManager.h"
 
 using namespace RooFit;
-
-#include "TreesManager.h"
 
 // Main function
 void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFALSE, Int_t bin = -1);
@@ -35,6 +35,10 @@ Double_t YieldJpsi = 0;
 
 void tSlopeWithoutBkg(){
 
+    // PtBinning "Method 4"
+    // Using Guillermo's macro after subtracting the background first using
+    // inv mass fits in 10 predefined pt bins by 0.08 GeV (pt_step)
+
     const Double_t pt_step = 0.08;
     const Double_t pt_min = 0.20;
     const Double_t pt_max = 1.00;
@@ -42,7 +46,7 @@ void tSlopeWithoutBkg(){
     Printf("Number of bins: %i", n_bins);
     Int_t iBin = 1;
 
-    //Print the results
+    // Print the results
     TString name = "PtBinning/tSlopeWithoutBkg/output.txt";
     ofstream outfile(name.Data());
 
@@ -110,6 +114,9 @@ void tSlopeWithoutBkg(){
     l->SetBorderSize(0);
     l->SetFillStyle(0);
     l->Draw();
+
+    // Print the canvas
+    cFit->Print("PtBinning/tSlopeWithoutBkg/exp_fit.png");
 
     // Calculate the pt binning
     Double_t b = slope.getVal(); // slope

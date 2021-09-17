@@ -21,11 +21,11 @@
 #include "RooBinning.h"
 #include "RooCBShape.h"
 #include "RooAddPdf.h"
-
-using namespace RooFit;
-
+// my headers
 #include "TreesManager.h"
 #include "PtBinsManager.h"
+
+using namespace RooFit;
 
 // Main function
 void DoInvMassFitMain(Int_t opt);
@@ -38,18 +38,24 @@ void InvMassFit(){
 
     //PrepareDataTree();
 
-    //DoInvMassFitMain(0);
-    //DoInvMassFitMain(1);
-    //DoInvMassFitMain(2);
-    //DoInvMassFitMain(3);
+    Bool_t main_fits = kTRUE;
+    if(main_fits){
+        DoInvMassFitMain(0);
+        DoInvMassFitMain(1);
+        DoInvMassFitMain(2);
+        DoInvMassFitMain(3);
+    }
     // bins:
-    Bool_t bins = kTRUE;
+    Bool_t bins = kFALSE;
     if(bins){
+        SetPtBinning(); // method must be chosen in PtBinsManager.h
         DoInvMassFitMain(4);
         DoInvMassFitMain(5);
         DoInvMassFitMain(6);
         DoInvMassFitMain(7);
     }
+
+    Printf("Done.");
 
     return;
 }
@@ -242,12 +248,12 @@ void DoInvMassFitMain(Int_t opt = 0){
 
     // Calculate the number of J/psi events
     Double_t N_Jpsi_out[2];
-    fM.setRange("JpsiMassRange",3.0,3.2);
-    RooAbsReal *intDSCB = DoubleSidedCB.createIntegral(fM,NormSet(fM),Range("JpsiMassRange"));
+    fM.setRange("WholeMassRange",fMCutLow,fMCutUpp);
+    RooAbsReal *iDSCB = DoubleSidedCB.createIntegral(fM,NormSet(fM),Range("WholeMassRange"));
     // Integral of the normalized PDF, DSCB => will range from 0 to 1
 
-    N_Jpsi_out[0] = intDSCB->getVal()*N_Jpsi.getVal();
-    N_Jpsi_out[1] = intDSCB->getVal()*N_Jpsi.getError();
+    N_Jpsi_out[0] = iDSCB->getVal()*N_Jpsi.getVal();
+    N_Jpsi_out[1] = iDSCB->getVal()*N_Jpsi.getError();
 
     // ##########################################################
     // Plot the results
@@ -339,28 +345,28 @@ void DoInvMassFitMain(Int_t opt = 0){
 
     switch(opt){
         case 0:
-            str = new TString("Results/InvMassFit/inc/inc_DCSB");
+            str = new TString("Results/InvMassFit/inc/inc");
             break;
         case 1:
-            str = new TString("Results/InvMassFit/coh/coh_DSCB");
+            str = new TString("Results/InvMassFit/coh/coh");
             break;
         case 2:
-            str = new TString("Results/InvMassFit/all/all_DSCB");
+            str = new TString("Results/InvMassFit/all/all");
             break;
         case 3:
-            str = new TString("Results/InvMassFit/.bins/allbins_DSCB");
+            str = new TString("Results/InvMassFit/.bins/allbins");
             break;
         case 4:
-            str = new TString("Results/InvMassFit/.bins/bin1_DSCB");
+            str = new TString("Results/InvMassFit/.bins/bin1");
             break;
         case 5:
-            str = new TString("Results/InvMassFit/.bins/bin2_DSCB");
+            str = new TString("Results/InvMassFit/.bins/bin2");
             break;
         case 6:
-            str = new TString("Results/InvMassFit/.bins/bin3_DSCB");
+            str = new TString("Results/InvMassFit/.bins/bin3");
             break;
         case 7:
-            str = new TString("Results/InvMassFit/.bins/bin4_DSCB");
+            str = new TString("Results/InvMassFit/.bins/bin4");
             break;
     }
     // Print the plots
@@ -369,20 +375,36 @@ void DoInvMassFitMain(Int_t opt = 0){
     cCorrMat->Print((*str + "_cm.pdf").Data());
     cCorrMat->Print((*str + "_cm.png").Data());    
 
-    // Calculate the number of bkg events with mass in 3.0 to 3.2 GeV/c^2
+    // Calculate the number of signal and bkg events with mass in 3.0 to 3.2 GeV/c^2
     Double_t N_bkg_out[2];
-    RooAbsReal *iBkg = BkgPdf.createIntegral(fM,NormSet(fM),Range("JpsiMassRange"));
+    Double_t N_Jpsi_out2[2];
 
+    fM.setRange("JpsiMassRange",3.0,3.2);
+    RooAbsReal *iBkg = BkgPdf.createIntegral(fM,NormSet(fM),Range("JpsiMassRange"));
     N_bkg_out[0] = iBkg->getVal()*N_bkg.getVal();
     N_bkg_out[1] = iBkg->getVal()*N_bkg.getError();
+    RooAbsReal *iDSCB2 = DoubleSidedCB.createIntegral(fM,NormSet(fM),Range("JpsiMassRange"));
+    N_Jpsi_out2[0] = iDSCB2->getVal()*N_Jpsi.getVal();
+    N_Jpsi_out2[1] = iDSCB2->getVal()*N_Jpsi.getError();
 
     // Print the number of events to text file
     ofstream outfile((*str + ".txt").Data());
-    outfile << "Mass region 3.0 < m < 3.2 GeV:" << endl;
+    outfile << "Signal in whole mass region 2.2 < m < 4.5 GeV:" << endl;
     outfile << "N_J/psi:\t" << N_Jpsi_out[0] << " pm " << N_Jpsi_out[1] << endl;
+    outfile << "Mass region 3.0 < m < 3.2 GeV:" << endl;
+    outfile << "N_J/psi:\t" << N_Jpsi_out2[0] << " pm " << N_Jpsi_out2[1] << endl;    
     outfile << "N_bkg:  \t" << N_bkg_out[0] << " pm " << N_bkg_out[1] << endl;
     outfile.close();
     Printf("*** Results printed to %s.***", (*str + ".txt").Data());
+
+    if(opt == 3){
+        // If allbins, print just the number of signal events
+        // Needed in BinsThroughMassFit.c
+        ofstream outfile((*str + "_signal.txt").Data());
+        outfile << N_Jpsi_out[0];
+        outfile.close();
+        Printf("*** Results printed to %s.***", (*str + "_signal.txt").Data());
+    }
 
     return;
 }
