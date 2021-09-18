@@ -38,7 +38,7 @@ void InvMassFit(){
 
     //PrepareDataTree();
 
-    Bool_t main_fits = kTRUE;
+    Bool_t main_fits = kFALSE;
     if(main_fits){
         DoInvMassFitMain(0);
         DoInvMassFitMain(1);
@@ -46,13 +46,16 @@ void InvMassFit(){
         DoInvMassFitMain(3);
     }
     // bins:
-    Bool_t bins = kFALSE;
+    Bool_t bins = kTRUE;
     if(bins){
-        SetPtBinning(); // method must be chosen in PtBinsManager.h
+        SetPtBinning(); // PtBinning method must be chosen in PtBinsManager.h
         DoInvMassFitMain(4);
         DoInvMassFitMain(5);
         DoInvMassFitMain(6);
         DoInvMassFitMain(7);
+        if(nPtBins == 5){
+            DoInvMassFitMain(8);
+        }
     }
 
     Printf("Done.");
@@ -112,6 +115,11 @@ void DoInvMassFitMain(Int_t opt = 0){
             fPtCutUpp = ptBoundaries[4];
             sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
             break;
+        case 8:
+            fPtCutLow = ptBoundaries[4];
+            fPtCutUpp = ptBoundaries[5];
+            sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
+            break;
     }
 
     // Binning:
@@ -136,7 +144,7 @@ void DoInvMassFitMain(Int_t opt = 0){
     // Get the data trees
     TFile *fFileIn = new TFile("Trees/InvMassFit/InvMassFit.root"); 
     TTree *fTreeIn = NULL;
-    if(opt == 0 || opt == 3 || opt == 4 || opt == 5 || opt == 6 || opt == 7){
+    if(opt == 0 || opt == 3 || opt == 4 || opt == 5 || opt == 6 || opt == 7 || opt == 8){
         fFileIn->GetObject("tIncEnrSample",fTreeIn);
     } else if(opt == 1){
         fFileIn->GetObject("tCohEnrSample",fTreeIn);
@@ -164,28 +172,35 @@ void DoInvMassFitMain(Int_t opt = 0){
     TString* path = new TString("Results/InvMassFitMC/");
     switch(opt){
         case 0: // Incoherent-enriched sample
-            path->Append("inc_doubleCB.txt");
+            path->Append("inc/inc.txt");
             break;
         case 1: // Coherent-enriched sample
-            path->Append("coh_doubleCB.txt");
+            path->Append("coh/coh.txt");
             break;
         case 2: // Total sample (pt < 2.0 GeV/c)
-            path->Append("all_doubleCB.txt");
+            path->Append("all/all.txt");
             break;
         case 3: // Sample with pt from 0.2 to 1 GeV/c 
-            path->Append("inc_doubleCB.txt");
+            path->Append("allbins/allbins.txt");
             break;
         case 4: // pt bin 1
-            path->Append("inc_doubleCB.txt");
+            if(nPtBins == 4) path->Append("4bins/bin1.txt");
+            if(nPtBins == 5) path->Append("5bins/bin1.txt");
             break;
         case 5: // pt bin 2
-            path->Append("inc_doubleCB.txt");
+            if(nPtBins == 4) path->Append("4bins/bin2.txt");
+            if(nPtBins == 5) path->Append("5bins/bin2.txt");
             break;
         case 6: // pt bin 3
-            path->Append("inc_doubleCB.txt");
+            if(nPtBins == 4) path->Append("4bins/bin3.txt");
+            if(nPtBins == 5) path->Append("5bins/bin3.txt");
             break;
         case 7: // pt bin 4
-            path->Append("inc_doubleCB.txt");
+            if(nPtBins == 4) path->Append("4bins/bin4.txt");
+            if(nPtBins == 5) path->Append("5bins/bin4.txt");
+            break;
+        case 8: // pt bin 5
+            if(nPtBins == 5) path->Append("5bins/bin5.txt");
             break;
     }
 
@@ -241,7 +256,7 @@ void DoInvMassFitMain(Int_t opt = 0){
     // Background:
     RooGenericPdf BkgPdf("BkgPdf","exp(fM*lambda)",RooArgSet(fM,lambda));
 
-    // Create Model
+    // Create model
     RooAddPdf DSCBAndBkgPdf("DSCBAndBkgPdf","Double sided CB and background PDFs", RooArgList(DoubleSidedCB,BkgPdf), RooArgList(N_Jpsi,N_bkg));
     // Perform fit
     RooFitResult* fResFit = DSCBAndBkgPdf.fitTo(*fDataSet,Extended(kTRUE),Range(fMCutLow,fMCutUpp),Save());
@@ -298,7 +313,7 @@ void DoInvMassFitMain(Int_t opt = 0){
         l1->AddEntry((TObject*)0,Form("#it{p}_{T} > %.2f GeV/#it{c}", fPtCut),"");
     } else if(opt == 1 || opt == 2){
         l1->AddEntry((TObject*)0,Form("#it{p}_{T} < %.2f GeV/#it{c}", fPtCut),"");
-    } else if(opt == 3 || opt == 4 || opt == 5 || opt == 6 || opt == 7){
+    } else if(opt == 3 || opt == 4 || opt == 5 || opt == 6 || opt == 7 || opt == 8){
         l1->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.2f,%.2f) GeV/#it{c}", fPtCutLow,fPtCutUpp),"");
     }
     l1->SetTextSize(0.042);
@@ -321,7 +336,7 @@ void DoInvMassFitMain(Int_t opt = 0){
     l2->AddEntry("DoubleSidedCB","J/#psi signal","L");
     l2->AddEntry((TObject*)0,Form("#it{N}_{J/#psi} = %.0f #pm %.0f",N_Jpsi_out[0],N_Jpsi_out[1]),"");
     // Incoherent: lower precision:
-    if(opt == 0 || opt == 3 || opt == 4 || opt == 5 || opt == 6 || opt == 7){
+    if(opt == 0 || opt == 3 || opt == 4 || opt == 5 || opt == 6 || opt == 7 || opt == 8){
         l2->AddEntry((TObject*)0,Form("#it{M}_{J/#psi} = %.3f #pm %.3f GeV/#it{c}^{2}", mass_Jpsi.getVal(), mass_Jpsi.getError()),"");
         l2->AddEntry((TObject*)0,Form("#sigma = %.3f #pm %.3f GeV/#it{c}^{2}", sigma_Jpsi.getVal(), sigma_Jpsi.getError()),"");
     // No incoherent: higher precision:
@@ -354,19 +369,26 @@ void DoInvMassFitMain(Int_t opt = 0){
             str = new TString("Results/InvMassFit/all/all");
             break;
         case 3:
-            str = new TString("Results/InvMassFit/.bins/allbins");
+            str = new TString("Results/InvMassFit/allbins/allbins");
             break;
         case 4:
-            str = new TString("Results/InvMassFit/.bins/bin1");
+            if(nPtBins == 4) str = new TString("Results/InvMassFit/4bins/bin1");
+            if(nPtBins == 5) str = new TString("Results/InvMassFit/5bins/bin1");
             break;
         case 5:
-            str = new TString("Results/InvMassFit/.bins/bin2");
+            if(nPtBins == 4) str = new TString("Results/InvMassFit/4bins/bin2");
+            if(nPtBins == 5) str = new TString("Results/InvMassFit/5bins/bin2");
             break;
         case 6:
-            str = new TString("Results/InvMassFit/.bins/bin3");
+            if(nPtBins == 4) str = new TString("Results/InvMassFit/4bins/bin3");
+            if(nPtBins == 5) str = new TString("Results/InvMassFit/5bins/bin3");
             break;
         case 7:
-            str = new TString("Results/InvMassFit/.bins/bin4");
+            if(nPtBins == 4) str = new TString("Results/InvMassFit/4bins/bin4");
+            if(nPtBins == 5) str = new TString("Results/InvMassFit/5bins/bin4");
+            break;
+        case 8:
+            if(nPtBins == 5) str = new TString("Results/InvMassFit/5bins/bin5");
             break;
     }
     // Print the plots

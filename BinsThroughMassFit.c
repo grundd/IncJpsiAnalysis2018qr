@@ -34,12 +34,12 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFAL
 // Support functions
 void SetCanvas(TCanvas *c, Bool_t bLogScale);
 
-const Int_t nPtBins = 4;
+const Int_t nPtBins = 5;
 Double_t YieldJpsi = 0;
 
 Double_t *ptBoundaries = NULL;
-Double_t ptBoundaries_5[5] = {0.2, 0., 0., 0., 1.0};
-Double_t ptBoundaries_6[6] = {0.2, 0., 0., 0., 0., 1.0};
+Double_t ptBoundaries_4[5] = {0.2, 0., 0., 0., 1.0};
+Double_t ptBoundaries_5[6] = {0.2, 0., 0., 0., 0., 1.0};
 
 void BinsThroughMassFit(){
 
@@ -47,12 +47,12 @@ void BinsThroughMassFit(){
     // Adding ptStep = 0.01 GeV/c until a bin with sufficient signal (EvPerBin) is found
 
     if(nPtBins == 4){
-        ptBoundaries = ptBoundaries_5;
+        ptBoundaries = ptBoundaries_4;
     } else if(nPtBins == 5){
-        ptBoundaries = ptBoundaries_6;
+        ptBoundaries = ptBoundaries_5;
     }
 
-    Double_t ptStep = 0.01;
+    Double_t ptStep = 0.001;
     Double_t CurrPtCutUpp = 0.2;
 
     Double_t EvTotal = 0;
@@ -72,7 +72,12 @@ void BinsThroughMassFit(){
     sleep_until(system_clock::now() + seconds(2));
 
     //Print the results
-    TString name = "PtBinning/BinsThroughMassFit/output.txt";
+    TString name;
+    if(nPtBins == 4){
+        name = "PtBinning/BinsThroughMassFit/output_4bins.txt";
+    } else if(nPtBins == 5){
+        name = "PtBinning/BinsThroughMassFit/output_5bins.txt";
+    }
     ofstream outfile(name.Data());
 
     outfile << Form("Using pt step %.3f GeV/c.\n", ptStep);
@@ -94,7 +99,11 @@ void BinsThroughMassFit(){
 
     // Do fits in the four calculated bins
     for(Int_t i = 0; i < nPtBins; i++){
-        DoInvMassFitMain(ptBoundaries[i], ptBoundaries[i+1], kTRUE, i+1);
+        if(nPtBins == 4){
+            DoInvMassFitMain(ptBoundaries[i], ptBoundaries[i+1], kTRUE, i+1);
+        } else if(nPtBins == 5){
+            DoInvMassFitMain(ptBoundaries[i], ptBoundaries[i+1], kTRUE, i+1);
+        }
     }
         
     return;
@@ -295,7 +304,11 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     if(save){
         // Prepare path
         TString *str = NULL;
-        str = new TString(Form("PtBinning/BinsThroughMassFit/bin%i", bin));
+        if(nPtBins == 4){
+            str = new TString(Form("PtBinning/BinsThroughMassFit/4bins/bin%i", bin));
+        } else if(nPtBins == 5){
+            str = new TString(Form("PtBinning/BinsThroughMassFit/5bins/bin%i", bin));
+        }
         // Print the plots
         cHist->Print((*str + ".pdf").Data());
         cHist->Print((*str + ".png").Data()); 
