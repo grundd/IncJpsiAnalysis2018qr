@@ -23,11 +23,9 @@
 #include "RooGenericPdf.h"
 #include "RooBinning.h"
 // my headers
-#include "TreesManager.h"
+#include "AnalysisManager.h"
 
 using namespace RooFit;
-
-const Int_t nPtBins = 4;
 
 Double_t t; // Mandelstam t
 Double_t m; // inv mass
@@ -48,9 +46,9 @@ void PrepareData();
 
 void tSlope(){
 
-    PrepareData();
+    //PrepareData();
 
-    CalcSlope();
+    //CalcSlope();
 
     CalcBinning();
 
@@ -158,10 +156,10 @@ void CalcSlope(){
 void CalcBinning(){
 
     Double_t b; // slope
-    Double_t tBoundaries[nPtBins+1] = { 0 };
-    Double_t ptBoundaries[nPtBins+1] = { 0 };
-    tBoundaries[0] = t_i;
-    ptBoundaries[0] = pt_i;
+    Double_t tBoundariesNew[nPtBins+1] = { 0 };
+    Double_t ptBoundariesNewNew[nPtBins+1] = { 0 };
+    tBoundariesNew[0] = t_i;
+    ptBoundariesNewNew[0] = pt_i;
 
     // Load the calculated slope
     ifstream infile;
@@ -192,8 +190,8 @@ void CalcBinning(){
         // New value of t
         Double_t t_n = -TMath::Log(e_1-f*e_int)/b;
 
-        tBoundaries[i] = t_n;
-        ptBoundaries[i] = TMath::Sqrt(t_n);
+        tBoundariesNew[i] = t_n;
+        ptBoundariesNewNew[i] = TMath::Sqrt(t_n);
 
         // Prepare for the next bin
         t_1 = t_n;
@@ -232,12 +230,12 @@ void CalcBinning(){
         // Find the bin ranges for given pt bin
         Int_t bin_i = -1;
         if(iPtBin == 0){
-            bin_i = FindBinIndex(hist,tBoundaries[iPtBin]);
+            bin_i = FindBinIndex(hist,tBoundariesNew[iPtBin]);
         } else {
-            bin_i = FindBinIndex(hist,tBoundaries[iPtBin]) + 1;
+            bin_i = FindBinIndex(hist,tBoundariesNew[iPtBin]) + 1;
         }
         Printf("bin_i = %i", bin_i);
-        Int_t bin_f = FindBinIndex(hist,tBoundaries[iPtBin+1]);
+        Int_t bin_f = FindBinIndex(hist,tBoundariesNew[iPtBin+1]);
         Printf("bin_f = %i", bin_f);
         // Sum the number of events in given pt bin
         nEvPerBin[iPtBin] = SumHistEntries(hist,bin_i,bin_f);
@@ -247,22 +245,24 @@ void CalcBinning(){
     Printf("Total # of events = %i", nEvTotal);
 
     // Print the boundaries to the txt file
-    TString name = "PtBinning/bin_boundaries1.txt";
+    TString name;
+    if(nPtBins == 4) name = "PtBinning/ptBoundaries1_4bins.txt";
+    if(nPtBins == 5) name = "PtBinning/ptBoundaries1_5bins.txt";
     ofstream outfile (name.Data());
     outfile << std::fixed << std::setprecision(3) << "t:\t"; // Set the precision to 3 dec places
     for(Int_t i = 0; i <= nPtBins; i++){
         if(i != nPtBins){
-            outfile <<  tBoundaries[i] << "\t";
+            outfile <<  tBoundariesNew[i] << "\t";
         } else {
-            outfile << tBoundaries[i] << std::endl;
+            outfile << tBoundariesNew[i] << std::endl;
         }
     }
     outfile << "pt:\t";
     for(Int_t i = 0; i <= nPtBins; i++){
         if(i != nPtBins){
-            outfile << ptBoundaries[i] << "\t";
+            outfile << ptBoundariesNewNew[i] << "\t";
         } else {
-            outfile << ptBoundaries[i] << std::endl;
+            outfile << ptBoundariesNewNew[i] << std::endl;
         }
     }
     outfile << "nEv:\t";
@@ -327,8 +327,8 @@ void CalcBinning2(){
     Double_t nOptEvPerBin = hist->GetEntries() / nPtBins;
     Printf("Optimal # of entries per bin: %.0f", nOptEvPerBin); 
 
-    Double_t tBoundaries[nPtBins+1];
-    tBoundaries[0] = hist->GetBinLowEdge(1);
+    Double_t tBoundariesNew[nPtBins+1];
+    tBoundariesNew[0] = hist->GetBinLowEdge(1);
 
     // Go over bins in hist and find pt bins
     Int_t nEvPerBin[nPtBins] = { 0 };
@@ -338,13 +338,13 @@ void CalcBinning2(){
     while(kTRUE){
         SumEv += hist->GetBinContent(iHistBin);
         if(SumEv >= nOptEvPerBin){
-            tBoundaries[iPtBin+1] = hist->GetBinLowEdge(iHistBin+1);
+            tBoundariesNew[iPtBin+1] = hist->GetBinLowEdge(iHistBin+1);
             nEvPerBin[iPtBin] = SumEv;
             iPtBin++;
             SumEv = 0;
         }
         if(iHistBin == hist->GetNbinsX()){
-            tBoundaries[iPtBin+1] = hist->GetBinLowEdge(iHistBin) + hist->GetBinWidth(iHistBin);
+            tBoundariesNew[iPtBin+1] = hist->GetBinLowEdge(iHistBin) + hist->GetBinWidth(iHistBin);
             nEvPerBin[iPtBin] = SumEv;
             break;
         } 
@@ -353,27 +353,29 @@ void CalcBinning2(){
     // Print the results to the console
     Int_t nEvTotal = 0;
     for(Int_t iPtBin = 0; iPtBin < nPtBins; iPtBin++){
-        Printf("Bin %i: t_low = %.3f, t_upp = %.3f, entries: %i", iPtBin+1, tBoundaries[iPtBin], tBoundaries[iPtBin+1], nEvPerBin[iPtBin]);
+        Printf("Bin %i: t_low = %.3f, t_upp = %.3f, entries: %i", iPtBin+1, tBoundariesNew[iPtBin], tBoundariesNew[iPtBin+1], nEvPerBin[iPtBin]);
         nEvTotal += nEvPerBin[iPtBin];
     }
     Printf("Total # of events = %i", nEvTotal);
     // Print the boundaries to the txt file
-    TString name = "PtBinning/bin_boundaries2.txt";
+    TString name;
+    if(nPtBins == 4) name = "PtBinning/ptBoundaries2_4bins.txt";
+    if(nPtBins == 5) name = "PtBinning/ptBoundaries2_5bins.txt";
     ofstream outfile (name.Data());
     outfile << std::fixed << std::setprecision(3) << "t:\t"; // Set the precision to 3 dec places
     for(Int_t i = 0; i <= nPtBins; i++){
         if(i != nPtBins){
-            outfile <<  tBoundaries[i] << "\t";
+            outfile <<  tBoundariesNew[i] << "\t";
         } else {
-            outfile << tBoundaries[i] << std::endl;
+            outfile << tBoundariesNew[i] << std::endl;
         }
     }
     outfile << "pt:\t";
     for(Int_t i = 0; i <= nPtBins; i++){
         if(i != nPtBins){
-            outfile << TMath::Sqrt(tBoundaries[i]) << "\t";
+            outfile << TMath::Sqrt(tBoundariesNew[i]) << "\t";
         } else {
-            outfile << TMath::Sqrt(tBoundaries[i]) << std::endl;
+            outfile << TMath::Sqrt(tBoundariesNew[i]) << std::endl;
         }
     }
     outfile << "nEv:\t";

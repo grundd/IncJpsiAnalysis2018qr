@@ -10,7 +10,7 @@
 #include "TList.h"
 #include "TH1.h"
 // my headers
-#include "TreesManager.h"
+#include "AnalysisManager.h"
 
 Int_t counter[13] = {0};
 

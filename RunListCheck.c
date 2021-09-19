@@ -5,7 +5,7 @@
 #include "TFile.h"
 #include <fstream> // print output to txt file
 
-#include "TreesManager.h"
+#include "AnalysisManager.h"
 
 Int_t RunList18q[123] = {
     295585, 295586, 295588, 295589, 295610, 295611, 295612, 295615, 295666, 295667, 295668, 295673, 295675, 
@@ -114,14 +114,18 @@ void DoRunListCheck(){
     }
 
     // Check if all the run numbers were found
-    Bool_t AllNumbersFound = kTRUE;
+    Int_t nRunNumbersMissing = 0;
     for(Int_t j = 0; j < n; j++){
-        if(FoundRunNumbers[j] == kFALSE) AllNumbersFound = kFALSE;
+        if(FoundRunNumbers[j] == kFALSE){
+            nRunNumbersMissing++;
+            Printf("==> run no. %i is missing!", RunList18qr[j]);
+        } 
     }
-    if(AllNumbersFound == kTRUE){
+    if(nRunNumbersMissing == 0){
         Printf("All run numbers appear in the tree.");
     } else {
-        Printf("Some run number is missing!");
+        Printf("%i run number(s) is(are) missing (see above)!", nRunNumbersMissing);
+        Printf("Check lumi plots...");
     }
 
     return;

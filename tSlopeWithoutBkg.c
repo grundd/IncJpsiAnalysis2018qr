@@ -22,7 +22,7 @@
 #include "RooCBShape.h"
 #include "RooAddPdf.h"
 // my headers
-#include "TreesManager.h"
+#include "AnalysisManager.h"
 
 using namespace RooFit;
 
@@ -120,17 +120,17 @@ void tSlopeWithoutBkg(){
 
     // Calculate the pt binning
     Double_t b = slope.getVal(); // slope
-    Double_t ptBoundaries[5] = { 0 };
-    ptBoundaries[0] = pt_min;
+    Double_t ptBoundariesNew[nPtBins+1] = { 0 };
+    ptBoundariesNew[0] = pt_min;
     
     // Initialise
     Double_t pt_1 = pt_min;
     
     // Fraction of the integral occupied by each bin
-    Double_t f = 1.0/4;
+    Double_t f = 1.0/nPtBins;
 
     // Go over the bins
-    for(Int_t i = 1; i <= 4; i++){
+    for(Int_t i = 1; i <= nPtBins; i++){
         // Exponentials
         Double_t e_i = TMath::Exp(-b*pt_min);
         Double_t e_f = TMath::Exp(-b*pt_max);
@@ -143,20 +143,20 @@ void tSlopeWithoutBkg(){
         // New value of t
         Double_t pt_n = -TMath::Log(e_1-f*e_int)/b;
 
-        ptBoundaries[i] = pt_n;
+        ptBoundariesNew[i] = pt_n;
 
         // Prepare for the next bin
         pt_1 = pt_n;
     }
 
     // Make inv mass fits in defined bins
-    for(Int_t i = 1; i <= 4; i++){
-        DoInvMassFitMain(ptBoundaries[i-1], ptBoundaries[i], kTRUE, 100+i);
+    for(Int_t i = 1; i <= nPtBins; i++){
+        DoInvMassFitMain(ptBoundariesNew[i-1], ptBoundariesNew[i], kTRUE, 100+i);
     }    
 
     // Print the values
-    for(Int_t i = 1; i <= 4; i++){
-        Printf("Bin %i: (%.3f, %.3f)", i, ptBoundaries[i-1], ptBoundaries[i]);
+    for(Int_t i = 1; i <= nPtBins; i++){
+        Printf("Bin %i: (%.3f, %.3f)", i, ptBoundariesNew[i-1], ptBoundariesNew[i]);
     }
 
     return;

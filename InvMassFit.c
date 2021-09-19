@@ -22,8 +22,7 @@
 #include "RooCBShape.h"
 #include "RooAddPdf.h"
 // my headers
-#include "TreesManager.h"
-#include "PtBinsManager.h"
+#include "AnalysisManager.h"
 
 using namespace RooFit;
 

@@ -206,7 +206,7 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0){
     return kTRUE;
 }
 
-Bool_t EventPassedMCRec(Int_t iMassCut = 0, Int_t iPtCut = 0){
+Bool_t EventPassedMCRec(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin = -1){
 
     // Selections applied on the GRID:
     // 0) fEvent non-empty
@@ -285,6 +285,12 @@ Bool_t EventPassedMCRec(Int_t iMassCut = 0, Int_t iPtCut = 0){
         case 2: // Total sample (pt < 2.0 GeV/c)
             if(fPt < 2.00) bPtCut = kTRUE;
             break;
+        case 3: // Sample with pt from 0.2 to 1 GeV/c 
+            if(fPt > 0.20 && fPt < 1.00) bPtCut = kTRUE;
+            break;
+        case 4: // Pt bins
+            //if(fPt > ptBoundaries[iPtBin-1] && fPt < ptBoundaries[iPtBin]) bPtCut = kTRUE;
+            break;
     }
     if(!bPtCut) return kFALSE;
 
@@ -292,9 +298,21 @@ Bool_t EventPassedMCRec(Int_t iMassCut = 0, Int_t iPtCut = 0){
     return kTRUE;
 }
 
-Bool_t EventPassedMCGen(){
+Bool_t EventPassedMCGen(Int_t iPtCut = -1, Int_t iPtBin = -1){
     // 1) Dilepton rapidity |y| < 0.8
     if(!(abs(fYGen) < 0.8)) return kFALSE;    
+
+    // 2) Transverse momentum cut
+    Bool_t bPtCut = kFALSE;
+    switch(iPtCut){
+        case -1: // No pt cut
+            bPtCut = kTRUE;
+            break;
+        case 0: // Pt bins
+            //if(fPt > ptBoundaries[iPtBin-1] && fPt < ptBoundaries[iPtBin]) bPtCut = kTRUE;
+            break;
+    }
+    if(!bPtCut) return kFALSE;
 
     // Event passed all the selections =>
     return kTRUE;

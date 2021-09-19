@@ -2,7 +2,7 @@
 // David Grund, Sep 11, 2021
 
 const Int_t nPtBins = 5;
-Int_t method = 3;
+Int_t iMethodBinning = 3;
 
 Double_t *ptBoundaries = NULL;
 Double_t ptBoundaries1[5] = {0.200, 0.331, 0.455, 0.608, 1.000};
@@ -12,7 +12,7 @@ Double_t ptBoundaries3_5[6] = {0.200, 0.264, 0.335, 0.445, 0.658, 1.000};
 Double_t ptBoundaries4[5] = {0.200, 0.286, 0.402, 0.582, 1.000};
 
 void SetPtBinning(){
-    switch(method){
+    switch(iMethodBinning){
         case 1:
             // PtBinning "Method 1": CalcBinning() in tSlope.c
             if(nPtBins == 4) ptBoundaries = ptBoundaries1;

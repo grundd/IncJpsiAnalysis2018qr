@@ -23,7 +23,7 @@
 #include "RooCBShape.h"
 #include "RooAddPdf.h"
 // my headers
-#include "TreesManager.h"
+#include "AnalysisManager.h"
 
 using namespace RooFit;
 using namespace std::this_thread;
@@ -34,23 +34,19 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFAL
 // Support functions
 void SetCanvas(TCanvas *c, Bool_t bLogScale);
 
-const Int_t nPtBins = 5;
 Double_t YieldJpsi = 0;
 
-Double_t *ptBoundaries = NULL;
-Double_t ptBoundaries_4[5] = {0.2, 0., 0., 0., 1.0};
-Double_t ptBoundaries_5[6] = {0.2, 0., 0., 0., 0., 1.0};
+Double_t *ptBoundariesNew = NULL;
+Double_t ptBoundariesNew_4bins[5] = {0.2, 0., 0., 0., 1.0};
+Double_t ptBoundariesNew_5bins[6] = {0.2, 0., 0., 0., 0., 1.0};
 
 void BinsThroughMassFit(){
 
     // PtBinning "Method 3"
     // Adding ptStep = 0.01 GeV/c until a bin with sufficient signal (EvPerBin) is found
 
-    if(nPtBins == 4){
-        ptBoundaries = ptBoundaries_4;
-    } else if(nPtBins == 5){
-        ptBoundaries = ptBoundaries_5;
-    }
+    if(nPtBins == 4) ptBoundariesNew = ptBoundariesNew_4bins;
+    if(nPtBins == 5) ptBoundariesNew = ptBoundariesNew_5bins;
 
     Double_t ptStep = 0.001;
     Double_t CurrPtCutUpp = 0.2;
@@ -58,7 +54,7 @@ void BinsThroughMassFit(){
     Double_t EvTotal = 0;
     // Load the total number of signal events
     ifstream infile;
-    infile.open("Results/InvMassFit/.bins/allbins_signal.txt");   
+    infile.open("Results/InvMassFit/allbins/allbins_signal.txt");   
     while(!infile.eof()){
         infile >> EvTotal;
     }
@@ -84,15 +80,15 @@ void BinsThroughMassFit(){
     for(Int_t i = 0; i < nPtBins-1; i++){
         while(YieldJpsi <= EvPerBin){
             CurrPtCutUpp += ptStep;
-            DoInvMassFitMain(ptBoundaries[i], CurrPtCutUpp);
-            outfile << Form("(%.3f, %.3f): %.0f\n", ptBoundaries[i], CurrPtCutUpp, YieldJpsi);
+            DoInvMassFitMain(ptBoundariesNew[i], CurrPtCutUpp);
+            outfile << Form("(%.3f, %.3f): %.0f\n", ptBoundariesNew[i], CurrPtCutUpp, YieldJpsi);
         }
-        ptBoundaries[i+1] = CurrPtCutUpp;
-        outfile << Form("Bin %i defined as (%.3f, %.3f)\n", (i+1), ptBoundaries[i], ptBoundaries[i+1]);
+        ptBoundariesNew[i+1] = CurrPtCutUpp;
+        outfile << Form("Bin %i defined as (%.3f, %.3f)\n", (i+1), ptBoundariesNew[i], ptBoundariesNew[i+1]);
         outfile << Form("Going to next bin...\n");
         YieldJpsi = 0;
     }
-    outfile << Form("Bin %i defined as (%.3f, %.3f)\n", nPtBins, ptBoundaries[nPtBins-1], ptBoundaries[nPtBins]);
+    outfile << Form("Bin %i defined as (%.3f, %.3f)\n", nPtBins, ptBoundariesNew[nPtBins-1], ptBoundariesNew[nPtBins]);
 
     outfile.close();
     Printf("*** Results printed to %s.***", name.Data());
@@ -100,9 +96,9 @@ void BinsThroughMassFit(){
     // Do fits in the four calculated bins
     for(Int_t i = 0; i < nPtBins; i++){
         if(nPtBins == 4){
-            DoInvMassFitMain(ptBoundaries[i], ptBoundaries[i+1], kTRUE, i+1);
+            DoInvMassFitMain(ptBoundariesNew[i], ptBoundariesNew[i+1], kTRUE, i+1);
         } else if(nPtBins == 5){
-            DoInvMassFitMain(ptBoundaries[i], ptBoundaries[i+1], kTRUE, i+1);
+            DoInvMassFitMain(ptBoundariesNew[i], ptBoundariesNew[i+1], kTRUE, i+1);
         }
     }
         
