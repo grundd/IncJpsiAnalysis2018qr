@@ -164,10 +164,73 @@ void ConnectTreeVariablesMCRec(TTree *t){
     return;
 }
 
+void ConnectTreeVariablesMCRec_AOD(TTree *t){
+    // Set branch addresses
+    // Basic things:
+    t->SetBranchAddress("runNumber", &fRunNumber);
+    t->SetBranchAddress("triggerInputsMC", &fTriggerInputsMC);
+    // PID, sigmas:
+    t->SetBranchAddress("trk1SigIfMu", &fTrk1SigIfMu);
+    t->SetBranchAddress("trk1SigIfEl", &fTrk1SigIfEl);
+    t->SetBranchAddress("trk2SigIfMu", &fTrk2SigIfMu);
+    t->SetBranchAddress("trk2SigIfEl", &fTrk2SigIfEl);
+    // Kinematics:
+    t->SetBranchAddress("fPt", &fPt);
+    t->SetBranchAddress("fPhi", &fPhi);
+    t->SetBranchAddress("fY", &fY);
+    t->SetBranchAddress("fM", &fM);
+    // Two tracks:
+    t->SetBranchAddress("Pt_1", &fPt1);
+    t->SetBranchAddress("Pt_2", &fPt2);
+    t->SetBranchAddress("Eta_1", &fEta1);
+    t->SetBranchAddress("Eta_2", &fEta2);
+    t->SetBranchAddress("Phi_1", &fPhi1);
+    t->SetBranchAddress("Phi_2", &fPhi2);
+    t->SetBranchAddress("Q_1", &fQ1);
+    t->SetBranchAddress("Q_2", &fQ2);
+    // ZDC:
+    t->SetBranchAddress("ZNA_energy", &fZNA_energy);
+    t->SetBranchAddress("ZNC_energy", &fZNC_energy);
+    t->SetBranchAddress("ZNA_TDC", &fZNA_time);
+    t->SetBranchAddress("ZNC_TDC", &fZNC_time);
+    // V0:
+    t->SetBranchAddress("V0A_decision", &fV0A_dec);
+    t->SetBranchAddress("V0C_decision", &fV0C_dec);
+    t->SetBranchAddress("V0A_time", &fV0A_time);
+    t->SetBranchAddress("V0C_time", &fV0C_time);
+    // AD:
+    t->SetBranchAddress("ADA_decision", &fADA_dec);
+    t->SetBranchAddress("ADC_decision", &fADC_dec);
+    t->SetBranchAddress("ADA_time", &fADA_time);
+    t->SetBranchAddress("ADC_time", &fADC_time);
+    // MC kinematics on generated level
+    t->SetBranchAddress("fPtGen", &fPtGen);
+    t->SetBranchAddress("fPhiGen", &fPhiGen);
+    t->SetBranchAddress("fYGen", &fYGen);
+    t->SetBranchAddress("fMGen", &fMGen);
+
+    Printf("Variables from %s connected.", t->GetName());
+    return;
+}
+
 void ConnectTreeVariablesMCGen(TTree *t){
     // Set branch addresses
     // Basic things:
     t->SetBranchAddress("fRunNumber", &fRunNumber);
+    // MC kinematics on generated level
+    t->SetBranchAddress("fPtGen", &fPtGen);
+    t->SetBranchAddress("fPhiGen", &fPhiGen);
+    t->SetBranchAddress("fYGen", &fYGen);
+    t->SetBranchAddress("fMGen", &fMGen);
+
+    Printf("Variables from %s connected.", t->GetName());
+    return;
+}
+
+void ConnectTreeVariablesMCGen_AOD(TTree *t){
+    // Set branch addresses
+    // Basic things:
+    t->SetBranchAddress("runNumber", &fRunNumber);
     // MC kinematics on generated level
     t->SetBranchAddress("fPtGen", &fPtGen);
     t->SetBranchAddress("fPhiGen", &fPhiGen);
@@ -336,7 +399,99 @@ Bool_t EventPassedMCRec(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin = -
             if(fPt > 0.20 && fPt < 1.00) bPtCut = kTRUE;
             break;
         case 4: // Pt bins
-            if(fPt > ptBoundaries[iPtBin-1] && fPt < ptBoundaries[iPtBin]) bPtCut = kTRUE;
+            if(fPt > ptBoundaries[iPtBin-1] && fPt <= ptBoundaries[iPtBin]) bPtCut = kTRUE;
+            break;
+    }
+    if(!bPtCut) return kFALSE;
+
+    // Event passed all the selections =>
+    return kTRUE;
+}
+
+Bool_t EventPassedMCRec_AOD(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin = -1){
+
+    // Selections applied on the GRID:
+    // 0) fEvent non-empty
+    // 1) At least two tracks associated with the vertex
+    // 2) Distance from the IP lower than 15 cm
+    // 3) nGoodTracksTPC == 2 && nGoodTracksSPD == 2
+
+    // 4) Central UPC trigger CCUP31:
+    // for fRunNumber < 295881: CCUP31-B-NOPF-CENTNOTRD
+    // for fRunNumber >= 295881: CCUP31-B-SPD2-CENTNOTRD
+    Bool_t CCUP31 = kFALSE;
+    if(
+        !fTriggerInputsMC[0] &&  // !0VBA (no signal in the V0A)
+        !fTriggerInputsMC[1] &&  // !0VBC (no signal in the V0C)
+        !fTriggerInputsMC[2] &&  // !0UBA (no signal in the ADA)
+        !fTriggerInputsMC[3] &&  // !0UBC (no signal in the ADC)
+        fTriggerInputsMC[10] &&  //  0STG (SPD topological)
+        fTriggerInputsMC[4]      //  0OMU (TOF two hits topology)
+    ) CCUP31 = kTRUE;
+    if(!CCUP31) return kFALSE;
+
+    // 5) SPD cluster matches FOhits
+    // (...)
+
+    // 6a) ADA offline veto (no effect on MC)
+    if(!(fADA_dec == 0)) return kFALSE;
+
+    // 6b) ADC offline veto (no effect on MC)
+    if(!(fADC_dec == 0)) return kFALSE;
+
+    // 7a) V0A offline veto (no effect on MC)
+    if(!(fV0A_dec == 0)) return kFALSE;
+
+    // 7b) V0C offline veto (no effect on MC)
+    if(!(fV0C_dec == 0)) return kFALSE;
+
+    // 8) Dilepton rapidity |y| < 0.8
+    if(!(abs(fY) < 0.8)) return kFALSE;
+
+    // 9) Pseudorapidity of both tracks |eta| < 0.8
+    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
+
+    // 10) Tracks have opposite charges
+    if(!(fQ1 * fQ2 < 0)) return kFALSE;
+
+    // 11) Muon pairs only
+    if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
+
+    // 12) Invariant mass between 2.2 and 4.5 GeV/c^2
+    Bool_t bMassCut = kFALSE;
+    switch(iMassCut){
+        case -1: // No inv mass cut
+            bMassCut = kTRUE;
+            break;
+        case 0:
+            if(fM > 2.2 && fM < 4.5) bMassCut = kTRUE;
+            break;
+        case 1:
+            if(fM > 3.0 && fM < 3.2) bMassCut = kTRUE;
+            break;
+    }
+    if(!bMassCut) return kFALSE;
+
+    // 13) Transverse momentum cut
+    Bool_t bPtCut = kFALSE;
+    switch(iPtCut){
+        case -1: // No pt cut
+            bPtCut = kTRUE;
+            break;
+        case 0: // Incoherent-enriched sample
+            if(fPt > 0.20) bPtCut = kTRUE;
+            break;
+        case 1: // Coherent-enriched sample
+            if(fPt < 0.11) bPtCut = kTRUE;
+            break;
+        case 2: // Total sample (pt < 2.0 GeV/c)
+            if(fPt < 2.00) bPtCut = kTRUE;
+            break;
+        case 3: // Sample with pt from 0.2 to 1 GeV/c 
+            if(fPt > 0.20 && fPt < 1.00) bPtCut = kTRUE;
+            break;
+        case 4: // Pt bins
+            if(fPt > ptBoundaries[iPtBin-1] && fPt <= ptBoundaries[iPtBin]) bPtCut = kTRUE;
             break;
     }
     if(!bPtCut) return kFALSE;
@@ -347,7 +502,7 @@ Bool_t EventPassedMCRec(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin = -
 
 Bool_t EventPassedMCGen(Int_t iPtCut = -1, Int_t iPtBin = -1){
     // 1) Dilepton rapidity |y| < 0.8
-    if(!(abs(fYGen) < 0.8)) return kFALSE;    
+    if(!(abs(fYGen) < 0.8)) return kFALSE;
 
     // 2) Transverse momentum cut
     Bool_t bPtCut = kFALSE;
@@ -355,8 +510,14 @@ Bool_t EventPassedMCGen(Int_t iPtCut = -1, Int_t iPtBin = -1){
         case -1: // No pt cut
             bPtCut = kTRUE;
             break;
-        case 0: // Pt bins
-            if(fPtGen > ptBoundaries[iPtBin-1] && fPtGen < ptBoundaries[iPtBin]) bPtCut = kTRUE;
+        case 0: // No pt cut
+            bPtCut = kTRUE;
+            break;
+        case 3: // Sample with pt from 0.2 to 1 GeV/c 
+            if(fPtGen > 0.20 && fPtGen < 1.00) bPtCut = kTRUE;
+            break;
+        case 4: // Pt bins
+            if(fPtGen > ptBoundaries[iPtBin-1] && fPtGen <= ptBoundaries[iPtBin]) bPtCut = kTRUE;
             break;
     }
     if(!bPtCut) return kFALSE;

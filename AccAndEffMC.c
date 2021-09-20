@@ -1,10 +1,10 @@
-// AccAndEffMC_PtDep.c
-// David Grund, 20-09-2021
-// To investigate pt dependence of AxE
+// AccAndEffMC.c
+// David Grund, 15-09-2021
+// To calculate the acceptance x efficiency from MC data in defined pt bins
 
 // cpp headers
 #include <fstream> // print output to txt file
-#include <iomanip> // std::setprecision()
+//#include <iomanip> // std::setprecision()
 // root headers
 #include "TH1.h"
 #include "TString.h"
@@ -16,52 +16,124 @@
 // my headers
 #include "AnalysisManager.h"
 
-Int_t nBins = 0;
-// From "AxE/PtBinEdges.txt":
-Double_t edges[25] = {0.00, 0.04, 0.08, 0.12, 0.16, 0.20, 0.24, 0.28, 0.32, 0.36, 0.40, 0.44, 0.48, 0.52, 0.56, 0.60, 0.68, 0.76, 0.84, 0.92, 1.00, 1.15, 1.30, 1.45, 1.60};
-TH1D *hNRec = NULL;
-TH1D *hNGen = NULL;
+TH1D* hNRec = NULL; 
+TH1D* hNGen = NULL; 
 TH1D* hAxE = NULL;
 
-// Global folder for saving files
-TString GlobPath = "AxE_PtDep/binning1/";
-
-Int_t nCuts = 16;
-Bool_t cuts[16] = {
-    0,  // 0) pt cut rec (kFALSE) or gen (kTRUE)
-    0,  // 1) !0VBA (no signal in the V0A) 
-    0,  // 2) !0VBC (no signal in the V0C)
-    0,  // 3) !0UBA (no signal in the ADA)
-    0,  // 4) !0UBC (no signal in the ADC)
-    1,  // 5) 0STG (SPD topological)
-    1,  // 6) 0OMU (TOF two hits topology)
-    0,  // 7) SPD cluster matches FOhits
-    0,  // 8) AD offline veto
-    0,  // 9) V0 offline veto
-    0,  // 10) Rapidity
-    0,  // 11) Pseudorapidity
-    0,  // 12) Opposite charges
-    0,  // 13) Muons only
-    0,  // 14) Inv mass
-    1   // 15) Transverse momentum
-};
-
+void CalculateAxE(Int_t iPtCut);
+void CalculateAxE_AOD(Int_t iPtCut);
+void CalculateAxEPtBins();
 void FillHistNRec();
 void FillHistNGen();
-Bool_t EventPassedMCRec_AxEPtDep(Int_t iMassCut, Int_t iPtBin);
-Bool_t EventPassedMCGen_AxEPtDep(Int_t iPtBin);
-TString ConvertCutsToString(Bool_t *cuts);
 void SaveToFile(TH1D* hist, TString name);
 Double_t CalculateErrorBayes(Double_t k, Double_t n);
 
-void AccAndEffMC_PtDep(){
+void AccAndEffMC(){
 
-    // Get number of bins
-    nBins = sizeof(edges) / sizeof(edges[0]) - 1;
-    Printf("%i pt bins defined.", nBins);
-    // Define the histograms
-    hNRec = new TH1D("hNRec","N rec per bin",nBins,edges);
-    hNGen = new TH1D("hNGen","N gen per bin",nBins,edges);
+    Bool_t bTotalESD = kFALSE;
+    if(bTotalESD){
+        CalculateAxE(0); // pt > 0.2 GeV/c
+        CalculateAxE(3); // 0.2 < pt < 1 GeV/c
+    }
+
+    Bool_t bTotalAOD = kFALSE;
+    if(bTotalAOD){
+        CalculateAxE_AOD(0); // pt > 0.2 GeV/c
+        CalculateAxE_AOD(3); // 0.2 < pt < 1 GeV/c
+    }
+    
+    CalculateAxEPtBins();
+
+    return;
+}
+
+void CalculateAxE(Int_t iPtCut){
+
+    TFile *fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohJpsiToMu.root", "read");
+    //TFile *fRec = TFile::Open("Trees/AnalysisDataMC/old (from GRID)/AnalysisResults_kIncohJpsiToMu.root", "read");
+    if(fRec) Printf("MC rec file loaded.");
+
+    TTree *tRec = dynamic_cast<TTree*> (fRec->Get("AnalysisOutput/fTreeJPsiMCRec"));
+    if(tRec) Printf("MC rec tree loaded.");
+    
+    ConnectTreeVariablesMCRec(tRec);
+
+    Double_t NRec = 0;
+    for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
+        tRec->GetEntry(iEntry);
+        if(EventPassedMCRec(0, iPtCut)) NRec++;
+    }
+
+    TTree *tGen = dynamic_cast<TTree*> (fRec->Get("AnalysisOutput/fTreeJPsiMCGen"));
+    if(tGen) Printf("MC rec tree loaded.");
+    
+    ConnectTreeVariablesMCGen(tGen);
+
+    Double_t NGen = 0;
+    for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
+        tGen->GetEntry(iEntry);
+        if(EventPassedMCGen(iPtCut)) NGen++;
+    }
+
+    Printf("N_rec = %.0f", NRec);
+    Printf("N_gen = %.0f", NGen);
+
+    Double_t AxE = NRec / NGen;
+    Double_t AxE_err = CalculateErrorBayes(NRec, NGen);
+
+    Printf("AxE = (%.4f pm %.4f)%%", AxE*100, AxE_err*100);
+
+    return;
+}
+
+void CalculateAxE_AOD(Int_t iPtCut){
+    // comment the SPD matching in EventPassedMCRec when working with AODs
+
+    TFile *fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kIncohJpsiToMu_migr.root", "read");
+    if(fRec) Printf("MC rec file loaded.");
+
+    TTree *tRec = dynamic_cast<TTree*> (fRec->Get("analysisTree"));
+    if(tRec) Printf("MC rec tree loaded.");
+    
+    ConnectTreeVariablesMCRec_AOD(tRec);
+
+    Double_t NRec = 0;
+    for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
+        tRec->GetEntry(iEntry);
+        if(EventPassedMCRec_AOD(0, iPtCut)) NRec++;
+    }
+
+    TFile *fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kIncohJpsiToMu_migr.root", "read");
+    if(fGen) Printf("MC rec file loaded.");
+
+    TTree *tGen = dynamic_cast<TTree*> (fGen->Get("MCgenTree"));
+    if(tGen) Printf("MC rec tree loaded.");
+    
+    ConnectTreeVariablesMCGen_AOD(tGen);
+
+    Double_t NGen = 0;
+    for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
+        tGen->GetEntry(iEntry);
+        if(EventPassedMCGen(iPtCut)) NGen++;
+    }
+
+    Printf("N_rec = %.0f", NRec);
+    Printf("N_gen = %.0f", NGen);
+
+    Double_t AxE = NRec / NGen;
+    Double_t AxE_err = CalculateErrorBayes(NRec, NGen);
+
+    Printf("AxE = (%.4f pm %.4f)%%", AxE*100, AxE_err*100);
+
+    return;
+}
+
+void CalculateAxEPtBins(){
+
+    SetPtBinning();
+
+    hNRec = new TH1D("hNRec","N rec per bin",nPtBins,ptBoundaries);
+    hNGen = new TH1D("hNGen","N gen per bin",nPtBins,ptBoundaries);
 
     FillHistNRec();
     FillHistNGen();
@@ -83,9 +155,9 @@ void AccAndEffMC_PtDep(){
     gStyle->SetPalette(1);
     gStyle->SetPaintTextFormat("4.2f");
     // Marker and line
-    hAxE->SetMarkerStyle(21);
-    hAxE->SetMarkerColor(kBlue);
-    hAxE->SetMarkerSize(1.0);
+    //hAxE->SetMarkerStyle(21);
+    //hAxE->SetMarkerColor(kBlue);
+    //hAxE->SetMarkerSize(1.0);
     hAxE->SetLineColor(kBlue);
     hAxE->SetLineWidth(1.0);
     // Vertical axis
@@ -115,18 +187,19 @@ void AccAndEffMC_PtDep(){
     l->Draw();
 
     // Save the figures and print the results to txt file
-    TString CutConfiguration = ConvertCutsToString(cuts);
-    TString path((GlobPath + "fig/" + CutConfiguration).Data());
-    c->Print((path + ".pdf").Data());
-    c->Print((path + ".png").Data());
-    ofstream outfile((path + ".txt").Data());
-    outfile << std::fixed << std::setprecision(3);
-    outfile << "Bin \tPtLow \tPtUpp \tAxE [%%] \tAxE_err [%%] \n";
-    for(Int_t i = 1; i <= nBins; i++){
-        outfile << i << "\t" << edges[i-1] << "\t" << edges[i] << "\t" << hAxE->GetBinContent(i)*100 << "\t\t" << hAxE->GetBinError(i)*100 << "\n";
+    TString str;
+    if(nPtBins == 4) str = "Results/AccAndEffMC/AxE_4bins";
+    if(nPtBins == 5) str = "Results/AccAndEffMC/AxE_5bins";
+    c->Print((str + ".pdf").Data());
+    c->Print((str + ".png").Data());
+    ofstream outfile((str + ".txt").Data());
+    outfile << std::fixed << std::setprecision(5);
+    outfile << "Bin \tAxE [%%] \tAxE_err [%%] \n";
+    for(Int_t i = 1; i <= nPtBins; i++){
+        outfile << i << "\t" << hAxE->GetBinContent(i)*100 << "\t\t" << hAxE->GetBinError(i)*100 << "\n";
     }
     outfile.close();
-    Printf("*** Results printed to %s.***", (path + ".txt").Data());
+    Printf("*** Results printed to %s.***", (str + ".txt").Data());
 
     // Compare errors that Root gives with CalculateErrorBayes
     Bool_t DebugErrors = kFALSE;
@@ -156,8 +229,9 @@ void AccAndEffMC_PtDep(){
 
 void FillHistNRec(){
     // Check if the corresponding text file already exists
-    TString CutConfiguration = ConvertCutsToString(cuts);
-    TString file((GlobPath + CutConfiguration + ".txt").Data());
+    TString file("Results/AccAndEffMC/");
+    if(nPtBins == 4) file.Append("NRec_4bins.txt");
+    if(nPtBins == 5) file.Append("NRec_5bins.txt");
 
     ifstream inFile;
     inFile.open(file);
@@ -187,11 +261,11 @@ void FillHistNRec(){
         ConnectTreeVariablesMCRec(tRec);
 
         // Loop over all pt bins
-        for(Int_t iPtBin = 1; iPtBin <= nBins; iPtBin++){
+        for(Int_t iPtBin = 1; iPtBin <= nPtBins; iPtBin++){
             Int_t NRec = 0;
             for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
                 tRec->GetEntry(iEntry);
-                if(EventPassedMCRec_AxEPtDep(0, iPtBin)) NRec++;
+                if(EventPassedMCRec(0, 4, iPtBin)) NRec++;
             }
             hNRec->SetBinContent(iPtBin, NRec);
             Printf("*** Bin %i done. ***", iPtBin);
@@ -206,7 +280,9 @@ void FillHistNRec(){
 
 void FillHistNGen(){
     // Check if the corresponding text file already exists
-    TString file((GlobPath + "NGen.txt").Data());
+    TString file("Results/AccAndEffMC/");
+    if(nPtBins == 4) file.Append("NGen_4bins.txt");
+    if(nPtBins == 5) file.Append("NGen_5bins.txt");
 
     ifstream inFile;
     inFile.open(file);
@@ -236,11 +312,11 @@ void FillHistNGen(){
         ConnectTreeVariablesMCGen(tGen);
 
         // Loop over all pt bins
-        for(Int_t iPtBin = 1; iPtBin <= nBins; iPtBin++){
+        for(Int_t iPtBin = 1; iPtBin <= nPtBins; iPtBin++){
             Int_t NGen = 0;
             for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
                 tGen->GetEntry(iEntry);
-                if(EventPassedMCGen_AxEPtDep(iPtBin)) NGen++;
+                if(EventPassedMCGen(4, iPtBin)) NGen++;
             }
             hNGen->SetBinContent(iPtBin, NGen);
             Printf("*** Bin %i done. ***", iPtBin);
@@ -251,112 +327,7 @@ void FillHistNGen(){
 
         return;
     }
-}
-
-Bool_t EventPassedMCRec_AxEPtDep(Int_t iMassCut = 0, Int_t iPtBin = 0){
-
-    // Selections applied on the GRID:
-    // 0) fEvent non-empty
-    // 1) At least two tracks associated with the vertex
-    // 2) Distance from the IP lower than 15 cm
-    // 3) nGoodTracksTPC == 2 && nGoodTracksSPD == 2
-
-    // 4) Central UPC trigger CCUP31:
-    // for fRunNumber < 295881: CCUP31-B-NOPF-CENTNOTRD
-    // for fRunNumber >= 295881: CCUP31-B-SPD2-CENTNOTRD
-    if(cuts[1]){ // !0VBA (no signal in the V0A)
-        if(fTriggerInputsMC[0]) return kFALSE;
-    }
-    if(cuts[2]){ // !0VBC (no signal in the V0C)
-        if(fTriggerInputsMC[1]) return kFALSE;
-    }
-    if(cuts[3]){ // !0UBA (no signal in the ADA)
-        if(fTriggerInputsMC[2]) return kFALSE;
-    }
-    if(cuts[4]){ // !0UBC (no signal in the ADC)
-        if(fTriggerInputsMC[3]) return kFALSE;
-    }
-    if(cuts[5]){ // 0STG (SPD topological)
-        if(!fTriggerInputsMC[10]) return kFALSE;
-    }
-    if(cuts[6]){ // 0OMU (TOF two hits topology)
-        if(!fTriggerInputsMC[4]) return kFALSE;
-    }
-
-    // 5) SPD cluster matches FOhits
-    if(cuts[7]){
-        if(!(fMatchingSPD == kTRUE)) return kFALSE;
-    }
-
-    // 6) AD offline veto (negligible effect on MC)
-    if(cuts[8]){
-        if(!(fADA_dec == 0 && fADC_dec == 0)) return kFALSE;
-    }
-
-    // 7) V0 offline veto (negligible effect on MC)
-    if(cuts[9]){
-        if(!(fV0A_dec == 0 && fV0C_dec == 0)) return kFALSE;
-    }
-
-    // 8) Dilepton rapidity |y| < 0.8
-    if(cuts[10]){
-        if(!(abs(fY) < 0.8)) return kFALSE;
-    }
-
-    // 9) Pseudorapidity of both tracks |eta| < 0.8
-    if(cuts[11]){
-        if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
-    }
-
-    // 10) Tracks have opposite charges
-    if(cuts[12]){
-        if(!(fQ1 * fQ2 < 0)) return kFALSE;
-    }
-    
-    // 11) Muon pairs only
-    if(cuts[13]){
-        if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
-    }
-
-    // 12) Invariant mass between 2.2 and 4.5 GeV/c^2
-    if(cuts[14]){
-        Bool_t bMassCut = kFALSE;
-        switch(iMassCut){
-            case -1: // No inv mass cut
-                bMassCut = kTRUE;
-                break;
-            case 0:
-                if(fM > 2.2 && fM < 4.5) bMassCut = kTRUE;
-                break;
-            case 1:
-                if(fM > 3.0 && fM < 3.2) bMassCut = kTRUE;
-                break;
-        }
-        if(!bMassCut) return kFALSE;
-    }
-
-    // 13) Transverse momentum cut
-    if(cuts[15]){
-        if(cuts[0] == kFALSE){ // vs PtRec
-            if(!(fPt > edges[iPtBin-1] && fPt <= edges[iPtBin])) return kFALSE;
-        } else if(cuts[0] == kTRUE){ // vs PtGen
-            if(!(fPtGen > edges[iPtBin-1] && fPtGen < edges[iPtBin])) return kFALSE;
-        }
-    }
-
-    // Event passed all the selections =>
-    return kTRUE;
-}
-
-Bool_t EventPassedMCGen_AxEPtDep(Int_t iPtBin = 0){
-    // 1) Dilepton rapidity |y| < 0.8
-    if(!(abs(fYGen) < 0.8)) return kFALSE;
-
-    // 2) Transverse momentum cut
-    if(!(fPtGen > edges[iPtBin-1] && fPtGen < edges[iPtBin])) return kFALSE;
-
-    // Event passed all the selections =>
-    return kTRUE;
+    return;
 }
 
 void SaveToFile(TH1D* hist, TString name){
@@ -365,17 +336,7 @@ void SaveToFile(TH1D* hist, TString name){
         outfile << iBin << "\t" << hist->GetBinContent(iBin) << "\n";
     }
     outfile.close();
-    Printf("*** Saved to %s.***", name.Data());
-}
-
-TString ConvertCutsToString(Bool_t *cuts){
-    TString s("cuts_");
-    for(Int_t iCut = 0; iCut < nCuts; iCut++){
-        if(cuts[iCut] == kTRUE) s.Append("1");
-        else s.Append("0");
-    }
-    //cout << s << endl;
-    return s;
+    Printf("*** File saved in %s.***", name.Data());
 }
 
 Double_t CalculateErrorBayes(Double_t k, Double_t n){ // k = NRec, n = NGen
