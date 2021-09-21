@@ -30,7 +30,7 @@ Double_t CalculateErrorBayes(Double_t k, Double_t n);
 
 void AccAndEffMC(){
 
-    Bool_t bTotalESD = kFALSE;
+    Bool_t bTotalESD = kTRUE;
     if(bTotalESD){
         CalculateAxE(0); // pt > 0.2 GeV/c
         CalculateAxE(3); // 0.2 < pt < 1 GeV/c
@@ -65,7 +65,7 @@ void CalculateAxE(Int_t iPtCut){
     }
 
     TTree *tGen = dynamic_cast<TTree*> (fRec->Get("AnalysisOutput/fTreeJPsiMCGen"));
-    if(tGen) Printf("MC rec tree loaded.");
+    if(tGen) Printf("MC gen tree loaded.");
     
     ConnectTreeVariablesMCGen(tGen);
 
@@ -104,10 +104,10 @@ void CalculateAxE_AOD(Int_t iPtCut){
     }
 
     TFile *fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kIncohJpsiToMu_migr.root", "read");
-    if(fGen) Printf("MC rec file loaded.");
+    if(fGen) Printf("MC gen file loaded.");
 
     TTree *tGen = dynamic_cast<TTree*> (fGen->Get("MCgenTree"));
-    if(tGen) Printf("MC rec tree loaded.");
+    if(tGen) Printf("MC gen tree loaded.");
     
     ConnectTreeVariablesMCGen_AOD(tGen);
 
@@ -185,6 +185,14 @@ void CalculateAxEPtBins(){
     l->SetBorderSize(0); // no border
     l->SetFillStyle(0);  // legend is transparent
     l->Draw();
+    // Legend 2
+    TLegend *l2 = new TLegend(0.15,0.17,0.35,0.32);
+    l2->AddEntry((TObject*)0,Form("|#it{y}| < 0.8"),""); 
+    l2->AddEntry((TObject*)0,Form("2.2 < #it{m} < 4.5 GeV/#it{c}^{2}"),"");
+    l2->SetTextSize(0.056);
+    l2->SetBorderSize(0); // no border
+    l2->SetFillStyle(0);  // legend is transparent
+    l2->Draw();
 
     // Save the figures and print the results to txt file
     TString str;
