@@ -10,6 +10,7 @@
 #include "TString.h"
 #include "TFile.h"
 #include "TCanvas.h"
+#include "TPad.h"
 #include "TStyle.h" // gStyle
 #include "TLegend.h"
 #include "TMath.h"
@@ -26,35 +27,75 @@ TH1D* hAxE = NULL;
 // Global folder for saving files
 TString GlobPath = "AxE_PtDep/binning1/";
 
-Int_t nCuts = 16;
-Bool_t cuts[16] = {
+const Int_t nCuts = 13;
+Bool_t cuts[nCuts] = {
     0,  // 0) pt cut rec (kFALSE) or gen (kTRUE)
-    0,  // 1) !0VBA (no signal in the V0A) 
-    0,  // 2) !0VBC (no signal in the V0C)
-    0,  // 3) !0UBA (no signal in the ADA)
-    0,  // 4) !0UBC (no signal in the ADC)
-    1,  // 5) 0STG (SPD topological)
-    1,  // 6) 0OMU (TOF two hits topology)
-    0,  // 7) SPD cluster matches FOhits
-    0,  // 8) AD offline veto
-    0,  // 9) V0 offline veto
-    0,  // 10) Rapidity
-    0,  // 11) Pseudorapidity
-    0,  // 12) Opposite charges
-    0,  // 13) Muons only
-    0,  // 14) Inv mass
-    1   // 15) Transverse momentum
+    0,  // 1) !0VBA (no signal in the V0A) && !0VBC (no signal in the V0C)
+    0,  // 2) !0UBA (no signal in the ADA) && !0UBC (no signal in the ADC)
+    0,  // 3) 0STG (SPD topological)
+    0,  // 4) 0OMU (TOF two hits topology)
+    0,  // 5) SPD cluster matches FOhits
+    0,  // 6) AD offline veto
+    0,  // 7) V0 offline veto
+    0,  // 8) Rapidity
+    0,  // 9) Pseudorapidity
+    0,  // 10) Opposite charges
+    0,  // 11) Muons only
+    0   // 12) Inv mass
 };
 
+// For CalculateRatiosOfNRec:
+Bool_t CutsToBePlotted[nCuts-1] = {
+    1,  // 1) !0VBA && !0VBC 
+    1,  // 2) !0UBA && !0UBC 
+    1,  // 3) 0STG
+    1,  // 4) 0OMU
+    1,  // 5) SPD cluster matches FOhits
+    1,  // 6) AD offline veto
+    1,  // 7) V0 offline veto
+    1,  // 8) Rapidity
+    1,  // 9) Pseudorapidity
+    1,  // 10) Opposite charges
+    1,  // 11) Muons only
+    1   // 12) Inv mass
+};
+TString CutsLabels[nCuts-1] = {
+    "!0VBA && !0VBC",
+    "!0UBA && !0UBC",
+    "0STG",
+    "0OMU",
+    "SPD matching",
+    "AD offline",
+    "V0 offline",
+    "|#it{y}| < 0.8",
+    "|#eta_{1,2}| < 0.8",
+    "#it{Q}_{1}#it{Q}_{2} < 0",
+    "muons only",
+    "2.2 < #it{m} < 4.5 GeV/#it{c}^{2}"
+};
+
+void CalculateAxEPtDep();
 void FillHistNRec();
 void FillHistNGen();
+void CalculateRatiosOfNRec();
 Bool_t EventPassedMCRec_AxEPtDep(Int_t iMassCut, Int_t iPtBin);
 Bool_t EventPassedMCGen_AxEPtDep(Int_t iPtBin);
-TString ConvertCutsToString(Bool_t *cuts);
+void SetPad(TPad* p);
 void SaveToFile(TH1D* hist, TString name);
+TString ConvertCutsToString();
+TString ConvertCutsToBePlottedToString();
 Double_t CalculateErrorBayes(Double_t k, Double_t n);
 
 void AccAndEffMC_PtDep(){
+
+    //CalculateAxEPtDep();
+
+    CalculateRatiosOfNRec();
+
+    return;
+}
+
+void CalculateAxEPtDep(){
 
     // Get number of bins
     nBins = sizeof(edges) / sizeof(edges[0]) - 1;
@@ -73,15 +114,10 @@ void AccAndEffMC_PtDep(){
 
     // Draw the histogram:
     TCanvas *c = new TCanvas("c", "c", 900, 600);
-    c->SetTopMargin(0.02);
-    c->SetBottomMargin(0.14);
-    c->SetRightMargin(0.03);
-    c->SetLeftMargin(0.145);
-    // gStyle
-    gStyle->SetOptTitle(0);
-    gStyle->SetOptStat(0);
-    gStyle->SetPalette(1);
-    gStyle->SetPaintTextFormat("4.2f");
+    TPad *p = new TPad("p", "p",0.0,0.0,1.0,1.0);
+    p->Draw();
+    p->cd();
+    SetPad(p);
     // Marker and line
     hAxE->SetMarkerStyle(21);
     hAxE->SetMarkerColor(kBlue);
@@ -115,7 +151,7 @@ void AccAndEffMC_PtDep(){
     l->Draw();
 
     // Save the figures and print the results to txt file
-    TString CutConfiguration = ConvertCutsToString(cuts);
+    TString CutConfiguration = ConvertCutsToString();
     TString path((GlobPath + "fig/" + CutConfiguration).Data());
     c->Print((path + ".pdf").Data());
     c->Print((path + ".png").Data());
@@ -156,7 +192,7 @@ void AccAndEffMC_PtDep(){
 
 void FillHistNRec(){
     // Check if the corresponding text file already exists
-    TString CutConfiguration = ConvertCutsToString(cuts);
+    TString CutConfiguration = ConvertCutsToString();
     TString file((GlobPath + CutConfiguration + ".txt").Data());
 
     ifstream inFile;
@@ -253,6 +289,104 @@ void FillHistNGen(){
     }
 }
 
+void CalculateRatiosOfNRec(){ 
+
+    // Get number of bins
+    nBins = sizeof(edges) / sizeof(edges[0]) - 1;
+    Printf("%i pt bins defined.", nBins);
+    // Define the histogram hNRec
+    hNRec = new TH1D("hNRec","N rec per bin",nBins,edges);
+
+    // Turn off all cuts
+    for(Int_t i = 0; i < nCuts; i++) cuts[i] = 0;
+    // Create an array of histograms to store the results
+    TH1D *hNRecRatios[nCuts] = { NULL };
+    // Calculate NRec per bin just for the pt cut
+    FillHistNRec();
+    // Store the results in the zeroth component of hNRecRatios
+    hNRecRatios[0] = (TH1D*)hNRec->Clone("hNRecRatios_0");
+    // Calculate NRec per bin for every other i-th cut (except the 1st one ofc)
+    for(Int_t i = 1; i < nCuts; i++){
+        cuts[i] = 1;
+        FillHistNRec();
+        TString hName("hNRecRatios_%i", i);
+        hNRecRatios[i] = (TH1D*)hNRec->Clone(hName.Data());
+        cuts[i] = 0;
+    }
+    // Plot the results
+    TH1D* hOne = new TH1D("hOne","ones",nBins,edges);
+    for(Int_t i = 1; i <= nBins; i++){
+        hOne->SetBinContent(i, 1.);
+    }
+    TCanvas *cRatios = new TCanvas("cRatios","cRatios",1000,600);
+    TPad *PadL = new TPad("PadL", "PadL",0.00,0.0,0.72,1.0);
+    TPad *PadR = new TPad("PadR", "PadR",0.72,0.0,1.00,1.0);
+    PadL->Draw();
+    PadR->Draw();
+    SetPad(PadL);
+    // Left pad
+    PadL->cd();
+    // Plot the histogram with ones
+    // Marker and line
+    hOne->SetMarkerStyle(21);
+    hOne->SetMarkerColor(kBlack);
+    hOne->SetMarkerSize(1.0);
+    hOne->SetLineStyle(kDashed);
+    hOne->SetLineColor(kBlack);
+    hOne->SetLineWidth(2.0);
+    // Vertical axis
+    hOne->GetYaxis()->SetTitle("#it{N}_{rec}[#it{p}_{T} sel. + add. sel.]/#it{N}_{rec}[#it{p}_{T} sel.]");
+    hOne->GetYaxis()->SetTitleSize(0.056);
+    hOne->GetYaxis()->SetTitleOffset(1.1);
+    hOne->GetYaxis()->SetLabelSize(0.056);
+    hOne->GetYaxis()->SetDecimals(3);
+    hOne->GetYaxis()->SetRangeUser(0.0,hOne->GetBinContent(1)*1.1);
+    // Horizontal axis
+    hOne->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
+    hOne->GetXaxis()->SetTitleSize(0.056);
+    hOne->GetXaxis()->SetTitleOffset(1.2);
+    hOne->GetXaxis()->SetLabelSize(0.056);
+    hOne->GetXaxis()->SetLabelOffset(0.015);
+    hOne->GetXaxis()->SetDecimals(1);
+    // Eventually draw it
+    hOne->Draw("HIST");
+    // Plot the rest of ratios
+    Int_t colors[nCuts] = {2, 8, 4, 6, 7, 9, 12, 28, 92, 205, 222, 209, 159};
+    for(Int_t i = 1; i < nCuts; i++){
+        hNRecRatios[i]->Sumw2();
+        hNRecRatios[i]->Divide(hNRecRatios[0]);
+        if(CutsToBePlotted[i-1]){
+            hNRecRatios[i]->SetMarkerStyle(21);
+            hNRecRatios[i]->SetMarkerColor(colors[i-1]);
+            hNRecRatios[i]->SetMarkerSize(1.0);
+            //hNRecRatios[i]->SetLineStyle(kDashed);
+            hNRecRatios[i]->SetLineColor(colors[i-1]);
+            hNRecRatios[i]->SetLineWidth(1.0);
+            hNRecRatios[i]->Draw("SAME E1 P");
+        }
+    }
+    // Right pad: plot the legend
+    PadR->cd();
+    TLegend *l = new TLegend(0.0,0.1,1.0,0.98);
+    //l->AddEntry(hist[0],"only S9");
+    l->AddEntry(hOne,"only #it{p}_{T} sel. = 1.0");
+    l->AddEntry((TObject*)0,Form("with additional:"),"");
+    for(Int_t iHist = 1; iHist < nCuts; iHist++){
+        l->AddEntry(hNRecRatios[iHist],Form("%s", (CutsLabels[iHist-1]).Data()));
+    }
+    l->SetTextSize(0.085);
+    l->SetBorderSize(0);
+    l->SetFillStyle(0); 
+    l->Draw();
+    // Save the figures
+    TString PlotConfiguration = ConvertCutsToBePlottedToString();
+    TString Path("AxE_PtDep/ratios/");
+    cRatios->Print((Path + PlotConfiguration + ".pdf").Data());
+    cRatios->Print((Path + PlotConfiguration + ".png").Data());
+
+    return;
+}
+
 Bool_t EventPassedMCRec_AxEPtDep(Int_t iMassCut = 0, Int_t iPtBin = 0){
 
     // Selections applied on the GRID:
@@ -264,62 +398,62 @@ Bool_t EventPassedMCRec_AxEPtDep(Int_t iMassCut = 0, Int_t iPtBin = 0){
     // 4) Central UPC trigger CCUP31:
     // for fRunNumber < 295881: CCUP31-B-NOPF-CENTNOTRD
     // for fRunNumber >= 295881: CCUP31-B-SPD2-CENTNOTRD
-    if(cuts[1]){ // !0VBA (no signal in the V0A)
-        if(fTriggerInputsMC[0]) return kFALSE;
+    if(cuts[1]){ 
+        // !0VBA (no signal in the V0A)
+        // and
+        // !0VBC (no signal in the V0C)
+        if(fTriggerInputsMC[0] || fTriggerInputsMC[1]) return kFALSE;
     }
-    if(cuts[2]){ // !0VBC (no signal in the V0C)
-        if(fTriggerInputsMC[1]) return kFALSE;
+    if(cuts[2]){ 
+        // !0UBA (no signal in the ADA)
+        // and
+        // !0UBC (no signal in the ADC)
+        if(fTriggerInputsMC[2] || fTriggerInputsMC[3]) return kFALSE;
     }
-    if(cuts[3]){ // !0UBA (no signal in the ADA)
-        if(fTriggerInputsMC[2]) return kFALSE;
-    }
-    if(cuts[4]){ // !0UBC (no signal in the ADC)
-        if(fTriggerInputsMC[3]) return kFALSE;
-    }
-    if(cuts[5]){ // 0STG (SPD topological)
+    if(cuts[3]){ // 0STG (SPD topological)
         if(!fTriggerInputsMC[10]) return kFALSE;
     }
-    if(cuts[6]){ // 0OMU (TOF two hits topology)
+    if(cuts[4]){ // 0OMU (TOF two hits topology)
         if(!fTriggerInputsMC[4]) return kFALSE;
     }
 
     // 5) SPD cluster matches FOhits
-    if(cuts[7]){
+    if(cuts[5]){
         if(!(fMatchingSPD == kTRUE)) return kFALSE;
     }
 
     // 6) AD offline veto (negligible effect on MC)
-    if(cuts[8]){
+    if(cuts[6]){
         if(!(fADA_dec == 0 && fADC_dec == 0)) return kFALSE;
     }
 
     // 7) V0 offline veto (negligible effect on MC)
-    if(cuts[9]){
+    if(cuts[7]){
         if(!(fV0A_dec == 0 && fV0C_dec == 0)) return kFALSE;
     }
 
     // 8) Dilepton rapidity |y| < 0.8
-    if(cuts[10]){
+    if(cuts[8]){
         if(!(abs(fY) < 0.8)) return kFALSE;
     }
 
     // 9) Pseudorapidity of both tracks |eta| < 0.8
-    if(cuts[11]){
+    if(cuts[9]){
         if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
     }
 
     // 10) Tracks have opposite charges
-    if(cuts[12]){
+    if(cuts[10]){
         if(!(fQ1 * fQ2 < 0)) return kFALSE;
     }
     
     // 11) Muon pairs only
-    if(cuts[13]){
+    if(cuts[11]){
         if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
     }
 
     // 12) Invariant mass between 2.2 and 4.5 GeV/c^2
-    if(cuts[14]){
+    if(cuts[12]){
         Bool_t bMassCut = kFALSE;
         switch(iMassCut){
             case -1: // No inv mass cut
@@ -336,12 +470,10 @@ Bool_t EventPassedMCRec_AxEPtDep(Int_t iMassCut = 0, Int_t iPtBin = 0){
     }
 
     // 13) Transverse momentum cut
-    if(cuts[15]){
-        if(cuts[0] == kFALSE){ // vs PtRec
-            if(!(fPt > edges[iPtBin-1] && fPt <= edges[iPtBin])) return kFALSE;
-        } else if(cuts[0] == kTRUE){ // vs PtGen
-            if(!(fPtGen > edges[iPtBin-1] && fPtGen < edges[iPtBin])) return kFALSE;
-        }
+    if(cuts[0] == kFALSE){ // vs PtRec
+        if(!(fPt > edges[iPtBin-1] && fPt <= edges[iPtBin])) return kFALSE;
+    } else if(cuts[0] == kTRUE){ // vs PtGen
+        if(!(fPtGen > edges[iPtBin-1] && fPtGen < edges[iPtBin])) return kFALSE;
     }
 
     // Event passed all the selections =>
@@ -359,6 +491,20 @@ Bool_t EventPassedMCGen_AxEPtDep(Int_t iPtBin = 0){
     return kTRUE;
 }
 
+void SetPad(TPad* p){
+    p->SetTopMargin(0.02);
+    p->SetBottomMargin(0.14);
+    p->SetRightMargin(0.03);
+    p->SetLeftMargin(0.145);
+
+    gStyle->SetOptTitle(0);
+    gStyle->SetOptStat(0);
+    gStyle->SetPalette(1);
+    gStyle->SetPaintTextFormat("4.2f");
+
+    return;
+}
+
 void SaveToFile(TH1D* hist, TString name){
     ofstream outfile (name.Data());
     for(Int_t iBin = 1; iBin <= hist->GetNbinsX(); iBin++){
@@ -368,13 +514,21 @@ void SaveToFile(TH1D* hist, TString name){
     Printf("*** Saved to %s.***", name.Data());
 }
 
-TString ConvertCutsToString(Bool_t *cuts){
+TString ConvertCutsToString(){
     TString s("cuts_");
     for(Int_t iCut = 0; iCut < nCuts; iCut++){
         if(cuts[iCut] == kTRUE) s.Append("1");
         else s.Append("0");
     }
-    //cout << s << endl;
+    return s;
+}
+
+TString ConvertCutsToBePlottedToString(){
+    TString s("ratios_");
+    for(Int_t iCut = 0; iCut < nCuts-1; iCut++){
+        if(CutsToBePlotted[iCut] == kTRUE) s.Append("1");
+        else s.Append("0");
+    }
     return s;
 }
 
