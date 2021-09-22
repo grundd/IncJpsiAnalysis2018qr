@@ -4,7 +4,7 @@
 
 // cpp headers
 #include <fstream> // print output to txt file
-//#include <iomanip> // std::setprecision()
+#include <iomanip> // std::setprecision()
 // root headers
 #include "TH1.h"
 #include "TString.h"
@@ -21,7 +21,7 @@ TH1D* hNGen = NULL;
 TH1D* hAxE = NULL;
 
 void CalculateAxE(Int_t iPtCut);
-void CalculateAxE_AOD(Int_t iPtCut);
+void CalculateAxE_AOD(Int_t iMassCut, Int_t iPtCut);
 void CalculateAxEPtBins();
 void FillHistNRec();
 void FillHistNGen();
@@ -30,19 +30,21 @@ Double_t CalculateErrorBayes(Double_t k, Double_t n);
 
 void AccAndEffMC(){
 
-    Bool_t bTotalESD = kFALSE;
+    Bool_t bTotalESD = kTRUE;
     if(bTotalESD){
-        CalculateAxE(0); // pt > 0.2 GeV/c
-        CalculateAxE(3); // 0.2 < pt < 1 GeV/c
+        CalculateAxE(0); // pt > 0.2 GeV
+        CalculateAxE(3); // 0.2 < pt < 1 GeV
     }
 
-    Bool_t bTotalAOD = kFALSE;
+    Bool_t bTotalAOD = kTRUE;
     if(bTotalAOD){
-        CalculateAxE_AOD(0); // pt > 0.2 GeV/c
-        CalculateAxE_AOD(3); // 0.2 < pt < 1 GeV/c
+        CalculateAxE_AOD(0, 0); // pt > 0.2 GeV && 2.2 < m < 4.5 GeV
+        CalculateAxE_AOD(1, 0); // pt > 0.2 GeV && 3.0 < m < 3.2 GeV
+        CalculateAxE_AOD(0, 3); // 0.2 < pt < 1 GeV && 2.2 < m < 4.5 GeV
+        CalculateAxE_AOD(1, 3); // 0.2 < pt < 1 GeV && 3.0 < m < 3.2 GeV
     }
     
-    CalculateAxEPtBins();
+    //CalculateAxEPtBins();
 
     return;
 }
@@ -83,10 +85,18 @@ void CalculateAxE(Int_t iPtCut){
 
     Printf("AxE = (%.4f pm %.4f)%%", AxE*100, AxE_err*100);
 
+    TString str = Form("Results/AccAndEffMC/AxE_tot_PtCut%i", iPtCut);
+    ofstream outfile((str + ".txt").Data());
+    outfile << std::fixed << std::setprecision(5);
+    //outfile << "AxE [%%] \tAxE_err [%%] \n";
+    outfile << AxE*100 << "\t" << AxE_err*100;
+    outfile.close();
+    Printf("*** Results printed to %s.***", (str + ".txt").Data());
+
     return;
 }
 
-void CalculateAxE_AOD(Int_t iPtCut){
+void CalculateAxE_AOD(Int_t iMassCut, Int_t iPtCut){
     // comment the SPD matching in EventPassedMCRec when working with AODs
 
     TFile *fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kIncohJpsiToMu_migr.root", "read");
@@ -100,7 +110,7 @@ void CalculateAxE_AOD(Int_t iPtCut){
     Double_t NRec = 0;
     for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
         tRec->GetEntry(iEntry);
-        if(EventPassedMCRec_AOD(0, iPtCut)) NRec++;
+        if(EventPassedMCRec_AOD(iMassCut, iPtCut)) NRec++;
     }
 
     TFile *fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kIncohJpsiToMu_migr.root", "read");
@@ -124,6 +134,14 @@ void CalculateAxE_AOD(Int_t iPtCut){
     Double_t AxE_err = CalculateErrorBayes(NRec, NGen);
 
     Printf("AxE = (%.4f pm %.4f)%%", AxE*100, AxE_err*100);
+
+    TString str = Form("Results/AccAndEffMC/AxE_AOD_tot_MassCut%i_PtCut%i", iMassCut, iPtCut);
+    ofstream outfile((str + ".txt").Data());
+    outfile << std::fixed << std::setprecision(5);
+    //outfile << "AxE [%%] \tAxE_err [%%] \n";
+    outfile << AxE*100 << "\t" << AxE_err*100;
+    outfile.close();
+    Printf("*** Results printed to %s.***", (str + ".txt").Data());
 
     return;
 }

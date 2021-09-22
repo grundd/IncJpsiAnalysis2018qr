@@ -37,7 +37,7 @@ void InvMassFit(){
 
     //PrepareDataTree();
 
-    Bool_t main_fits = kFALSE;
+    Bool_t main_fits = kTRUE;
     if(main_fits){
         DoInvMassFitMain(0);
         DoInvMassFitMain(1);

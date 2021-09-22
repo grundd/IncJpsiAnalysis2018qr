@@ -227,7 +227,7 @@ void ConnectTreeVariablesMCGen(TTree *t){
     return;
 }
 
-void ConnectTreeVariablesMCGen_AOD(TTree *t){
+void ConnectTreeVariablesMCGen_AOD(TTree *t){ // for MC_gen_18qr_kIncohJpsiToMu_migr.root
     // Set branch addresses
     // Basic things:
     t->SetBranchAddress("runNumber", &fRunNumber);
@@ -236,6 +236,20 @@ void ConnectTreeVariablesMCGen_AOD(TTree *t){
     t->SetBranchAddress("fPhiGen", &fPhiGen);
     t->SetBranchAddress("fYGen", &fYGen);
     t->SetBranchAddress("fMGen", &fMGen);
+
+    Printf("Variables from %s connected.", t->GetName());
+    return;
+}
+
+void ConnectTreeVariablesMCGen_AOD_old(TTree *t){ // for other files such as MC_gen_18qr_kCohPsi2sToMuPi.root
+    // Set branch addresses
+    // Basic things:
+    t->SetBranchAddress("runNumber", &fRunNumber);
+    // MC kinematics on generated level
+    t->SetBranchAddress("fPt", &fPtGen);
+    t->SetBranchAddress("fPhi", &fPhiGen);
+    t->SetBranchAddress("fY", &fYGen);
+    t->SetBranchAddress("fM", &fMGen);
 
     Printf("Variables from %s connected.", t->GetName());
     return;
@@ -425,7 +439,7 @@ Bool_t EventPassedMCRec_AOD(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin
         !fTriggerInputsMC[1] &&  // !0VBC (no signal in the V0C)
         !fTriggerInputsMC[2] &&  // !0UBA (no signal in the ADA)
         !fTriggerInputsMC[3] &&  // !0UBC (no signal in the ADC)
-        fTriggerInputsMC[10] &&  //  0STG (SPD topological)
+        fTriggerInputsMC[10] &&  //  0STG (SPD topological) // in replaying this trigger input, there is a bug in my GRID code for AOD files (!)
         fTriggerInputsMC[4]      //  0OMU (TOF two hits topology)
     ) CCUP31 = kTRUE;
     if(!CCUP31) return kFALSE;

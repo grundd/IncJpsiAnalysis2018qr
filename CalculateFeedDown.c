@@ -10,9 +10,15 @@
 // my headers
 #include "AnalysisManager.h"
 
-void CalculateFeedDownInBins();
-Bool_t AxE_PtBins_Jpsi();
-void CalculateAxE_PtBins_Psi2s(Int_t iFD);
+void CalculateFD_Total(Int_t iPtCut);
+void CalculateFD_Total_AOD();
+void CalculateFD_PtBins();
+Bool_t AxE_IncJpsi_Total(Int_t iPtCut);
+Bool_t AxE_IncJpsi_Total_AOD();
+Bool_t AxE_IncJpsi_PtBins();
+void CalculateAxE_Psi2s_Total(Int_t iPtCut, Int_t iFD);
+void CalculateAxE_Psi2s_Total_AOD(Int_t iFD);
+void CalculateAxE_Psi2s_PtBins(Int_t iFD);
 // iFD:
 // == 1 => coh charged
 // == 2 => inc charged
@@ -24,12 +30,19 @@ TString Datasets[4] = {"CohCharged","IncCharged","CohNeutral","IncNeutral"};
 // Temporary variables when loading the data:
 Int_t i_bin;
 Double_t pt_low, pt_upp;
+// Total feed-down coefficient, for pt > 0.2 GeV/c
+Double_t AxE_IncJpsi_tot_val = 0;
+Double_t AxE_IncJpsi_tot_err = 0;
+Double_t AxE_Psi2s_tot_val = 0;
+Double_t AxE_Psi2s_tot_err = 0;
+Double_t CorrFD_tot_val[4] = { 0 };
+Double_t CorrFD_tot_err[4] = { 0 };
 // Arrays of AxE in bins
-Double_t AxE_Jpsi_val[nPtBins] = { 0 };
-Double_t AxE_Jpsi_err[nPtBins] = { 0 };
+Double_t AxE_IncJpsi_val[nPtBins] = { 0 };
+Double_t AxE_IncJpsi_err[nPtBins] = { 0 };
 Double_t AxE_Psi2s_val[nPtBins] = { 0 };
 Double_t AxE_Psi2s_err[nPtBins] = { 0 };
-Double_t CorrFD[4][nPtBins] = { 0 };
+Double_t CorrFD_val[4][nPtBins] = { 0 };
 Double_t CorrFD_err[4][nPtBins] = { 0 };
 // Branching ratios
 Double_t BR;
@@ -48,18 +61,147 @@ Double_t SigSL_p_coh = 2.52;  //mb
 
 void CalculateFeedDown(){
 
-    CalculateFeedDownInBins();
+    //CalculateFD_Total(0);
+    //CalculateFD_Total(3);
+
+    //CalculateFD_Total_AOD();
+
+    CalculateFD_PtBins();
 
     return;
 }
 
-void CalculateFeedDownInBins(){
+void CalculateFD_Total(Int_t iPtCut){
+
+    // Load AxE value for kIncohJpsiToMu
+    Bool_t AxE_IncJpsi = AxE_IncJpsi_Total(iPtCut);
+    if(!AxE_IncJpsi){
+        Printf("Values of AxE for kIncohJpsiToMu with pt cut no. %i not found!", iPtCut);
+        Printf("Create them using AccAndEffMC.c.");
+        Printf("Terminating...");
+        return;
+    }
+    // Calculate all FD corrections
+    for(Int_t iFD = 1; iFD <= 4; iFD++){
+        CalculateAxE_Psi2s_Total(iPtCut, iFD);
+        // Cross-check: print the values that will be used for calculations
+        Printf("AxE J/psi:\t(%.3f pm %.3f)%%", AxE_IncJpsi_tot_val, AxE_IncJpsi_tot_err);
+        Printf("AxE Psi2s:\t(%.3f pm %.3f)%%", AxE_Psi2s_tot_val, AxE_Psi2s_tot_err);
+
+        // Load BR and cross sections
+        if(iFD == 1 || iFD == 2){
+            // charged processes
+            BR = BR_ch;
+            BR_err = BR_ch_err;
+        }
+        if(iFD == 3 || iFD == 4){
+            // neutral processes
+            BR = BR_ne;
+            BR_err = BR_ne_err;
+        }
+        if(iFD == 1 || iFD == 3){
+            // coherent Psi2s
+            SigSL_p = SigSL_p_coh;
+        }
+        if(iFD == 2 || iFD == 4){
+            // incoherent Psi2s
+            SigSL_p = SigSL_p_inc;
+        }   
+        // Calculate FD corrections         
+        CorrFD_tot_val[iFD-1] = SigSL_p / SigSL_j_inc * AxE_Psi2s_tot_val / AxE_IncJpsi_tot_val * BR * 100; // in percent already
+        CorrFD_tot_err[iFD-1]= CorrFD_tot_val[iFD-1] * TMath::Sqrt(TMath::Power((AxE_Psi2s_tot_err/AxE_Psi2s_tot_val),2) + TMath::Power((AxE_IncJpsi_tot_err/AxE_IncJpsi_tot_val),2) + TMath::Power((BR_err/BR),2));
+        Printf("FD corr: \t(%.3f pm %.3f)%%", CorrFD_tot_val[iFD-1], CorrFD_tot_err[iFD-1]);
+        Printf(" ");
+    }
+    // Define an output text file
+    TString OutputFile(Form("Results/FeedDown/FeedDownCorrections_tot_PtCut%i.txt", iPtCut));
+    ofstream outfile(OutputFile.Data());
+    outfile << std::fixed << std::setprecision(3);
+    // Print the results to the output text file
+    outfile << CorrFD_tot_val[0] << "\t"    // coh charged
+            << CorrFD_tot_err[0] << "\t"
+            << CorrFD_tot_val[1] << "\t"    // inc charged
+            << CorrFD_tot_err[1] << "\t"
+            << CorrFD_tot_val[2] << "\t"    // coh neutral
+            << CorrFD_tot_err[2] << "\t"
+            << CorrFD_tot_val[3] << "\t"    // inc neutral
+            << CorrFD_tot_err[3] << "\n";
+    // Close the output file
+    outfile.close();
+    Printf("Results printed to %s.", OutputFile.Data());   
+
+    return;
+}
+
+void CalculateFD_Total_AOD(){
+
+    // Load AxE value for kIncohJpsiToMu
+    Bool_t AxE_IncJpsi = AxE_IncJpsi_Total_AOD();
+    if(!AxE_IncJpsi){
+        Printf("Values of AxE for kIncohJpsiToMu not found!");
+        Printf("Create them using AccAndEffMC.c.");
+        Printf("Terminating...");
+        return;
+    }
+    // Calculate all FD corrections
+    for(Int_t iFD = 1; iFD <= 4; iFD++){
+        CalculateAxE_Psi2s_Total_AOD(iFD);
+        // Cross-check: print the values that will be used for calculations
+        Printf("AxE J/psi:\t(%.3f pm %.3f)%%", AxE_IncJpsi_tot_val, AxE_IncJpsi_tot_err);
+        Printf("AxE Psi2s:\t(%.3f pm %.3f)%%", AxE_Psi2s_tot_val, AxE_Psi2s_tot_err);
+
+        // Load BR and cross sections
+        if(iFD == 1 || iFD == 2){
+            // charged processes
+            BR = BR_ch;
+            BR_err = BR_ch_err;
+        }
+        if(iFD == 3 || iFD == 4){
+            // neutral processes
+            BR = BR_ne;
+            BR_err = BR_ne_err;
+        }
+        if(iFD == 1 || iFD == 3){
+            // coherent Psi2s
+            SigSL_p = SigSL_p_coh;
+        }
+        if(iFD == 2 || iFD == 4){
+            // incoherent Psi2s
+            SigSL_p = SigSL_p_inc;
+        }   
+        // Calculate FD corrections         
+        CorrFD_tot_val[iFD-1] = SigSL_p / SigSL_j_inc * AxE_Psi2s_tot_val / AxE_IncJpsi_tot_val * BR * 100; // in percent already
+        CorrFD_tot_err[iFD-1]= CorrFD_tot_val[iFD-1] * TMath::Sqrt(TMath::Power((AxE_Psi2s_tot_err/AxE_Psi2s_tot_val),2) + TMath::Power((AxE_IncJpsi_tot_err/AxE_IncJpsi_tot_val),2) + TMath::Power((BR_err/BR),2));
+        Printf("FD corr: \t(%.3f pm %.3f)%%", CorrFD_tot_val[iFD-1], CorrFD_tot_err[iFD-1]);
+        Printf(" ");
+    }
+    // Define an output text file
+    TString OutputFile(Form("Results/FeedDown/AOD/FeedDownCorrections.txt"));
+    ofstream outfile(OutputFile.Data());
+    outfile << std::fixed << std::setprecision(3);
+    // Print the results to the output text file
+    outfile << CorrFD_tot_val[0] << "\t"    // coh charged
+            << CorrFD_tot_err[0] << "\t"
+            << CorrFD_tot_val[1] << "\t"    // inc charged
+            << CorrFD_tot_err[1] << "\t"
+            << CorrFD_tot_val[2] << "\t"    // coh neutral
+            << CorrFD_tot_err[2] << "\t"
+            << CorrFD_tot_val[3] << "\t"    // inc neutral
+            << CorrFD_tot_err[3] << "\n";
+    // Close the output file
+    outfile.close();
+    Printf("Results printed to %s.", OutputFile.Data());   
+
+    return;
+}
+
+void CalculateFD_PtBins(){
 
     SetPtBinning();
 
-    // Calculate AxE for kIncohJpsiToMu
-    Bool_t AxE_Jpsi = AxE_PtBins_Jpsi();
-    if(!AxE_Jpsi){
+    // Load AxE values for kIncohJpsiToMu
+    Bool_t AxE_IncJpsi = AxE_IncJpsi_PtBins();
+    if(!AxE_IncJpsi){
         Printf("Values of AxE for kIncohJpsiToMu not found!");
         Printf("Create them using AccAndEffMC.c.");
         Printf("Terminating...");
@@ -68,12 +210,12 @@ void CalculateFeedDownInBins(){
     // Calculate the FD correction in all bins
     for(Int_t iFD = 1; iFD <= 4; iFD++){
         // Calculate AxE for Psi2s files
-        CalculateAxE_PtBins_Psi2s(iFD);
+        CalculateAxE_Psi2s_PtBins(iFD);
         // Go over pt bins
         for(Int_t iBin = 0; iBin < nPtBins; iBin++){
             // Cross-check: print the values that will be used for calculations
             Printf("Bin %i:", iBin+1);
-            Printf("AxE J/psi:\t(%.3f pm %.3f)%%", AxE_Jpsi_val[iBin], AxE_Jpsi_err[iBin]);
+            Printf("AxE J/psi:\t(%.3f pm %.3f)%%", AxE_IncJpsi_val[iBin], AxE_IncJpsi_err[iBin]);
             Printf("AxE Psi2s:\t(%.3f pm %.3f)%%", AxE_Psi2s_val[iBin], AxE_Psi2s_err[iBin]);
             
             // Load BR and cross sections
@@ -96,9 +238,9 @@ void CalculateFeedDownInBins(){
                 SigSL_p = SigSL_p_inc;
             }   
             // Calculate FD corrections         
-            CorrFD[iFD-1][iBin] = SigSL_p / SigSL_j_inc * AxE_Psi2s_val[iBin] / AxE_Jpsi_val[iBin] * BR * 100; // in percent already
-            CorrFD_err[iFD-1][iBin] = CorrFD[iFD-1][iBin] * TMath::Sqrt(TMath::Power((AxE_Psi2s_err[iBin]/AxE_Psi2s_val[iBin]),2) + TMath::Power((AxE_Jpsi_err[iBin]/AxE_Jpsi_val[iBin]),2) + TMath::Power((BR_err/BR),2));
-            Printf("FD corr: \t(%.3f pm %.3f)%%", CorrFD[iFD-1][iBin], CorrFD_err[iFD-1][iBin]);
+            CorrFD_val[iFD-1][iBin] = SigSL_p / SigSL_j_inc * AxE_Psi2s_val[iBin] / AxE_IncJpsi_val[iBin] * BR * 100; // in percent already
+            CorrFD_err[iFD-1][iBin] = CorrFD_val[iFD-1][iBin] * TMath::Sqrt(TMath::Power((AxE_Psi2s_err[iBin]/AxE_Psi2s_val[iBin]),2) + TMath::Power((AxE_IncJpsi_err[iBin]/AxE_IncJpsi_val[iBin]),2) + TMath::Power((BR_err/BR),2));
+            Printf("FD corr: \t(%.3f pm %.3f)%%", CorrFD_val[iFD-1][iBin], CorrFD_err[iFD-1][iBin]);
             Printf(" ");
         }  
     } 
@@ -109,13 +251,13 @@ void CalculateFeedDownInBins(){
     // Print the results to the output text file
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
         outfile << iBin + 1 << "\t"
-                << CorrFD[0][iBin] << "\t"      // coh charged
+                << CorrFD_val[0][iBin] << "\t"      // coh charged
                 << CorrFD_err[0][iBin] << "\t"
-                << CorrFD[1][iBin] << "\t"      // inc charged
+                << CorrFD_val[1][iBin] << "\t"      // inc charged
                 << CorrFD_err[1][iBin] << "\t"
-                << CorrFD[2][iBin] << "\t"      // coh neutral
+                << CorrFD_val[2][iBin] << "\t"      // coh neutral
                 << CorrFD_err[2][iBin] << "\t"
-                << CorrFD[3][iBin] << "\t"      // inc neutral
+                << CorrFD_val[3][iBin] << "\t"      // inc neutral
                 << CorrFD_err[3][iBin] << "\n";
     }
     // Close the output file
@@ -125,7 +267,49 @@ void CalculateFeedDownInBins(){
     return;
 }
 
-Bool_t AxE_PtBins_Jpsi(){
+Bool_t AxE_IncJpsi_Total(Int_t iPtCut){
+
+    TString FilePath = Form("Results/AccAndEffMC/AxE_tot_PtCut%i.txt", iPtCut);
+    // Check if already calculated
+    ifstream FileIn;
+    FileIn.open(FilePath.Data());
+    if(!(FileIn.fail())){
+        // Read data from the file
+        while(!FileIn.eof()){
+            FileIn >> AxE_IncJpsi_tot_val >> AxE_IncJpsi_tot_err;
+        }
+        FileIn.close(); 
+        Printf("AxE for kIncohJpsiToMu with pt cut no. %i has already been calculated.\n", iPtCut); 
+
+        return kTRUE;
+    } else {
+        // AxE for kIncohJpsiToMu not found
+        return kFALSE;
+    }
+}
+
+Bool_t AxE_IncJpsi_Total_AOD(){
+
+    TString FilePath = Form("Results/AccAndEffMC/AxE_AOD_tot_MassCut1_PtCut0.txt");
+    // Check if already calculated
+    ifstream FileIn;
+    FileIn.open(FilePath.Data());
+    if(!(FileIn.fail())){
+        // Read data from the file
+        while(!FileIn.eof()){
+            FileIn >> AxE_IncJpsi_tot_val >> AxE_IncJpsi_tot_err;
+        }
+        FileIn.close(); 
+        Printf("AxE for kIncohJpsiToMu has already been calculated.\n"); 
+
+        return kTRUE;
+    } else {
+        // AxE for kIncohJpsiToMu not found
+        return kFALSE;
+    }
+}
+
+Bool_t AxE_IncJpsi_PtBins(){
 
     TString FilePath = Form("Results/AccAndEffMC/AxE_%ibins.txt", nPtBins);
     // Check if already calculated
@@ -135,7 +319,7 @@ Bool_t AxE_PtBins_Jpsi(){
         // Read data from the file
         Int_t i_line = 0;
         while(!FileIn.eof()){
-            FileIn >> i_bin >> AxE_Jpsi_val[i_line] >> AxE_Jpsi_err[i_line];
+            FileIn >> i_bin >> AxE_IncJpsi_val[i_line] >> AxE_IncJpsi_err[i_line];
             i_line++;
         }
         FileIn.close(); 
@@ -148,7 +332,211 @@ Bool_t AxE_PtBins_Jpsi(){
     }
 }
 
-void CalculateAxE_PtBins_Psi2s(Int_t iFD){
+void CalculateAxE_Psi2s_Total(Int_t iPtCut, Int_t iFD){
+
+    TString FilePath = Form("Results/FeedDown/AxE_%s_tot_PtCut%i", (Datasets[iFD-1]).Data(), iPtCut);
+    // Check if already calculated
+    ifstream FileIn;
+    FileIn.open((FilePath + ".txt").Data());
+    if(!(FileIn.fail())){
+        // Read data from the file
+        while(!FileIn.eof()){
+            FileIn >> AxE_Psi2s_tot_val >> AxE_Psi2s_tot_err;
+        }
+        FileIn.close(); 
+        Printf("############################");
+        Printf("AxE for %s with pt cut no. %i has already been calculated.\n", (Datasets[iFD-1]).Data(), iPtCut);
+
+        return;
+    }
+
+    TFile *fRec = NULL;
+    switch(iFD){
+        case 1:
+            fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohPsi2sToMuPi.root", "read");
+            break;
+        case 2:
+            fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohPsi2sToMuPi.root", "read");
+            break;
+        case 3:
+            fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohPsi2sToMuPi_neutral.root", "read");
+            break;
+        case 4:
+            fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohPsi2sToMuPi_neutral.root", "read");
+            break;
+    }
+    if(fRec) Printf("MC rec file loaded.");
+
+    TTree *tRec = dynamic_cast<TTree*> (fRec->Get("AnalysisOutput/fTreeJPsiMCRec"));
+    if(tRec) Printf("MC rec tree loaded.");
+    
+    ConnectTreeVariablesMCRec(tRec);
+
+    Printf("Now calculating FD for %s.", fRec->GetName());
+
+    Printf("Tree %s has %lli entries.", tRec->GetName(), tRec->GetEntries());
+
+    Double_t NRec = 0;
+    // Loop over tree entries
+    Int_t nEntriesAnalysed = 0;
+    for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
+        tRec->GetEntry(iEntry);
+        if(EventPassedMCRec(0, iPtCut)) NRec++;
+        if((iEntry+1) % 200000 == 0){
+            nEntriesAnalysed += 200000;
+            Printf("%i entries analysed.", nEntriesAnalysed);
+        }
+    }
+    Printf("Done.");
+    
+    TTree *tGen = dynamic_cast<TTree*> (fRec->Get("AnalysisOutput/fTreeJPsiMCGen"));
+    if(tGen) Printf("MC gen tree loaded.");
+    
+    ConnectTreeVariablesMCGen(tGen);
+
+    Printf("Tree %s has %lli entries.", tGen->GetName(), tGen->GetEntries());
+
+    Double_t NGen = 0;
+    // Loop over tree entries
+    nEntriesAnalysed = 0;
+    for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
+        tGen->GetEntry(iEntry);
+        if(EventPassedMCGen(iPtCut)) NGen++;
+        if((iEntry+1) % 500000 == 0){
+            nEntriesAnalysed += 500000;
+            Printf("%i entries analysed.", nEntriesAnalysed);
+        }
+    }
+    Printf("Done.");
+
+    // Calculate AxE per bin
+    AxE_Psi2s_tot_val = NRec / NGen * 100;
+    AxE_Psi2s_tot_err = CalculateErrorBayes(NRec, NGen) * 100;
+    Printf("AxE = (%.4f pm %.4f)%%", AxE_Psi2s_tot_val, AxE_Psi2s_tot_err);
+
+    // Save the results to text file
+    ofstream outfile((FilePath + ".txt").Data());
+    outfile << std::fixed << std::setprecision(3);
+    //outfile << Form("AxE_Psi2s [%%]\tAxE_Psi2s_err [%%] \n");
+    outfile << AxE_Psi2s_tot_val << "\t" << AxE_Psi2s_tot_err << "\n";
+    outfile.close();
+    Printf("Results printed to %s.", (FilePath + ".txt").Data());    
+
+    return;
+}
+
+void CalculateAxE_Psi2s_Total_AOD(Int_t iFD){
+    TString FilePath = Form("Results/FeedDown/AOD/AxE_%s", (Datasets[iFD-1]).Data());
+    // Check if already calculated
+    ifstream FileIn;
+    FileIn.open((FilePath + ".txt").Data());
+    if(!(FileIn.fail())){
+        // Read data from the file
+        while(!FileIn.eof()){
+            FileIn >> AxE_Psi2s_tot_val >> AxE_Psi2s_tot_err;
+        }
+        FileIn.close(); 
+        Printf("############################");
+        Printf("AxE for %s has already been calculated.\n", (Datasets[iFD-1]).Data());
+
+        return;
+    }
+
+    TFile *fRec = NULL;
+    switch(iFD){
+        case 1:
+            fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kCohPsi2sToMuPi.root", "read");
+            break;
+        case 2:
+            fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kIncohPsi2sToMuPi.root", "read");
+            break;
+        case 3:
+            fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kCohPsi2sToMuPi_NeutPi.root", "read");
+            break;
+        case 4:
+            fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kIncohPsi2sToMuPi_NeutPi.root", "read");
+            break;
+    }
+    if(fRec) Printf("MC rec file loaded.");
+
+    TTree *tRec = dynamic_cast<TTree*> (fRec->Get("analysisTree"));
+    if(tRec) Printf("MC rec tree loaded.");
+    
+    ConnectTreeVariablesMCRec_AOD(tRec);
+
+    Printf("Now calculating FD for %s.", fRec->GetName());
+
+    Printf("Tree %s has %lli entries.", tRec->GetName(), tRec->GetEntries());
+
+    Double_t NRec = 0;
+    // Loop over tree entries
+    Int_t nEntriesAnalysed = 0;
+    for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
+        tRec->GetEntry(iEntry);
+        if(EventPassedMCRec_AOD(1, 0)) NRec++;
+        if((iEntry+1) % 200000 == 0){
+            nEntriesAnalysed += 200000;
+            Printf("%i entries analysed.", nEntriesAnalysed);
+        }
+    }
+    Printf("Done.");
+
+    TFile *fGen = NULL;
+    switch(iFD){
+        case 1:
+            fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kCohPsi2sToMuPi.root", "read");
+            break;
+        case 2:
+            fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kIncohPsi2sToMuPi.root", "read");
+            break;
+        case 3:
+            fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kCohPsi2sToMuPi_NeutPi.root", "read");
+            break;
+        case 4:
+            fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kIncohPsi2sToMuPi_NeutPi.root", "read");
+            break;
+    }
+    if(fGen) Printf("MC gen file loaded.");
+
+    TTree *tGen = dynamic_cast<TTree*> (fGen->Get("MCgenTree"));
+    if(tGen) Printf("MC gen tree loaded.");
+    
+    ConnectTreeVariablesMCGen_AOD_old(tGen);
+
+    Printf("Tree %s has %lli entries.", tGen->GetName(), tGen->GetEntries());
+
+    Double_t NGen = 0;
+    // Loop over tree entries
+    nEntriesAnalysed = 0;
+    for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
+        tGen->GetEntry(iEntry);
+        if(EventPassedMCGen(0)) NGen++;
+        if((iEntry+1) % 500000 == 0){
+            nEntriesAnalysed += 500000;
+            Printf("%i entries analysed.", nEntriesAnalysed);
+        }
+    }
+    Printf("Done.");
+
+    // Calculate AxE per bin
+    Printf("N_rec = %.0f", NRec);
+    Printf("N_gen = %.0f", NGen);
+    AxE_Psi2s_tot_val = NRec / NGen * 100;
+    AxE_Psi2s_tot_err = CalculateErrorBayes(NRec, NGen) * 100;
+    Printf("AxE = (%.4f pm %.4f)%%", AxE_Psi2s_tot_val, AxE_Psi2s_tot_err);
+
+    // Save the results to text file
+    ofstream outfile((FilePath + ".txt").Data());
+    outfile << std::fixed << std::setprecision(3);
+    //outfile << Form("AxE_Psi2s [%%]\tAxE_Psi2s_err [%%] \n");
+    outfile << AxE_Psi2s_tot_val << "\t" << AxE_Psi2s_tot_err << "\n";
+    outfile.close();
+    Printf("Results printed to %s.", (FilePath + ".txt").Data());    
+
+    return;    
+}
+
+void CalculateAxE_Psi2s_PtBins(Int_t iFD){
 
     TString FilePath = Form("Results/FeedDown/AxE_%s_%ibins", (Datasets[iFD-1]).Data(), nPtBins);
     // Check if already calculated
@@ -237,17 +625,17 @@ void CalculateAxE_PtBins_Psi2s(Int_t iFD){
 
     // Calculate AxE per bin
     for(Int_t iPtBin = 0; iPtBin < nPtBins; iPtBin++){
-        AxE_Psi2s_val[iPtBin] = NRec[iPtBin] / NGen[iPtBin];
-        AxE_Psi2s_err[iPtBin] = CalculateErrorBayes(NRec[iPtBin], NGen[iPtBin]);
-        Printf("AxE = (%.4f pm %.4f)%%", AxE_Psi2s_val[iPtBin]*100, AxE_Psi2s_err[iPtBin]*100);
+        AxE_Psi2s_val[iPtBin] = NRec[iPtBin] / NGen[iPtBin] * 100;
+        AxE_Psi2s_err[iPtBin] = CalculateErrorBayes(NRec[iPtBin], NGen[iPtBin]) * 100;
+        Printf("AxE = (%.4f pm %.4f)%%", AxE_Psi2s_val[iPtBin], AxE_Psi2s_err[iPtBin]);
     }
 
     // Save the results to text file
     ofstream outfile((FilePath + ".txt").Data());
     outfile << std::fixed << std::setprecision(3);
-    //outfile << Form("Bin \tPtLow \tPtUpp \tAxE_Psi2s_val [%%]\tAxE_Psi2s_err [%%] \n");
+    //outfile << Form("Bin \tPtLow \tPtUpp \tAxE_Psi2s [%%]\tAxE_Psi2s_err [%%] \n");
     for(Int_t i = 1; i <= nPtBins; i++){
-        outfile << i << "\t" << ptBoundaries[i-1] << "\t" << ptBoundaries[i] << "\t" << AxE_Psi2s_val[i-1]*100 << "\t" << AxE_Psi2s_err[i-1]*100 << "\n";
+        outfile << i << "\t" << ptBoundaries[i-1] << "\t" << ptBoundaries[i] << "\t" << AxE_Psi2s_val[i-1] << "\t" << AxE_Psi2s_err[i-1] << "\n";
     }
     outfile.close();
     Printf("Results printed to %s.", (FilePath + ".txt").Data());    
