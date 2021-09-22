@@ -1,5 +1,5 @@
 # Ignore the results folder
-Results/
+# Results/
 
 # Ignore the folder with data trees
 Trees/

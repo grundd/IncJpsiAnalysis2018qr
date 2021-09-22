@@ -1,0 +1,17 @@
+0a) event non-empty:	784509376
+0b) vert # contribs:	685344384
+0c) vert Z distance:	670802944
+0d) two good tracks:	3136073
+0e) CCUP31 trigger: 	2134187 (check: 2134187)
+1) SPD match FOhits:	766643
+2) muon pairs only: 	677393
+3) mass 2.2 to 4.5: 	28179
+4a) ADA offln veto: 	28100
+4b) ADC offln veto: 	28046
+5a) V0A offln veto: 	24709
+5b) V0C offln veto: 	22500
+6) dilept rapidity: 	22176
+7) eta of both trks:	18163
+8) oposite charges: 	16448
+9) dimuon pt < 0.11:	11005
+10) mass 3.0 to 3.2:	3525

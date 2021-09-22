@@ -15,6 +15,9 @@ Double_t BR = 0.05961;
 Double_t BR_err = 0.00033;
 Double_t RapWidth = 1.6;
 Double_t EffVetoes = 0.846; // (!) 
+// Old values
+Double_t Lumi18q_aod = 91.431;  // 1/(mu barn)
+Double_t Lumi18r_aod = 147.292; // 1/(mu barn)
 // Cross section in pt bins
 Double_t NYield[nPtBins] = { 0 };
 Double_t NYield_err[nPtBins] = { 0 };
@@ -48,10 +51,12 @@ void CalculateCrossSectionBins();
 
 void CalculateCrossSection(){
 
-    CalculateCrossSectionTotal(0);
-    CalculateCrossSectionTotal(3);
+    //CalculateCrossSectionTotal(0);
+    //CalculateCrossSectionTotal(3);
 
-    CalculateCrossSectionBins();
+    CalculateCrossSectionTotal_AOD();
+
+    //CalculateCrossSectionBins();
 
     return;
 }
@@ -110,7 +115,7 @@ void CalculateCrossSectionTotal(Int_t iPtCut){
         Printf("3) ERROR: CorrFD with pt cut no. %i file missing. Terminating...", iPtCut);
         return;
     }
-    // Calculate total FD per bin
+    // Calculate total FD
     Double_t CorrFD_total = 0;
     Double_t CorrFD_total_err = 0;
     Double_t SumOfSquares = 0;
@@ -181,7 +186,7 @@ void CalculateCrossSectionTotal_AOD(){
     Printf("1) N_yield_tot loaded.");
 
     // 2) Load AxE
-    TString AxE_tot_path = Form("Results/AccAndEffMC/AxE_tot_MassCut1_PtCut0.txt");
+    TString AxE_tot_path = Form("Results/AccAndEffMC/AxE_AOD_tot_MassCut1_PtCut0.txt");
     file_in.open(AxE_tot_path.Data());
     if(!(file_in.fail())){
         // Read data from the file
@@ -196,7 +201,7 @@ void CalculateCrossSectionTotal_AOD(){
     }
 
     // 3) Load all FD corrections
-    TString CorrFD_path = Form("Results/FeedDown/FeedDownCorrections_tot_PtCut%i.txt", iPtCut);
+    TString CorrFD_path = Form("Results/FeedDown/AOD/FeedDownCorrections.txt");
     file_in.open(CorrFD_path.Data());
     if(!(file_in.fail())){
         // Read data from the file
@@ -207,12 +212,12 @@ void CalculateCrossSectionTotal_AOD(){
                     >> CorrFD_tot[3] >> CorrFD_tot_err[3];
         }
         file_in.close(); 
-        Printf("3) CorrFD with pt cut no. %i loaded.", iPtCut);
+        Printf("3) CorrFD loaded.");
     } else {
-        Printf("3) ERROR: CorrFD with pt cut no. %i file missing. Terminating...", iPtCut);
+        Printf("3) ERROR: CorrFD file missing. Terminating...");
         return;
     }
-    // Calculate total FD per bin
+    // Calculate total FD
     Double_t CorrFD_total = 0;
     Double_t CorrFD_total_err = 0;
     Double_t SumOfSquares = 0;
@@ -223,10 +228,11 @@ void CalculateCrossSectionTotal_AOD(){
     CorrFD_total_err = TMath::Sqrt(SumOfSquares);
 
     // 4) Load FC corr
-    // (...)
+    CorrFC_tot = 0.0093;
+    CorrFC_tot_err = 0.0007;
 
     // 5) Total integrated luminosity
-    Double_t LumiAll = (Lumi18q + Lumi18r) * 1000; // 1/(mili barn)
+    Double_t LumiAll = (Lumi18q_aod + Lumi18r_aod) * 1000; // 1/(mili barn)
     Printf("5) Total integrated lumi calculated.");
 
     // Calculate the total cross section
@@ -242,7 +248,7 @@ void CalculateCrossSectionTotal_AOD(){
         TMath::Power(BR_err / BR, 2));
 
     // Define output text file to print results
-    TString FilePath = Form("Results/CrossSection/tot_PtCut%i_output.txt", iPtCut);
+    TString FilePath = Form("Results/CrossSection/tot_AOD_output.txt");
     ofstream outfile(FilePath.Data());
     outfile << std::fixed << std::setprecision(3);
     // Print results to the text file

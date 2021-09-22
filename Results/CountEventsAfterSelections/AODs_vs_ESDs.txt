@@ -1,0 +1,15 @@
+Selection		AODs			ESDs		ratio AODs/ESDs
+1) vert # contribs:  	not implemented		696,699,968	undefined
+2) vert Z distance:  	not implemented		681,932,608	undefined
+3) two good tracks:  	2,502,214		3,186,345	0.785
+4) CCUP31 trigger:   	2,277,051		2,170,713	1.049
+5b) AD offln veto:  	2,241,119		2,139,894	1.047
+6b) V0 offln veto:  	1,462,922		1,430,364	1.023
+7) dilept rapidity:  	1,217,971		1,394,397	0.873
+8) eta of both trks: 	1,118,383		1,124,322	0.995
+9) oposite charges:  	813,145			818,630		0.993
+10) muon pairs only: 	725,979			728,817		0.996
+11) mass 2.2 to 4.5: 	19,478			20,537		0.948
+12) dimuon pt > 0.2: 	6,941			7,171		0.968
+13) SPD match FOhits:	not implemented		4,624		undefined
+
