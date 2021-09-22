@@ -30,7 +30,7 @@ Double_t CalculateErrorBayes(Double_t k, Double_t n);
 
 void AccAndEffMC(){
 
-    Bool_t bTotalESD = kTRUE;
+    Bool_t bTotalESD = kFALSE;
     if(bTotalESD){
         CalculateAxE(0); // pt > 0.2 GeV/c
         CalculateAxE(3); // 0.2 < pt < 1 GeV/c
@@ -202,7 +202,7 @@ void CalculateAxEPtBins(){
     c->Print((str + ".png").Data());
     ofstream outfile((str + ".txt").Data());
     outfile << std::fixed << std::setprecision(5);
-    outfile << "Bin \tAxE [%%] \tAxE_err [%%] \n";
+    //outfile << "Bin \tAxE [%%] \tAxE_err [%%] \n";
     for(Int_t i = 1; i <= nPtBins; i++){
         outfile << i << "\t" << hAxE->GetBinContent(i)*100 << "\t\t" << hAxE->GetBinError(i)*100 << "\n";
     }

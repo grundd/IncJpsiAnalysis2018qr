@@ -7,6 +7,9 @@ Trees/
 # Ignore the data folder 
 Data/
 
+# Ignore the folder with documents/articles
+Documents/
+
 # Ignore any temporary files from a local/GRID analysis
 *.d
 *.so

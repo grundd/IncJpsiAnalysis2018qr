@@ -417,13 +417,17 @@ void DoInvMassFitMain(Int_t opt = 0){
     outfile << "N_bkg:  \t" << N_bkg_out[0] << " pm " << N_bkg_out[1] << endl;
     outfile.close();
     Printf("*** Results printed to %s.***", (*str + ".txt").Data());
+    // Print just the signal to text file
+    ofstream outfile2((*str + "_signal.txt").Data());
+    outfile2 << N_Jpsi_out[0] << "\t" << N_Jpsi_out[1] << endl;
+    outfile2.close();
 
     if(opt == 3){
         // If allbins, print just the number of signal events
         // Needed in BinsThroughMassFit.c
-        ofstream outfile((*str + "_signal.txt").Data());
-        outfile << N_Jpsi_out[0];
-        outfile.close();
+        ofstream outfile3((*str + "_signal.txt").Data());
+        outfile3 << N_Jpsi_out[0];
+        outfile3.close();
         Printf("*** Results printed to %s.***", (*str + "_signal.txt").Data());
     }
 
