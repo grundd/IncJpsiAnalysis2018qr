@@ -30,18 +30,18 @@ TString GlobPath = "AxE_PtDep/binning1/";
 const Int_t nCuts = 13;
 Bool_t cuts[nCuts] = {
     0,  // 0) pt cut rec (kFALSE) or gen (kTRUE)
-    0,  // 1) !0VBA (no signal in the V0A) && !0VBC (no signal in the V0C)
-    0,  // 2) !0UBA (no signal in the ADA) && !0UBC (no signal in the ADC)
-    0,  // 3) 0STG (SPD topological)
-    0,  // 4) 0OMU (TOF two hits topology)
-    0,  // 5) SPD cluster matches FOhits
-    0,  // 6) AD offline veto
-    0,  // 7) V0 offline veto
-    0,  // 8) Rapidity
-    0,  // 9) Pseudorapidity
-    0,  // 10) Opposite charges
-    0,  // 11) Muons only
-    0   // 12) Inv mass
+    1,  // 1) !0VBA (no signal in the V0A) && !0VBC (no signal in the V0C)
+    1,  // 2) !0UBA (no signal in the ADA) && !0UBC (no signal in the ADC)
+    1,  // 3) 0STG (SPD topological)
+    1,  // 4) 0OMU (TOF two hits topology)
+    1,  // 5) SPD cluster matches FOhits
+    1,  // 6) AD offline veto
+    1,  // 7) V0 offline veto
+    1,  // 8) Rapidity
+    1,  // 9) Pseudorapidity
+    1,  // 10) Opposite charges
+    1,  // 11) Muons only
+    1   // 12) Inv mass
 };
 
 // For CalculateRatiosOfNRec:
@@ -90,6 +90,12 @@ void AccAndEffMC_PtDep(){
 
     //CalculateAxEPtDep();
 
+    // Ratios vs pt rec
+    cuts[0] = 0;
+    CalculateRatiosOfNRec();
+
+    // Ratios vs pt gen
+    cuts[0] = 1;
     CalculateRatiosOfNRec();
 
     return;
@@ -132,7 +138,8 @@ void CalculateAxEPtDep(){
     hAxE->GetYaxis()->SetDecimals(3);
     hAxE->GetYaxis()->SetRangeUser(0.0,hAxE->GetBinContent(1)*1.1);
     // Horizontal axis
-    hAxE->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
+    if(cuts[0] == 0) hAxE->GetXaxis()->SetTitle("#it{p}_{T}^{rec} (GeV/#it{c})");
+    if(cuts[0] == 1) hAxE->GetXaxis()->SetTitle("#it{p}_{T}^{gen} (GeV/#it{c})");
     hAxE->GetXaxis()->SetTitleSize(0.056);
     hAxE->GetXaxis()->SetTitleOffset(1.2);
     hAxE->GetXaxis()->SetLabelSize(0.056);
@@ -297,8 +304,9 @@ void CalculateRatiosOfNRec(){
     // Define the histogram hNRec
     hNRec = new TH1D("hNRec","N rec per bin",nBins,edges);
 
-    // Turn off all cuts
-    for(Int_t i = 0; i < nCuts; i++) cuts[i] = 0;
+    // The first cut (pt_rec or pt_gen) must be selected manually
+    // Turn off all the remaining cuts
+    for(Int_t i = 1; i < nCuts; i++) cuts[i] = 0;
     // Create an array of histograms to store the results
     TH1D *hNRecRatios[nCuts] = { NULL };
     // Calculate NRec per bin just for the pt cut
@@ -342,7 +350,9 @@ void CalculateRatiosOfNRec(){
     hOne->GetYaxis()->SetDecimals(3);
     hOne->GetYaxis()->SetRangeUser(0.0,hOne->GetBinContent(1)*1.1);
     // Horizontal axis
-    hOne->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
+    
+    if(cuts[0] == 0) hOne->GetXaxis()->SetTitle("#it{p}_{T}^{rec} (GeV/#it{c})");
+    if(cuts[0] == 1) hOne->GetXaxis()->SetTitle("#it{p}_{T}^{gen} (GeV/#it{c})");
     hOne->GetXaxis()->SetTitleSize(0.056);
     hOne->GetXaxis()->SetTitleOffset(1.2);
     hOne->GetXaxis()->SetLabelSize(0.056);
@@ -525,6 +535,8 @@ TString ConvertCutsToString(){
 
 TString ConvertCutsToBePlottedToString(){
     TString s("ratios_");
+    if(cuts[0] == 0) s.Append("0");
+    if(cuts[0] == 1) s.Append("1");
     for(Int_t iCut = 0; iCut < nCuts-1; iCut++){
         if(CutsToBePlotted[iCut] == kTRUE) s.Append("1");
         else s.Append("0");

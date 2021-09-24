@@ -51,12 +51,12 @@ void CalculateCrossSectionBins();
 
 void CalculateCrossSection(){
 
-    //CalculateCrossSectionTotal(0);
-    //CalculateCrossSectionTotal(3);
+    CalculateCrossSectionTotal(0);
+    CalculateCrossSectionTotal(3);
 
     CalculateCrossSectionTotal_AOD();
 
-    //CalculateCrossSectionBins();
+    CalculateCrossSectionBins();
 
     return;
 }
@@ -356,7 +356,7 @@ void CalculateCrossSectionBins(){
 
     // 6) Widths of pt intervals [in GeV^2]
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        Pt2Widths[iBin] = TMath::Power(ptBoundaries[iBin+1] - ptBoundaries[iBin], 2);
+        Pt2Widths[iBin] = TMath::Power(ptBoundaries[iBin+1], 2) - TMath::Power(ptBoundaries[iBin], 2);
     }
     Printf("6) pt^2 widths calculated.");
 
