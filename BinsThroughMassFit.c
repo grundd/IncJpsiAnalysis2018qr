@@ -51,12 +51,12 @@ void BinsThroughMassFit(){
     Double_t ptStep = 0.001;
     Double_t CurrPtCutUpp = 0.2;
 
-    Double_t EvTotal = 0;
+    Double_t EvTotal, EvTotalErr;
     // Load the total number of signal events
     ifstream infile;
     infile.open("Results/InvMassFit/allbins/allbins_signal.txt");   
     while(!infile.eof()){
-        infile >> EvTotal;
+        infile >> EvTotal >> EvTotalErr;
     }
     infile.close();
     Printf("Total number of events loaded: %.3f", EvTotal);
