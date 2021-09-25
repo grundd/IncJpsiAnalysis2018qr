@@ -1,0 +1,7 @@
+Dataset	AxE [%]	AxE_err 
+JCoh	3.7171	0.0095
+JInc	2.6803	0.0083
+PCohCh	1.1527	0.0054
+PIncCh	0.9782	0.0049
+PCohNe	3.5417	0.0093
+PIncNe	3.1046	0.0089

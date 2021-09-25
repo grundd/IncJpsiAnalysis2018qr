@@ -5,8 +5,10 @@
 #include <stdio.h> // printf
 #include <fstream> // print output to txt file
 // root headers
-# include "TFile.h"
-# include "TTree.h"
+#include "TFile.h"
+#include "TCanvas.h"
+#include "TH2.h"
+#include "TStyle.h"
 // roofit headers
 #include "RooBinning.h"
 #include "RooRealVar.h"
@@ -18,32 +20,31 @@
 #include "RooGenericPdf.h"
 #include "RooAddPdf.h"
 #include "RooFitResult.h"
+#include "RooPlot.h"
+// my headers
+#include "AnalysisManager.h"
 
 using namespace RooFit;
 
-Int_t nBins = 200;
-
 Double_t fPtLow = 0.0;
 Double_t fPtUpp = 2.0;
-Double_t fPt;
 
-Double_t BinSizeDouble = (fPtUpp - fPtLow) * 1000 / nBins + 0.5;
-Int_t BinSize = (Int_t)BinSizeDouble;
-
-void DoPtFit(Bool_t isBkgData = kFALSE); // isBkgData == kTRUE if sideband data are used for bkg
+void DoPtFit(Bool_t isBkgData, Bool_t isVarSizeBins); // isBkgData == kTRUE if sideband data are used for bkg
 void DoPtFitNoBkg();
 void ConnectTreeVariablesPt(TTree *t);
+void SetStyle();
+void DrawCorrelationMatrix(TCanvas *cCM, RooFitResult* ResFit);
 
 void PtFit(){
 
-    DoPtFit();
+    DoPtFit(kFALSE, kFALSE);
 
     DoPtFitNoBkg(); // after subtracting the background first
 
     return;
 }
 
-void DoPtFit(Bool_t isBkgData){
+void DoPtFit(Bool_t isBkgData, Bool_t isVarSizeBins){
 
     // Load the data file
     TFile *file = TFile::Open("Trees/PtFit/PtFitTrees.root", "read");
@@ -74,14 +75,9 @@ void DoPtFit(Bool_t isBkgData){
     char fStrReduce[120];
     sprintf(fStrReduce,"fPt > %f && fPt < %f", fPtLow, fPtUpp);
 
-    // Binning
-    // (!) is binning necessary or not?
-    RooBinning bin(fPtLow, fPtUpp);
-    bin.addUniform(nBins, fPtLow, fPtUpp);
-
     // Definition of roofit variables
     RooRealVar fPt("fPt", "fPt", fPtLow, fPtUpp);
-    fPt.setBinning(bin);
+    //fPt.setBinning(bin);
     RooArgSet fSetOfVariables(fPt);
 
     // 1) Create PDF for kCohJpsiToMu
@@ -135,7 +131,13 @@ void DoPtFit(Bool_t isBkgData){
     Printf("5) Template for %s created.", tBkg->GetName());
 
     // 6) H1 parametrization of inc with nucleon dissociation
-    // (...)
+    // https://arxiv.org/pdf/1304.5162.pdf, p.16, HE
+    RooRealVar b_pd("b_pd","b_pd",1.79, 1.70, 1.90);
+    RooRealVar n_pd("n_pd","n_pd",3.58, 3.50, 3.70);
+    b_pd.setConstant(kTRUE);
+    n_pd.setConstant(kTRUE); 
+    RooGenericPdf PDFDiss("PDFDiss","fPt*pow((1+pow(fPt,2)*b_pd/n_pd),-n_pd)",RooArgSet(fPt, b_pd, n_pd));
+    Printf("5) PDF for diss part created.");
 
     // 7) Get the dataset
     ConnectTreeVariablesPt(tData);
@@ -173,8 +175,8 @@ void DoPtFit(Bool_t isBkgData){
 
     // 8.2) The model:
     RooAddPdf Mod("Mod","Sum of all PDFs",
-        RooArgList(hPDFCohJ, hPDFIncJ, hPDFCohJ, hPDFIncP, hPDFBkg), // dissociative part missing (!)
-        RooArgList(NCohJ, NIncJ, NCohP, NIncP, NBkg) // dissociative part missing (!)
+        RooArgList(hPDFCohJ, hPDFIncJ, hPDFCohJ, hPDFIncP, PDFDiss, hPDFBkg), // dissociative part missing (!)
+        RooArgList(NCohJ, NIncJ, NCohP, NIncP, NDiss, NBkg) // dissociative part missing (!)
     );
 
     // 9) Perform fitting
@@ -184,7 +186,63 @@ void DoPtFit(Bool_t isBkgData){
     // (...)
 
     // 11) Plot the results
-    // (...)
+    SetStyle();
+
+    // 11.1) Draw the Correlation Matrix
+    TCanvas *cCM = new TCanvas("cCM","cCM",600,500);
+    DrawCorrelationMatrix(cCM,ResFit);
+
+    // 11.2) Draw the pt fit
+    TCanvas *cPt = new TCanvas("cPt","cPt",900,600);
+    cPt->SetLogy();
+    cPt->SetTopMargin(0.05);
+    cPt->SetBottomMargin(0.12);
+    cPt->SetRightMargin(0.02);  
+
+    // 11.3) Set the binning (for plotting only, fit is unbinned)
+    RooBinning bin(fPtLow, fPtUpp);
+    if(isVarSizeBins == kFALSE){
+        Int_t nBins = 200;
+        bin.addUniform(nBins,fPtLow,fPtUpp);
+    } else {
+        Double_t BinSize1 = 0.01; // 10 MeV
+        Double_t BinSize2 = 0.02; // 20 MeV
+        Double_t BinSize3 = 0.05; // 50 MeV
+        Double_t Bin1UpTo = 0.40; // 400 MeV
+        Double_t Bin2UpTo = 0.80; // 800 MeV
+        Int_t nBin1 = (Bin1UpTo - fPtLow)/BinSize1;
+        Int_t nBin2 = (Bin2UpTo - Bin1UpTo)/BinSize2;
+        Int_t nBin3 = (fPtUpp - Bin2UpTo)/BinSize3;
+        bin.addUniform(nBin1, fPtLow,   Bin1UpTo);
+        bin.addUniform(nBin2, Bin1UpTo, Bin2UpTo);
+        bin.addUniform(nBin3, Bin2UpTo, fPtUpp);
+    }
+
+    RooPlot* PtFrame = fPt.frame(Title("Pt fit"));
+    Double_t fPtRangeLow = 0.00;
+    Double_t fPtRangeUpp = 2.00;
+    AbsDData->plotOn(PtFrame,Name("AbsDData"),Binning(bin), MarkerStyle(20), MarkerSize(1.));
+    Mod.plotOn(PtFrame,Name("hPDFCohJ"),Components(hPDFCohJ), LineColor(222), LineStyle(1),LineWidth(3), Range(fPtRangeLow,fPtRangeUpp));
+    Mod.plotOn(PtFrame,Name("hPDFIncJ"),Components(hPDFIncJ), LineColor(kRed),LineStyle(1),LineWidth(3), Range(fPtRangeLow,fPtRangeUpp));
+    Mod.plotOn(PtFrame,Name("hPDFCohP"),Components(hPDFCohP), LineColor(222), LineStyle(7),LineWidth(3), Range(fPtRangeLow,fPtRangeUpp));
+    Mod.plotOn(PtFrame,Name("hPDFIncP"),Components(hPDFIncP), LineColor(kRed),LineStyle(7),LineWidth(3), Range(fPtRangeLow,fPtRangeUpp));
+    Mod.plotOn(PtFrame,Name("PDFDiss"), Components(PDFDiss),  LineColor(15),  LineStyle(1),LineWidth(3), Range(fPtRangeLow,fPtRangeUpp));
+    Mod.plotOn(PtFrame,Name("Mod"),LineColor(215),LineWidth(3), Range(fPtRangeLow,fPtRangeUpp));
+    Mod.plotOn(PtFrame,Name("hPDFBkg"), Components(hPDFBkg),LineColor(kBlack),LineStyle(1),LineWidth(3), Range(fPtRangeLow,fPtRangeUpp));
+
+    PtFrame->SetAxisRange(0,2,"X");
+    // Set X axis
+    PtFrame->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
+    PtFrame->GetXaxis()->SetTitleSize(0.05);
+    PtFrame->GetXaxis()->SetLabelSize(0.05);
+    // Set Y axis
+    if(isVarSizeBins == kFALSE) PtFrame->GetYaxis()->SetTitle(Form("Counts per %.1f MeV/#it{c}", bin.binWidth(1)*1000));
+    else PtFrame->GetYaxis()->SetTitle(Form("Counts per bin"));
+    PtFrame->GetYaxis()->SetTitleSize(0.05);
+    PtFrame->GetYaxis()->SetTitleOffset(0.95);
+    PtFrame->GetYaxis()->SetLabelSize(0.05);
+    PtFrame->GetYaxis()->SetLabelOffset(0.01);
+    PtFrame->Draw("][");
 
     return;
 
@@ -200,6 +258,44 @@ void ConnectTreeVariablesPt(TTree *t){
     t->SetBranchAddress("fPt", &fPt);
 
     Printf("Variables from %s connected.", t->GetName());
+
+    return;
+}
+
+void SetStyle(){
+
+    gStyle->SetOptTitle(0); // suppress title
+    gStyle->SetOptStat(0);  // the type of information printed in the histogram statistics box
+                            // 0 = no information
+    gStyle->SetPalette(1);  // set color map
+    gStyle->SetPaintTextFormat("4.2f"); // precision if plotted with "TEXT"
+
+    return;
+}
+
+void DrawCorrelationMatrix(TCanvas *cCM, RooFitResult* ResFit){
+
+    // Set margins
+    cCM->SetTopMargin(0.03);
+    cCM->SetBottomMargin(0.11);
+    cCM->SetRightMargin(0.17);
+    cCM->SetLeftMargin(0.15);
+    // Get 2D corr hist
+    TH2* hCorr = ResFit->correlationHist();
+    // Set X axis
+    hCorr->GetXaxis()->SetBinLabel(1,"#it{N}_{coh}");
+    hCorr->GetXaxis()->SetBinLabel(2,"#it{N}_{diss}");
+    hCorr->GetXaxis()->SetBinLabel(3,"#it{N}_{coh}");
+    // Set Y axis
+    hCorr->GetYaxis()->SetBinLabel(1,"#it{N}_{inc}");
+    hCorr->GetYaxis()->SetBinLabel(2,"#it{N}_{diss}");
+    hCorr->GetYaxis()->SetBinLabel(3,"#it{N}_{coh}");
+    // Set corr hist and draw it
+    hCorr->SetMarkerSize(3.6);
+    hCorr->GetXaxis()->SetLabelSize(0.13);
+    hCorr->GetYaxis()->SetLabelSize(0.13);
+    hCorr->GetZaxis()->SetLabelSize(0.08);
+    hCorr->Draw("colz,text");
 
     return;
 }

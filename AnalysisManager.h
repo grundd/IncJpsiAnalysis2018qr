@@ -527,6 +527,9 @@ Bool_t EventPassedMCGen(Int_t iPtCut = -1, Int_t iPtBin = -1){
         case 0: // No pt cut
             bPtCut = kTRUE;
             break;
+        case 2: // No pt cut
+            bPtCut = kTRUE;
+            break;
         case 3: // Sample with pt from 0.2 to 1 GeV/c 
             if(fPtGen > 0.20 && fPtGen < 1.00) bPtCut = kTRUE;
             break;

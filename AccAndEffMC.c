@@ -1,59 +1,163 @@
 // AccAndEffMC.c
-// David Grund, 15-09-2021
-// To calculate the acceptance x efficiency from MC data in defined pt bins
+// David Grund, 24-09-2021
 
 // cpp headers
 #include <fstream> // print output to txt file
 #include <iomanip> // std::setprecision()
 // root headers
-#include "TH1.h"
 #include "TString.h"
 #include "TFile.h"
-#include "TCanvas.h"
-#include "TStyle.h" // gStyle
-#include "TLegend.h"
 #include "TMath.h"
 // my headers
 #include "AnalysisManager.h"
 
-TH1D* hNRec = NULL; 
-TH1D* hNGen = NULL; 
-TH1D* hAxE = NULL;
+TString path = "Results/AccAndEffMC/";
 
-void CalculateAxE(Int_t iPtCut);
-void CalculateAxE_AOD(Int_t iMassCut, Int_t iPtCut);
-void CalculateAxEPtBins();
-void FillHistNRec();
-void FillHistNGen();
-void SaveToFile(TH1D* hist, TString name);
+Double_t AxE;
+Double_t AxE_err;
+
+TString DatasetsMC[6] = {"JCoh","JInc","PCohCh","PIncCh", "PCohNe", "PIncNe"};
+
+void CalculateAxE(Int_t iMC, Int_t iMassCut, Int_t iPtCut, Int_t iPtBin = -1);
+// iMC == 0 => kCohJpsiToMu
+//     == 1 => kIncohJpsiToMu
+//     == 2 => kCohPsi2sToMuPi charged
+//     == 3 => kIncohPsi2sToMuPi charged
+//     == 4 => kCohPsi2sToMuPi neutral
+//     == 5 => kIncohPsi2sToMuPi neutral
+void CalculateAxE_AOD(Int_t iMC, Int_t iMassCut, Int_t iPtCut);
 Double_t CalculateErrorBayes(Double_t k, Double_t n);
 
 void AccAndEffMC(){
 
-    Bool_t bTotalESD = kTRUE;
-    if(bTotalESD){
-        CalculateAxE(0); // pt > 0.2 GeV
-        CalculateAxE(3); // 0.2 < pt < 1 GeV
+    // Calculate the total AxE from ESD data
+    // IncJ, 2.2 < m < 4.5 GeV, pt > 0.2 GeV
+    Bool_t bTotalESD = kFALSE;
+    if(bTotalESD) CalculateAxE(1, 0, 0);
+
+    // Calculate the total AxE from (old) AOD data
+    // IncJ, pt > 0.2 GeV
+    Bool_t bTotalAOD = kFALSE;
+    if(bTotalAOD){
+        CalculateAxE_AOD(1, 0, 0); // 2.2 < m < 4.5 GeV
+        CalculateAxE_AOD(1, 1, 0); // 3.0 < m < 3.2 GeV
     }
 
-    Bool_t bTotalAOD = kTRUE;
-    if(bTotalAOD){
-        CalculateAxE_AOD(0, 0); // pt > 0.2 GeV && 2.2 < m < 4.5 GeV
-        CalculateAxE_AOD(1, 0); // pt > 0.2 GeV && 3.0 < m < 3.2 GeV
-        CalculateAxE_AOD(0, 3); // 0.2 < pt < 1 GeV && 2.2 < m < 4.5 GeV
-        CalculateAxE_AOD(1, 3); // 0.2 < pt < 1 GeV && 3.0 < m < 3.2 GeV
+    // Calculate AxE for the total FD correction
+    Bool_t bCorrFDTotal = kFALSE;
+    if(bCorrFDTotal){
+        TString str = Form("%sAxE_FeedDown_Total.txt", path.Data());
+        ofstream outfile(str.Data());
+        outfile << std::fixed << std::setprecision(4);
+        outfile << Form("\tAxE[%%] \tErr \n");
+        // For all datasets (except JCoh):
+        for(Int_t iMC = 1; iMC < 6; iMC++){
+            CalculateAxE(iMC, 0, 0);
+            outfile << DatasetsMC[iMC] << "\t" << AxE << "\t" << AxE_err << "\n";
+        }
+        outfile.close();
+        Printf("*** Results printed to %s.***", str.Data());
     }
-    
-    //CalculateAxEPtBins();
+
+    // Calculate AxE for the total FD correction with AODs
+    Bool_t bCorrFDTotalAOD = kFALSE;
+    if(bCorrFDTotalAOD){
+        TString str = Form("%sAOD/AxE_AOD_FeedDown_Total.txt", path.Data());
+        ofstream outfile(str.Data());
+        outfile << std::fixed << std::setprecision(4);
+        outfile << Form("\tAxE[%%] \tErr \n");
+        // For all datasets (except JCoh):
+        for(Int_t iMC = 1; iMC < 6; iMC++){
+            CalculateAxE_AOD(iMC, 1, 0);
+            outfile << DatasetsMC[iMC] << "\t" << AxE << "\t" << AxE_err << "\n";
+        }
+        outfile.close();
+        Printf("*** Results printed to %s.***", str.Data());
+    }
+
+    // Calculate AxE in pt bins for FD correction
+    Bool_t bCorrFD = kFALSE;
+    if(bCorrFD){
+        SetPtBinning();
+        TString str = Form("%sAxE_FeedDown_%ibins.txt", path.Data(), nPtBins);
+        ofstream outfile(str.Data());
+        outfile << std::fixed << std::setprecision(4);
+        outfile << Form("AxE[%%] \tJInc \tErr \tPCohCh \tErr \tPIncCh \tErr \tPCohNe \tErr \tPIncNe \tErr \n");
+        // For all pt bins:
+        for(Int_t iBin = 1; iBin <= nPtBins; iBin++){
+            outfile << iBin;
+            // For all datasets (except JCoh):
+            for(Int_t iMC = 1; iMC < 6; iMC++){
+                CalculateAxE(iMC, 0, 4, iBin);
+                outfile << "\t" << AxE << "\t" << AxE_err;
+            }
+            outfile << "\n";
+        }
+        outfile.close();
+        Printf("*** Results printed to %s.***", str.Data());
+    }
+
+    // Calculate AxE for PtFit (FC correction)
+    // 3.0 < m < 3.2 GeV, pt < 2 GeV
+    Bool_t bCorrFCTotal = kFALSE;
+    if(bCorrFCTotal){
+        TString str = Form("%sAxE_PtFit.txt", path.Data());
+        ofstream outfile(str.Data());
+        outfile << std::fixed << std::setprecision(4);
+        outfile << Form("Dataset\tAxE [%%]\tAxE_err \n");
+        // For all datasets:
+        for(Int_t iMC = 0; iMC < 6; iMC++){ 
+            CalculateAxE(iMC, 1, 2);
+            outfile << DatasetsMC[iMC] << "\t" << AxE << "\t" << AxE_err << "\n";
+        }
+        outfile.close();
+        Printf("*** Results printed to %s.***", str.Data());
+    }
+
+    // Calculate AxE for PtFit (FC correction) with AODs
+    // 3.0 < m < 3.2 GeV, pt < 2 GeV
+    Bool_t bCorrFCTotalAOD = kTRUE;
+    if(bCorrFCTotalAOD){
+        TString str = Form("%sAOD/AxE_AOD_PtFit.txt", path.Data());
+        ofstream outfile(str.Data());
+        outfile << std::fixed << std::setprecision(4);
+        outfile << Form("Dataset\tAxE [%%]\tAxE_err \n");
+        // For all datasets:
+        for(Int_t iMC = 0; iMC < 6; iMC++){ 
+            CalculateAxE_AOD(iMC, 1, 2);
+            outfile << DatasetsMC[iMC] << "\t" << AxE << "\t" << AxE_err << "\n";
+        }
+        outfile.close();
+        Printf("*** Results printed to %s.***", str.Data());
+    }
 
     return;
 }
 
-void CalculateAxE(Int_t iPtCut){
+void CalculateAxE(Int_t iMC, Int_t iMassCut, Int_t iPtCut, Int_t iPtBin){
 
-    TFile *fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohJpsiToMu.root", "read");
-    //TFile *fRec = TFile::Open("Trees/AnalysisDataMC/old (from GRID)/AnalysisResults_kIncohJpsiToMu.root", "read");
-    if(fRec) Printf("MC rec file loaded.");
+    TFile *fRec = NULL;
+    switch(iMC){
+        case 0:
+            fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohJpsiToMu.root", "read");
+            break;
+        case 1:
+            fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohJpsiToMu.root", "read");
+            break;        
+        case 2:
+            fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohPsi2sToMuPi.root", "read");
+            break;
+        case 3:
+            fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohPsi2sToMuPi.root", "read");
+            break;
+        case 4:
+            fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohPsi2sToMuPi_neutral.root", "read");
+            break;
+        case 5:
+            fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohPsi2sToMuPi_neutral.root", "read");
+            break;
+    }
+    if(fRec) Printf("MC rec file for %s loaded.", DatasetsMC[iMC].Data());
 
     TTree *tRec = dynamic_cast<TTree*> (fRec->Get("AnalysisOutput/fTreeJPsiMCRec"));
     if(tRec) Printf("MC rec tree loaded.");
@@ -63,7 +167,7 @@ void CalculateAxE(Int_t iPtCut){
     Double_t NRec = 0;
     for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
         tRec->GetEntry(iEntry);
-        if(EventPassedMCRec(0, iPtCut)) NRec++;
+        if(EventPassedMCRec(iMassCut, iPtCut, iPtBin)) NRec++;
     }
 
     TTree *tGen = dynamic_cast<TTree*> (fRec->Get("AnalysisOutput/fTreeJPsiMCGen"));
@@ -74,32 +178,53 @@ void CalculateAxE(Int_t iPtCut){
     Double_t NGen = 0;
     for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
         tGen->GetEntry(iEntry);
-        if(EventPassedMCGen(iPtCut)) NGen++;
+        if(EventPassedMCGen(iPtCut, iPtBin)) NGen++;
     }
 
     Printf("N_rec = %.0f", NRec);
     Printf("N_gen = %.0f", NGen);
 
-    Double_t AxE = NRec / NGen;
-    Double_t AxE_err = CalculateErrorBayes(NRec, NGen);
+    AxE = NRec / NGen * 100; // in percent already
+    AxE_err = CalculateErrorBayes(NRec, NGen) * 100;
 
-    Printf("AxE = (%.4f pm %.4f)%%", AxE*100, AxE_err*100);
+    Printf("AxE = (%.4f pm %.4f)%%", AxE, AxE_err);
 
-    TString str = Form("Results/AccAndEffMC/AxE_tot_PtCut%i", iPtCut);
-    ofstream outfile((str + ".txt").Data());
-    outfile << std::fixed << std::setprecision(5);
-    //outfile << "AxE [%%] \tAxE_err [%%] \n";
-    outfile << AxE*100 << "\t" << AxE_err*100;
+    TString str;
+    if(iPtBin <= 0) str = Form("%sAxE_%s_MassCut%i_PtCut%i.txt", path.Data(), DatasetsMC[iMC].Data(), iMassCut, iPtCut);
+    if(iPtBin > 0) str = Form("%s/AxE_FD_%ibins/AxE_bin%i_%s.txt", path.Data(), nPtBins, iPtBin, DatasetsMC[iMC].Data());
+    ofstream outfile(str.Data());
+    outfile << std::fixed << std::setprecision(4);
+    outfile << Form("AxE [%%]\tAxE_err \n");
+    outfile << AxE << "\t" << AxE_err;
     outfile.close();
-    Printf("*** Results printed to %s.***", (str + ".txt").Data());
+    Printf("*** Results printed to %s.***", str.Data());
 
     return;
 }
 
-void CalculateAxE_AOD(Int_t iMassCut, Int_t iPtCut){
-    // comment the SPD matching in EventPassedMCRec when working with AODs
+void CalculateAxE_AOD(Int_t iMC, Int_t iMassCut, Int_t iPtCut){
 
-    TFile *fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kIncohJpsiToMu_migr.root", "read");
+    TFile *fRec = NULL;
+    switch(iMC){
+        case 0: 
+            fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kCohJpsiToMu.root", "read");
+            break;
+        case 1:
+            fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kIncohJpsiToMu_migr.root", "read");
+            break;
+        case 2:
+            fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kCohPsi2sToMuPi.root", "read");
+            break;
+        case 3:
+            fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kIncohPsi2sToMuPi.root", "read");
+            break;
+        case 4:
+            fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kCohPsi2sToMuPi_NeutPi.root", "read");
+            break;
+        case 5:
+            fRec = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kIncohPsi2sToMuPi_NeutPi.root", "read");
+            break;
+    }
     if(fRec) Printf("MC rec file loaded.");
 
     TTree *tRec = dynamic_cast<TTree*> (fRec->Get("analysisTree"));
@@ -113,13 +238,34 @@ void CalculateAxE_AOD(Int_t iMassCut, Int_t iPtCut){
         if(EventPassedMCRec_AOD(iMassCut, iPtCut)) NRec++;
     }
 
-    TFile *fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kIncohJpsiToMu_migr.root", "read");
+    TFile *fGen = NULL;
+    switch(iMC){
+        case 0:
+            fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kCohJpsiToMu.root", "read");
+            break;
+        case 1:
+            fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kIncohJpsiToMu_migr.root", "read");
+            break;
+        case 2:
+            fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kCohPsi2sToMuPi.root", "read");
+            break;
+        case 3:
+            fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kIncohPsi2sToMuPi.root", "read");
+            break;
+        case 4:
+            fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kCohPsi2sToMuPi_NeutPi.root", "read");
+            break;
+        case 5:
+            fGen = TFile::Open("Trees/AnalysisDataAOD/MC_gen_18qr_kIncohPsi2sToMuPi_NeutPi.root", "read");
+            break;
+    }
     if(fGen) Printf("MC gen file loaded.");
 
     TTree *tGen = dynamic_cast<TTree*> (fGen->Get("MCgenTree"));
     if(tGen) Printf("MC gen tree loaded.");
     
-    ConnectTreeVariablesMCGen_AOD(tGen);
+    if(iMC == 1) ConnectTreeVariablesMCGen_AOD(tGen);
+    else ConnectTreeVariablesMCGen_AOD_old(tGen);
 
     Double_t NGen = 0;
     for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
@@ -130,239 +276,20 @@ void CalculateAxE_AOD(Int_t iMassCut, Int_t iPtCut){
     Printf("N_rec = %.0f", NRec);
     Printf("N_gen = %.0f", NGen);
 
-    Double_t AxE = NRec / NGen;
-    Double_t AxE_err = CalculateErrorBayes(NRec, NGen);
+    AxE = NRec / NGen * 100;
+    AxE_err = CalculateErrorBayes(NRec, NGen) * 100;
 
-    Printf("AxE = (%.4f pm %.4f)%%", AxE*100, AxE_err*100);
+    Printf("AxE = (%.4f pm %.4f)%%", AxE, AxE_err);
 
-    TString str = Form("Results/AccAndEffMC/AxE_AOD_tot_MassCut%i_PtCut%i", iMassCut, iPtCut);
+    TString str = Form("%sAOD/AxE_AOD_%s_MassCut%i_PtCut%i", path.Data(), DatasetsMC[iMC].Data(), iMassCut, iPtCut);
     ofstream outfile((str + ".txt").Data());
-    outfile << std::fixed << std::setprecision(5);
-    //outfile << "AxE [%%] \tAxE_err [%%] \n";
-    outfile << AxE*100 << "\t" << AxE_err*100;
+    outfile << std::fixed << std::setprecision(4);
+    outfile << Form("AxE [%%]\tAxE_err \n");
+    outfile << AxE << "\t" << AxE_err;
     outfile.close();
     Printf("*** Results printed to %s.***", (str + ".txt").Data());
 
     return;
-}
-
-void CalculateAxEPtBins(){
-
-    SetPtBinning();
-
-    hNRec = new TH1D("hNRec","N rec per bin",nPtBins,ptBoundaries);
-    hNGen = new TH1D("hNGen","N gen per bin",nPtBins,ptBoundaries);
-
-    FillHistNRec();
-    FillHistNGen();
-
-    hAxE = (TH1D*)hNRec->Clone("hAxE");
-    hAxE->SetTitle("AxE per bin");
-    hAxE->Sumw2();
-    hAxE->Divide(hNGen);
-
-    // Draw the histogram:
-    TCanvas *c = new TCanvas("c", "c", 900, 600);
-    c->SetTopMargin(0.02);
-    c->SetBottomMargin(0.14);
-    c->SetRightMargin(0.03);
-    c->SetLeftMargin(0.145);
-    // gStyle
-    gStyle->SetOptTitle(0);
-    gStyle->SetOptStat(0);
-    gStyle->SetPalette(1);
-    gStyle->SetPaintTextFormat("4.2f");
-    // Marker and line
-    //hAxE->SetMarkerStyle(21);
-    //hAxE->SetMarkerColor(kBlue);
-    //hAxE->SetMarkerSize(1.0);
-    hAxE->SetLineColor(kBlue);
-    hAxE->SetLineWidth(1.0);
-    // Vertical axis
-    hAxE->GetYaxis()->SetTitle("#it{N}_{rec}/#it{N}_{gen}");
-    hAxE->GetYaxis()->SetTitleSize(0.056);
-    hAxE->GetYaxis()->SetTitleOffset(1.3);
-    hAxE->GetYaxis()->SetLabelSize(0.056);
-    hAxE->GetYaxis()->SetDecimals(3);
-    hAxE->GetYaxis()->SetRangeUser(0.0,hAxE->GetBinContent(1)*1.1);
-    // Horizontal axis
-    hAxE->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
-    hAxE->GetXaxis()->SetTitleSize(0.056);
-    hAxE->GetXaxis()->SetTitleOffset(1.2);
-    hAxE->GetXaxis()->SetLabelSize(0.056);
-    hAxE->GetXaxis()->SetLabelOffset(0.015);
-    hAxE->GetXaxis()->SetDecimals(1);
-    // Eventually draw it
-    hAxE->Draw("P E1");
-    // Legend
-    TLegend *l = new TLegend(0.52,0.77,0.85,0.97);
-    l->AddEntry((TObject*)0,Form("ALICE Simulation"),""); 
-    l->AddEntry((TObject*)0,Form("Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV"),"");
-    l->AddEntry((TObject*)0,Form("inc J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
-    l->SetTextSize(0.056);
-    l->SetBorderSize(0); // no border
-    l->SetFillStyle(0);  // legend is transparent
-    l->Draw();
-    // Legend 2
-    TLegend *l2 = new TLegend(0.15,0.17,0.35,0.32);
-    l2->AddEntry((TObject*)0,Form("|#it{y}| < 0.8"),""); 
-    l2->AddEntry((TObject*)0,Form("2.2 < #it{m} < 4.5 GeV/#it{c}^{2}"),"");
-    l2->SetTextSize(0.056);
-    l2->SetBorderSize(0); // no border
-    l2->SetFillStyle(0);  // legend is transparent
-    l2->Draw();
-
-    // Save the figures and print the results to txt file
-    TString str;
-    if(nPtBins == 4) str = "Results/AccAndEffMC/AxE_4bins";
-    if(nPtBins == 5) str = "Results/AccAndEffMC/AxE_5bins";
-    c->Print((str + ".pdf").Data());
-    c->Print((str + ".png").Data());
-    ofstream outfile((str + ".txt").Data());
-    outfile << std::fixed << std::setprecision(5);
-    //outfile << "Bin \tAxE [%%] \tAxE_err [%%] \n";
-    for(Int_t i = 1; i <= nPtBins; i++){
-        outfile << i << "\t" << hAxE->GetBinContent(i)*100 << "\t\t" << hAxE->GetBinError(i)*100 << "\n";
-    }
-    outfile.close();
-    Printf("*** Results printed to %s.***", (str + ".txt").Data());
-
-    // Compare errors that Root gives with CalculateErrorBayes
-    Bool_t DebugErrors = kFALSE;
-    if(DebugErrors){
-        Double_t ErrRoot = 0;
-        Double_t ErrBayes = 0;    
-        for(Int_t i = 1; i <= nPtBins; i++){
-            ErrRoot = hAxE->GetBinError(i);
-            ErrBayes = CalculateErrorBayes(hNRec->GetBinContent(i),hNGen->GetBinContent(i));
-            Printf("Root: %.5f, Bayes: %.5f", ErrRoot, ErrBayes);
-        }
-    }
-
-    // Cross-check: calculate the total value of AxE
-    Double_t NRecTot = 0;
-    Double_t NGenTot = 0;
-    for(Int_t i = 1; i <= nPtBins; i++){
-        NRecTot += hNRec->GetBinContent(i);
-        NGenTot += hNGen->GetBinContent(i);
-    }
-    Double_t AxETot = NRecTot / NGenTot;
-    Double_t AxETot_err = CalculateErrorBayes(NRecTot, NGenTot);
-    Printf("Total AxE = (%.4f pm %.4f)%%", AxETot*100, AxETot_err*100);
-
-    return;
-}
-
-void FillHistNRec(){
-    // Check if the corresponding text file already exists
-    TString file("Results/AccAndEffMC/");
-    if(nPtBins == 4) file.Append("NRec_4bins.txt");
-    if(nPtBins == 5) file.Append("NRec_5bins.txt");
-
-    ifstream inFile;
-    inFile.open(file);
-    if(!(inFile.fail())){
-        // This configuration has already been calculated
-        Printf("*** The file %s already exists. ***", file.Data());
-        // Fill hNRec with data from the text file
-        Int_t inBin;
-        Double_t inValue;
-        while(!inFile.eof()){
-            inFile >> inBin >> inValue; // fist and second column
-            hNRec->SetBinContent(inBin, inValue);
-        }
-        inFile.close(); 
-
-        return;
-    } else {
-        // This configuration is yet to be calculated
-        Printf("*** Calculating N rec per bin for %s... ***", file.Data());
-
-        TFile *fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohJpsiToMu.root", "read");
-        if(fRec) Printf("MC rec file loaded.");
-
-        TTree *tRec = dynamic_cast<TTree*> (fRec->Get("AnalysisOutput/fTreeJPsiMCRec"));
-        if(tRec) Printf("MC rec tree loaded.");
-        
-        ConnectTreeVariablesMCRec(tRec);
-
-        // Loop over all pt bins
-        for(Int_t iPtBin = 1; iPtBin <= nPtBins; iPtBin++){
-            Int_t NRec = 0;
-            for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
-                tRec->GetEntry(iEntry);
-                if(EventPassedMCRec(0, 4, iPtBin)) NRec++;
-            }
-            hNRec->SetBinContent(iPtBin, NRec);
-            Printf("*** Bin %i done. ***", iPtBin);
-        }
-        Printf("*** Finished! ***");
-        
-        SaveToFile(hNRec, file);
-
-        return;
-    }
-}
-
-void FillHistNGen(){
-    // Check if the corresponding text file already exists
-    TString file("Results/AccAndEffMC/");
-    if(nPtBins == 4) file.Append("NGen_4bins.txt");
-    if(nPtBins == 5) file.Append("NGen_5bins.txt");
-
-    ifstream inFile;
-    inFile.open(file);
-    if(!(inFile.fail())){
-        // This configuration has already been calculated
-        Printf("*** The file %s already exists. ***", file.Data());
-        // Fill hNGen with data from the text file
-        Int_t inBin;
-        Double_t inValue;
-        while(!inFile.eof()){
-            inFile >> inBin >> inValue; // fist and second column
-            hNGen->SetBinContent(inBin, inValue);
-        }
-        inFile.close(); 
-
-        return;
-    } else {
-        // This configuration is yet to be calculated
-        Printf("*** Calculating N gen per bin for %s... ***", file.Data());
-
-        TFile *fRec = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohJpsiToMu.root", "read");
-        if(fRec) Printf("MC rec file loaded.");
-
-        TTree *tGen = dynamic_cast<TTree*> (fRec->Get("AnalysisOutput/fTreeJPsiMCGen"));
-        if(tGen) Printf("MC rec tree loaded.");
-        
-        ConnectTreeVariablesMCGen(tGen);
-
-        // Loop over all pt bins
-        for(Int_t iPtBin = 1; iPtBin <= nPtBins; iPtBin++){
-            Int_t NGen = 0;
-            for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
-                tGen->GetEntry(iEntry);
-                if(EventPassedMCGen(4, iPtBin)) NGen++;
-            }
-            hNGen->SetBinContent(iPtBin, NGen);
-            Printf("*** Bin %i done. ***", iPtBin);
-        }
-        Printf("*** Finished! ***");
-        
-        SaveToFile(hNGen, file);
-
-        return;
-    }
-    return;
-}
-
-void SaveToFile(TH1D* hist, TString name){
-    ofstream outfile (name.Data());
-    for(Int_t iBin = 1; iBin <= hist->GetNbinsX(); iBin++){
-        outfile << iBin << "\t" << hist->GetBinContent(iBin) << "\n";
-    }
-    outfile.close();
-    Printf("*** File saved in %s.***", name.Data());
 }
 
 Double_t CalculateErrorBayes(Double_t k, Double_t n){ // k = NRec, n = NGen
