@@ -2,8 +2,9 @@
 // David Grund, Sep 21, 2021
 
 // cpp headers
-#include <fstream> // print output to txt file
-#include <iomanip> // std::setprecision()
+#include <fstream>  // print output to txt file
+#include <iomanip>  // std::setprecision()
+#include <string>   // getline
 // root headers
 #include "TMath.h"
 // my headers
@@ -45,98 +46,113 @@ Double_t Sigma_tot_err = 0;
 // For temporarily loading bin numbers when reading the text files
 Int_t i_bin;
 
-void CalculateCrossSectionTotal(Int_t iPtCut);
-void CalculateCrossSectionTotal_AOD(); // to check with the old result from DP
+void CalculateCrossSectionTotal(Bool_t bAOD = kFALSE);
 void CalculateCrossSectionBins();
 
 void CalculateCrossSection(){
 
-    CalculateCrossSectionTotal(0);
-    CalculateCrossSectionTotal(3);
+    // ESDs
+    CalculateCrossSectionTotal(kFALSE);
 
-    CalculateCrossSectionTotal_AOD();
+    // AODs
+    CalculateCrossSectionTotal(kTRUE);
 
     CalculateCrossSectionBins();
 
     return;
 }
 
-void CalculateCrossSectionTotal(Int_t iPtCut){
+void CalculateCrossSectionTotal(Bool_t bAOD){
     // for pt > 0.2 GeV/c
 
     ifstream file_in;
 
     // 1) Load N_yield
-    TString NYield_tot_path;
-    if(iPtCut == 0) NYield_tot_path = "Results/InvMassFit/inc/inc_signal.txt";
-    if(iPtCut == 3) NYield_tot_path = "Results/InvMassFit/allbins/allbins_signal.txt";
-    file_in.open(NYield_tot_path.Data());
-    if(!(file_in.fail())){
-        // Read data from the file
-        while(!file_in.eof()){
-            file_in >> NYield_tot >> NYield_tot_err;
+    if(!bAOD){
+        file_in.open("Results/InvMassFit/inc/inc_signal.txt");
+        if(!(file_in.fail())){
+            // Read data from the file
+            while(!file_in.eof()){
+                file_in >> NYield_tot >> NYield_tot_err;
+            }
+            file_in.close(); 
+            Printf("1) NYield file loaded.");
+        } else {
+            Printf("1) ERROR: NYield file missing. Terminating...");
+            return;
         }
-        file_in.close(); 
-        Printf("1) N_yield_tot with pt cut no. %i loaded.", iPtCut);
     } else {
-        Printf("1) ERROR: N_yield_tot file with pt cut no. %i missing. Terminating...", iPtCut);
-        return;
+        NYield_tot = 643;
+        NYield_tot_err = 31;         
     }
 
     // 2) Load AxE
-    TString AxE_tot_path = Form("Results/AccAndEffMC/AxE_tot_PtCut0.txt");
-    file_in.open(AxE_tot_path.Data());
+    if(!bAOD) file_in.open("Results/AccAndEffMC/AxE_JInc_MassCut0_PtCut0.txt");
+    else file_in.open("Results/AccAndEffMC/AOD/AxE_AOD_JInc_MassCut1_PtCut0.txt");
     if(!(file_in.fail())){
         // Read data from the file
-        while(!file_in.eof()){
-            file_in >> AxE_tot >> AxE_tot_err;
-        }
-        file_in.close(); 
-        Printf("2) AxE_tot with pt cut no. %i loaded.", iPtCut);
+        Int_t i = 0;
+        std::string str;
+        while(std::getline(file_in,str)){
+            istringstream in_stream(str);
+            // skip first line
+            if(i == 1) in_stream >> AxE_tot >> AxE_tot_err;
+            i++;   
+        } 
+        file_in.close();
+        Printf("2) AxE file loaded.");
     } else {
-        Printf("2) ERROR: AxE_tot file with pt cut no. %i missing. Terminating...", iPtCut);
-        return;
+        Printf("2) ERROR: AxE file missing. Terminating...");
+        return;            
     }
 
     // 3) Load all FD corrections
-    TString CorrFD_path = Form("Results/FeedDown/FeedDownCorrections_tot_PtCut%i.txt", iPtCut);
-    file_in.open(CorrFD_path.Data());
+    if(!bAOD) file_in.open("Results/FeedDown/FeedDown_Total.txt");
+    else file_in.open("Results/FeedDown/FeedDown_Total_AOD.txt");
     if(!(file_in.fail())){
         // Read data from the file
-        while(!file_in.eof()){
-            file_in >> CorrFD_tot[0] >> CorrFD_tot_err[0] 
-                    >> CorrFD_tot[1] >> CorrFD_tot_err[1]
-                    >> CorrFD_tot[2] >> CorrFD_tot_err[2]
-                    >> CorrFD_tot[3] >> CorrFD_tot_err[3];
-        }
+        Int_t i = 0;
+        char ch[8];
+        std::string str;
+        while(std::getline(file_in,str)){
+            istringstream in_stream(str);
+            // skip first line
+            if(i == 1) in_stream >> ch >> CorrFD_tot[0] >> CorrFD_tot_err[0] 
+                                    >> CorrFD_tot[1] >> CorrFD_tot_err[1]
+                                    >> CorrFD_tot[2] >> CorrFD_tot_err[2]
+                                    >> CorrFD_tot[3] >> CorrFD_tot_err[3];
+            i++;   
+        } 
         file_in.close(); 
-        Printf("3) CorrFD with pt cut no. %i loaded.", iPtCut);
+        Printf("3) FD file loaded.");
     } else {
-        Printf("3) ERROR: CorrFD with pt cut no. %i file missing. Terminating...", iPtCut);
+        Printf("3) ERROR: FD file missing. Terminating...");
         return;
     }
     // Calculate total FD
-    Double_t CorrFD_total = 0;
-    Double_t CorrFD_total_err = 0;
+    Double_t CorrFD_sum = 0;
+    Double_t CorrFD_sum_err = 0;
     Double_t SumOfSquares = 0;
     for(Int_t iFD = 0; iFD < 4; iFD++){
-        CorrFD_total += CorrFD_tot[iFD];
+        CorrFD_sum += CorrFD_tot[iFD];
         SumOfSquares += TMath::Power(CorrFD_tot_err[iFD],2);
     }
-    CorrFD_total_err = TMath::Sqrt(SumOfSquares);
+    CorrFD_sum_err = TMath::Sqrt(SumOfSquares);
 
     // 4) Load FC corr
     // (...)
 
     // 5) Total integrated luminosity
-    Double_t LumiAll = (Lumi18q + Lumi18r) * 1000; // 1/(mili barn)
+    Double_t LumiAll;
+    if(!bAOD) LumiAll = (Lumi18q + Lumi18r) * 1000;     // 1/(mili barn)
+    else LumiAll = (Lumi18q_aod + Lumi18r_aod) * 1000;  // 1/(mili barn)
     Printf("5) Total integrated lumi calculated.");
 
     // Calculate the total cross section
     Double_t Factors;
     Double_t Factors_err;
-    Factors = 1.0 + CorrFD_total / 100 + CorrFC_tot / 100;
-    Factors_err = TMath::Sqrt(TMath::Power(CorrFD_total_err / 100,2) + TMath::Power(CorrFC_tot_err / 100,2));
+    Factors = 1.0 + CorrFD_sum / 100 + CorrFC_tot / 100;
+    Factors_err = TMath::Sqrt(TMath::Power(CorrFD_sum_err / 100,2) + TMath::Power(CorrFC_tot_err / 100,2));
     Sigma_tot = NYield_tot / (Factors * EffVetoes * AxE_tot/100 * BR * RapWidth * LumiAll);
     Sigma_tot_err = Sigma_tot * TMath::Sqrt(
         TMath::Power(NYield_tot_err / NYield_tot, 2) +
@@ -145,7 +161,9 @@ void CalculateCrossSectionTotal(Int_t iPtCut){
         TMath::Power(BR_err / BR, 2));
 
     // Define output text file to print results
-    TString FilePath = Form("Results/CrossSection/tot_PtCut%i_output.txt", iPtCut);
+    TString FilePath;
+    if(!bAOD) FilePath = "Results/CrossSection/total_ESDs_output.txt";
+    else FilePath = "Results/CrossSection/total_AODs_output.txt";
     ofstream outfile(FilePath.Data());
     outfile << std::fixed << std::setprecision(3);
     // Print results to the text file
@@ -160,111 +178,8 @@ void CalculateCrossSectionTotal(Int_t iPtCut){
     outfile << std::fixed << std::setprecision(3);
     outfile << AxE_tot << "\t";
     outfile << AxE_tot_err << "\t";
-    outfile << CorrFD_total << "\t";
-    outfile << CorrFD_total_err << "\t";
-    outfile << CorrFC_tot << "\t";
-    outfile << CorrFC_tot_err << "\t";
-    outfile << Factors << "\t";
-    outfile << Factors_err << "\t";
-    outfile << Sigma_tot << "\t";
-    outfile << Sigma_tot_err << "\n";
-    outfile.close();
-    Printf("Results printed to %s.", FilePath.Data()); 
-
-    return;
-}
-
-void CalculateCrossSectionTotal_AOD(){
-    // for pt > 0.2 GeV/c
-    // to check with the old result from DP => must be an iMassCut = 1
-
-    ifstream file_in;
-
-    // 1) Load N_yield
-    NYield_tot = 643;
-    NYield_tot_err = 31; 
-    Printf("1) N_yield_tot loaded.");
-
-    // 2) Load AxE
-    TString AxE_tot_path = Form("Results/AccAndEffMC/AxE_AOD_tot_MassCut1_PtCut0.txt");
-    file_in.open(AxE_tot_path.Data());
-    if(!(file_in.fail())){
-        // Read data from the file
-        while(!file_in.eof()){
-            file_in >> AxE_tot >> AxE_tot_err;
-        }
-        file_in.close(); 
-        Printf("2) AxE_tot loaded.");
-    } else {
-        Printf("2) ERROR: AxE_tot file missing. Terminating...");
-        return;
-    }
-
-    // 3) Load all FD corrections
-    TString CorrFD_path = Form("Results/FeedDown/AOD/FeedDownCorrections.txt");
-    file_in.open(CorrFD_path.Data());
-    if(!(file_in.fail())){
-        // Read data from the file
-        while(!file_in.eof()){
-            file_in >> CorrFD_tot[0] >> CorrFD_tot_err[0] 
-                    >> CorrFD_tot[1] >> CorrFD_tot_err[1]
-                    >> CorrFD_tot[2] >> CorrFD_tot_err[2]
-                    >> CorrFD_tot[3] >> CorrFD_tot_err[3];
-        }
-        file_in.close(); 
-        Printf("3) CorrFD loaded.");
-    } else {
-        Printf("3) ERROR: CorrFD file missing. Terminating...");
-        return;
-    }
-    // Calculate total FD
-    Double_t CorrFD_total = 0;
-    Double_t CorrFD_total_err = 0;
-    Double_t SumOfSquares = 0;
-    for(Int_t iFD = 0; iFD < 4; iFD++){
-        CorrFD_total += CorrFD_tot[iFD];
-        SumOfSquares += TMath::Power(CorrFD_tot_err[iFD],2);
-    }
-    CorrFD_total_err = TMath::Sqrt(SumOfSquares);
-
-    // 4) Load FC corr
-    CorrFC_tot = 0.0093;
-    CorrFC_tot_err = 0.0007;
-
-    // 5) Total integrated luminosity
-    Double_t LumiAll = (Lumi18q_aod + Lumi18r_aod) * 1000; // 1/(mili barn)
-    Printf("5) Total integrated lumi calculated.");
-
-    // Calculate the total cross section
-    Double_t Factors;
-    Double_t Factors_err;
-    Factors = 1.0 + CorrFD_total / 100 + CorrFC_tot / 100;
-    Factors_err = TMath::Sqrt(TMath::Power(CorrFD_total_err / 100,2) + TMath::Power(CorrFC_tot_err / 100,2));
-    Sigma_tot = NYield_tot / (Factors * EffVetoes * AxE_tot/100 * BR * RapWidth * LumiAll);
-    Sigma_tot_err = Sigma_tot * TMath::Sqrt(
-        TMath::Power(NYield_tot_err / NYield_tot, 2) +
-        TMath::Power(AxE_tot_err / AxE_tot, 2) +
-        TMath::Power(Factors_err / Factors, 2) +
-        TMath::Power(BR_err / BR, 2));
-
-    // Define output text file to print results
-    TString FilePath = Form("Results/CrossSection/tot_AOD_output.txt");
-    ofstream outfile(FilePath.Data());
-    outfile << std::fixed << std::setprecision(3);
-    // Print results to the text file
-    outfile << Form("Lumi = %.3f 1/(mili barn)\n", LumiAll);
-    outfile << Form("BR(J/psi -> mu mu) = (%.3f pm %.3f)%%\n", BR*100, BR_err*100);
-    outfile << Form("Delta y = %.1f\n", RapWidth);
-    outfile << Form("EffVetoes = %.1f%%\n", EffVetoes*100);
-    outfile << Form("N \tN_er \tAxE \tAxE_er\tFD [%%]\tFD_err \tFC [%%]\tFC_er \tf [%%]\tf_er \tsig \tsig_er \n");
-    outfile << std::fixed << std::setprecision(2);
-    outfile << NYield_tot << "\t";
-    outfile << NYield_tot_err << "\t";
-    outfile << std::fixed << std::setprecision(3);
-    outfile << AxE_tot << "\t";
-    outfile << AxE_tot_err << "\t";
-    outfile << CorrFD_total << "\t";
-    outfile << CorrFD_total_err << "\t";
+    outfile << CorrFD_sum << "\t";
+    outfile << CorrFD_sum_err << "\t";
     outfile << CorrFC_tot << "\t";
     outfile << CorrFC_tot_err << "\t";
     outfile << Factors << "\t";
@@ -285,8 +200,8 @@ void CalculateCrossSectionBins(){
 
     // 1) Load N_yield per bin
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        TString NYield_path = Form("Results/InvMassFit/%ibins/bin%i_signal.txt", nPtBins, iBin+1);
-        file_in.open(NYield_path.Data());
+        file_in.open(Form("Results/InvMassFit/%ibins/bin%i_signal.txt", nPtBins, iBin+1));
+        // Read data from the file
         if(!(file_in.fail())){
             while(!file_in.eof()){
                 file_in >> NYield[iBin] >> NYield_err[iBin];
@@ -300,51 +215,58 @@ void CalculateCrossSectionBins(){
     Printf("1) N_yield for %ibins loaded.", nPtBins);
 
     // 2) Load AxE per bin
-    TString AxE_path = Form("Results/AccAndEffMC/AxE_%ibins.txt", nPtBins);
-    file_in.open(AxE_path.Data());
-    if(!(file_in.fail())){
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        file_in.open(Form("Results/AccAndEffMC/AxE_%ibins/AxE_bin%i_JInc.txt", nPtBins, iBin+1));
         // Read data from the file
-        Int_t i_line = 0;
-        while(!file_in.eof()){
-            file_in >> i_bin >> AxE[i_line] >> AxE_err[i_line];
-            i_line++;
+        if(!(file_in.fail())){
+            Int_t i = 0;
+            std::string str;
+            while(std::getline(file_in,str)){
+                istringstream in_stream(str);
+                // skip first line
+                if(i == 1) in_stream >> AxE[iBin] >> AxE_err[iBin];
+                i++;   
+            }
+        } else {
+            Printf("2) ERROR: AxE file missing. Terminating...");
+            return;            
         }
-        file_in.close(); 
-        Printf("2) AxE from kIncohJpsiToMu for %ibins loaded.", nPtBins);
-    } else {
-        Printf("2) ERROR: AxE file missing. Terminating...");
-        return;
+        file_in.close();
     }
+    Printf("2) AxE from kIncohJpsiToMu for %ibins loaded.", nPtBins);
 
     // 3) Load all FD corrections per bin
-    TString CorrFD_path = Form("Results/FeedDown/FeedDownCorrections_%ibins.txt", nPtBins);
-    file_in.open(CorrFD_path.Data());
+    file_in.open(Form("Results/FeedDown/FeedDown_%ibins.txt", nPtBins));
+    // Read data from the file
     if(!(file_in.fail())){
-        // Read data from the file
-        Int_t i_line = 0;
-        while(!file_in.eof()){
-            file_in >> i_bin    >> CorrFD[0][i_line] >> CorrFD_err[0][i_line] 
-                                >> CorrFD[1][i_line] >> CorrFD_err[1][i_line]
-                                >> CorrFD[2][i_line] >> CorrFD_err[2][i_line]
-                                >> CorrFD[3][i_line] >> CorrFD_err[3][i_line];
-            i_line++;
+        Int_t i = 0;
+        std::string str;
+        while(std::getline(file_in,str)){
+            istringstream in_stream(str);
+            // skip first line
+            if(i > 0) in_stream >> i_bin >> CorrFD[0][i-1] >> CorrFD_err[0][i-1] 
+                                >> CorrFD[1][i-1] >> CorrFD_err[1][i-1]
+                                >> CorrFD[2][i-1] >> CorrFD_err[2][i-1]
+                                >> CorrFD[3][i-1] >> CorrFD_err[3][i-1];
+            // Cross-check:
+            //Printf("%.4f", CorrFD[0][i-1]);
+            i++;   
         }
-        file_in.close(); 
-        Printf("3) Feed-down corrections for %ibins loaded.", nPtBins);
+        Printf("3) FD corrections for %ibins loaded.", nPtBins);
     } else {
-        Printf("3) ERROR: CorrFD file missing. Terminating...");
+        Printf("3) ERROR: FD file missing. Terminating...");
         return;
     }
     // Calculate total FD per bin
-    Double_t CorrFD_total[nPtBins] = { 0 };
-    Double_t CorrFD_total_err[nPtBins] = { 0 };
+    Double_t CorrFD_sum[nPtBins] = { 0 };
+    Double_t CorrFD_sum_err[nPtBins] = { 0 };
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
         Double_t SumOfSquares = 0;
         for(Int_t iFD = 0; iFD < 4; iFD++){
-            CorrFD_total[iBin] += CorrFD[iFD][iBin];
+            CorrFD_sum[iBin] += CorrFD[iFD][iBin];
             SumOfSquares += TMath::Power(CorrFD_err[iFD][iBin],2);
         }
-        CorrFD_total_err[iBin] = TMath::Sqrt(SumOfSquares);
+        CorrFD_sum_err[iBin] = TMath::Sqrt(SumOfSquares);
     }
 
     // 4) Load FC corr per bin
@@ -364,8 +286,8 @@ void CalculateCrossSectionBins(){
     Double_t Factors[nPtBins];
     Double_t Factors_err[nPtBins];
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        Factors[iBin] = 1.0 + CorrFD_total[iBin]/100 + CorrFC[iBin]/100;
-        Factors_err[iBin] = TMath::Sqrt(TMath::Power(CorrFD_total_err[iBin]/100,2) + TMath::Power(CorrFC_err[iBin]/100,2));
+        Factors[iBin] = 1.0 + CorrFD_sum[iBin]/100 + CorrFC[iBin]/100;
+        Factors_err[iBin] = TMath::Sqrt(TMath::Power(CorrFD_sum_err[iBin]/100,2) + TMath::Power(CorrFC_err[iBin]/100,2));
         Sigma[iBin] = NYield[iBin] / (Factors[iBin] * EffVetoes * AxE[iBin]/100 * BR * RapWidth * Pt2Widths[iBin] * LumiAll);
         Sigma_err[iBin] = Sigma[iBin] * TMath::Sqrt(
             TMath::Power(NYield_err[iBin] / NYield[iBin], 2) +
@@ -386,7 +308,7 @@ void CalculateCrossSectionBins(){
     outfile << "Per bins:\n";
     outfile << Form("Bin\tPtLow \tPtUpp \tPt^2_w \tN \tN_er \tAxE \tAxE_er\tFD [%%]\tFD_err \tFC [%%]\tFC_er \tf [%%]\tf_er \tsig \tsig_er \n");
     for(Int_t i = 0; i < nPtBins; i++){
-        outfile << i << "\t";
+        outfile << i+1 << "\t";
         outfile << ptBoundaries[i] << "\t";
         outfile << ptBoundaries[i+1] << "\t";
         outfile << std::fixed << std::setprecision(4);
@@ -397,8 +319,8 @@ void CalculateCrossSectionBins(){
         outfile << std::fixed << std::setprecision(3);
         outfile << AxE[i] << "\t";
         outfile << AxE_err[i] << "\t";
-        outfile << CorrFD_total[i] << "\t";
-        outfile << CorrFD_total_err[i] << "\t";
+        outfile << CorrFD_sum[i] << "\t";
+        outfile << CorrFD_sum_err[i] << "\t";
         outfile << CorrFC[i] << "\t";
         outfile << CorrFC_err[i] << "\t";
         outfile << Factors[i] << "\t";

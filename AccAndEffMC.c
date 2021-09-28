@@ -13,6 +13,9 @@
 
 TString path = "Results/AccAndEffMC/";
 
+Double_t NRec;
+Double_t NGen;
+
 Double_t AxE;
 Double_t AxE_err;
 
@@ -76,25 +79,39 @@ void AccAndEffMC(){
     }
 
     // Calculate AxE in pt bins for FD correction
-    Bool_t bCorrFD = kFALSE;
+    Bool_t bCorrFD = kTRUE;
     if(bCorrFD){
         SetPtBinning();
-        TString str = Form("%sAxE_FeedDown_%ibins.txt", path.Data(), nPtBins);
-        ofstream outfile(str.Data());
-        outfile << std::fixed << std::setprecision(4);
-        outfile << Form("AxE[%%] \tJInc \tErr \tPCohCh \tErr \tPIncCh \tErr \tPCohNe \tErr \tPIncNe \tErr \n");
+        TString str1 = Form("%sAxE_FeedDown_%ibins.txt", path.Data(), nPtBins);
+        TString str2 = Form("%sAxE_FeedDown_%ibins_NGen_SL.txt", path.Data(), nPtBins);
+        ofstream outfile1(str1.Data());
+        ofstream outfile2(str2.Data());
+        outfile1 << std::fixed << std::setprecision(4);
+        outfile2 << std::fixed << std::setprecision(0);
+        outfile1 << Form("AxE[%%] \tJInc \tErr \tPCohCh \tErr \tPIncCh \tErr \tPCohNe \tErr \tPIncNe \tErr \n");
+        outfile2 << "NGen \tJInc \tPCohCh \tPIncCh \tPCohNe \tPIncNe \nTotal";
+        // Go over datasets to get NGen_tot
+        for(Int_t iMC = 1; iMC < 6; iMC++){
+            CalculateAxE(iMC, 0, 0);
+            outfile2 << "\t" << NGen;
+        }
+        outfile2 << "\n";
         // For all pt bins:
         for(Int_t iBin = 1; iBin <= nPtBins; iBin++){
-            outfile << iBin;
+            outfile1 << iBin;
+            outfile2 << iBin;
             // For all datasets (except JCoh):
             for(Int_t iMC = 1; iMC < 6; iMC++){
                 CalculateAxE(iMC, 0, 4, iBin);
-                outfile << "\t" << AxE << "\t" << AxE_err;
+                outfile1 << "\t" << AxE << "\t" << AxE_err;
+                outfile2 << "\t" << NGen;
             }
-            outfile << "\n";
+            outfile1 << "\n";
+            outfile2 << "\n";
         }
-        outfile.close();
-        Printf("*** Results printed to %s.***", str.Data());
+        outfile1.close();
+        Printf("*** Results printed to %s.***", str1.Data());
+        Printf("*** Results printed to %s.***", str2.Data());
     }
 
     // Calculate AxE for PtFit (FC correction)
@@ -116,7 +133,7 @@ void AccAndEffMC(){
 
     // Calculate AxE for PtFit (FC correction) with AODs
     // 3.0 < m < 3.2 GeV, pt < 2 GeV
-    Bool_t bCorrFCTotalAOD = kTRUE;
+    Bool_t bCorrFCTotalAOD = kFALSE;
     if(bCorrFCTotalAOD){
         TString str = Form("%sAOD/AxE_AOD_PtFit.txt", path.Data());
         ofstream outfile(str.Data());
@@ -164,7 +181,7 @@ void CalculateAxE(Int_t iMC, Int_t iMassCut, Int_t iPtCut, Int_t iPtBin){
     
     ConnectTreeVariablesMCRec(tRec);
 
-    Double_t NRec = 0;
+    NRec = 0;
     for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
         tRec->GetEntry(iEntry);
         if(EventPassedMCRec(iMassCut, iPtCut, iPtBin)) NRec++;
@@ -175,7 +192,7 @@ void CalculateAxE(Int_t iMC, Int_t iMassCut, Int_t iPtCut, Int_t iPtBin){
     
     ConnectTreeVariablesMCGen(tGen);
 
-    Double_t NGen = 0;
+    NGen = 0;
     for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
         tGen->GetEntry(iEntry);
         if(EventPassedMCGen(iPtCut, iPtBin)) NGen++;
@@ -191,7 +208,7 @@ void CalculateAxE(Int_t iMC, Int_t iMassCut, Int_t iPtCut, Int_t iPtBin){
 
     TString str;
     if(iPtBin <= 0) str = Form("%sAxE_%s_MassCut%i_PtCut%i.txt", path.Data(), DatasetsMC[iMC].Data(), iMassCut, iPtCut);
-    if(iPtBin > 0) str = Form("%s/AxE_FD_%ibins/AxE_bin%i_%s.txt", path.Data(), nPtBins, iPtBin, DatasetsMC[iMC].Data());
+    if(iPtBin > 0) str = Form("%s/AxE_%ibins/AxE_bin%i_%s.txt", path.Data(), nPtBins, iPtBin, DatasetsMC[iMC].Data());
     ofstream outfile(str.Data());
     outfile << std::fixed << std::setprecision(4);
     outfile << Form("AxE [%%]\tAxE_err \n");
@@ -232,7 +249,7 @@ void CalculateAxE_AOD(Int_t iMC, Int_t iMassCut, Int_t iPtCut){
     
     ConnectTreeVariablesMCRec_AOD(tRec);
 
-    Double_t NRec = 0;
+    NRec = 0;
     for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
         tRec->GetEntry(iEntry);
         if(EventPassedMCRec_AOD(iMassCut, iPtCut)) NRec++;
@@ -267,7 +284,7 @@ void CalculateAxE_AOD(Int_t iMC, Int_t iMassCut, Int_t iPtCut){
     if(iMC == 1) ConnectTreeVariablesMCGen_AOD(tGen);
     else ConnectTreeVariablesMCGen_AOD_old(tGen);
 
-    Double_t NGen = 0;
+    NGen = 0;
     for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
         tGen->GetEntry(iEntry);
         if(EventPassedMCGen(iPtCut)) NGen++;

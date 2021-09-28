@@ -40,6 +40,10 @@ Double_t sig_SL_j_inc = 5.247; //mb
 Double_t sig_SL_j_coh = 12.504;//mb
 Double_t sig_SL_p_inc = 0.92;  //mb
 Double_t sig_SL_p_coh = 2.52;  //mb
+// Weighing of SL cross sections by NGen(bin)/NGen(tot)
+// order: JInc 	PCohCh 	PIncCh 	PCohNe 	PIncNe 
+Double_t NGen_tot[5] = { 0 };
+Double_t NGen_bin[5][nPtBins] = { 0 };
 // Branching ratios
 Double_t BR_ch = 0.3468;
 Double_t BR_ch_err = 0.0030;
@@ -51,9 +55,10 @@ void FeedDown(){
     // ESDs
     CalculateFD_Total(kFALSE);
 
-    // ESDs
+    // AODs
     CalculateFD_Total(kTRUE);
 
+    // Pt bins
     CalculateFD_PtBins();
 
     // For PtFit
@@ -170,19 +175,44 @@ void CalculateFD_PtBins(){
     in_file.close();
     Printf("Input file loaded...");
 
-    // 2) Define output file
+    // 2) Load NGen per bin and NGen tot to weigh SL cross sections
+    ifstream in_file2(Form("Results/AccAndEffMC/AxE_FeedDown_%ibins_NGen_SL.txt", nPtBins));
+
+    if(in_file2.fail()){
+        Printf("Missing input file...");
+        return;
+    } else {
+        Int_t i = 0;
+        char ch[8];
+        std::string str;
+        while(std::getline(in_file2,str)){
+            Printf("Reading line %i: %s", i, str.data());
+            istringstream in_stream(str);
+            // skip first line
+            if(i == 1) in_stream >> ch >> NGen_tot[0] >> NGen_tot[1] >> NGen_tot[2] >> NGen_tot[3] >> NGen_tot[4];
+            if(i > 1) in_stream >> iBin >> NGen_bin[0][i-2] >> NGen_bin[1][i-2] >> NGen_bin[2][i-2] >> NGen_bin[3][i-2] >> NGen_bin[4][i-2];
+            i++;   
+        }
+    }
+    in_file2.close();
+    Printf("Input file loaded...");
+    // Cross-check:
+    //Printf("%.0f", NGen_tot[0]); 
+    //Printf("%.0f", NGen_bin[4][4]);
+
+    // 3) Define output file
     TString str = Form("%sFeedDown_%ibins.txt", path.Data(), nPtBins);
     ofstream outfile(str.Data());
     outfile << std::fixed << std::setprecision(4);
     outfile << Form("fD[%%] \tCohCh \tErr \tIncCh \tErr \tCohNe \tErr \tIncNe \tErr \n");
 
-    // 3) Loop over bins, calculate fD corrections
+    // 4) Loop over bins, calculate fD corrections
     for(Int_t i = 0; i < nPtBins; i++){
         // all values of fD in percent already
-        fD_coh_ch_val[i] = sig_SL_p_coh / sig_SL_j_inc * AxE_Psi2s_val[0][i] / AxE_IncJ_val[i] * BR_ch * 100;
-        fD_inc_ch_val[i] = sig_SL_p_inc / sig_SL_j_inc * AxE_Psi2s_val[1][i] / AxE_IncJ_val[i] * BR_ch * 100;
-        fD_coh_ne_val[i] = sig_SL_p_coh / sig_SL_j_inc * AxE_Psi2s_val[2][i] / AxE_IncJ_val[i] * BR_ne * 100;
-        fD_inc_ne_val[i] = sig_SL_p_inc / sig_SL_j_inc * AxE_Psi2s_val[3][i] / AxE_IncJ_val[i] * BR_ne * 100;
+        fD_coh_ch_val[i] = sig_SL_p_coh * (NGen_bin[1][i]/NGen_tot[1]) / (sig_SL_j_inc * (NGen_bin[0][i]/NGen_tot[0])) * AxE_Psi2s_val[0][i] / AxE_IncJ_val[i] * BR_ch * 100;
+        fD_inc_ch_val[i] = sig_SL_p_inc * (NGen_bin[2][i]/NGen_tot[2]) / (sig_SL_j_inc * (NGen_bin[0][i]/NGen_tot[0])) * AxE_Psi2s_val[1][i] / AxE_IncJ_val[i] * BR_ch * 100;
+        fD_coh_ne_val[i] = sig_SL_p_coh * (NGen_bin[3][i]/NGen_tot[3]) / (sig_SL_j_inc * (NGen_bin[0][i]/NGen_tot[0])) * AxE_Psi2s_val[2][i] / AxE_IncJ_val[i] * BR_ne * 100;
+        fD_inc_ne_val[i] = sig_SL_p_inc * (NGen_bin[4][i]/NGen_tot[4]) / (sig_SL_j_inc * (NGen_bin[0][i]/NGen_tot[0])) * AxE_Psi2s_val[3][i] / AxE_IncJ_val[i] * BR_ne * 100;
         if(AxE_Psi2s_val[0][i] != 0){
             fD_coh_ch_err[i] = fD_coh_ch_val[i] * TMath::Sqrt(
                 TMath::Power((AxE_Psi2s_err[0][i]/AxE_Psi2s_val[0][i]),2) + 

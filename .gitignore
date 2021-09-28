@@ -23,3 +23,6 @@ Documents/
 *.pdf
 *.png
 
+# Ignore Libre Office tables
+*.ods
+
