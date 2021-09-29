@@ -8,7 +8,7 @@
 //################################## PT BINNING ####################################
 //##################################################################################
 
-const Int_t nPtBins = 5;
+const Int_t nPtBins = 4;
 Int_t iMethodBinning = 3;
 
 Double_t *ptBoundaries = NULL;

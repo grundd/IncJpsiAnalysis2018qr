@@ -1,0 +1,26 @@
+Dataset contains 4639 events.
+***
+In 0.0 < pt 2.0 GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr
+2556.40	456.29	180.00	33.65	330.85	1047.87
+***
+In 0.2 < pt 2.0 GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 
+7.48	364.05	79.88	26.69	313.34	34.12	0.0110	0.0007
+***
+In bin 1, (0.200, 0.280) GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 
+7.43	70.87	48.72	5.49	15.63	3.80	0.0859	0.0058
+***
+In bin 2, (0.280, 0.375) GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 
+0.05	85.25	26.44	6.46	23.34	4.95	0.0005	0.0000
+***
+In bin 3, (0.375, 0.569) GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 
+0.00	125.28	4.72	9.18	56.40	8.13	0.0000	-nan
+***
+In bin 4, (0.569, 1.000) GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 
+0.00	78.88	0.00	5.38	115.23	11.65	0.0000	-nan
+***
