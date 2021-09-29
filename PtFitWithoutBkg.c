@@ -1,93 +1,432 @@
 // PtFitWithoutBkg.c
 // David Grund, Sep 27, 2021
 
-// cpp headers
-#include <vector>
-#include <fstream> // print output to txt file
-// root headers
-#include "TH1.h"
-#include "TFile.h"
-#include "TCanvas.h"
-#include "TAxis.h"
-#include "TLegend.h"
-#include "TStyle.h" // gStyle
-#include "TMath.h"
 // roofit headers
-#include "RooRealVar.h"
-#include "RooDataSet.h"
-#include "RooDataHist.h"
-#include "RooFitResult.h"
-#include "RooPlot.h"
-#include "RooGenericPdf.h"
-#include "RooBinning.h"
 #include "RooCBShape.h"
-#include "RooAddPdf.h"
 // my headers
 #include "AnalysisManager.h"
+#include "PtFitUtilities.h"
 
 using namespace RooFit;
 
 // Main function
-void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFALSE, Int_t bin = -1);
-void SetCanvas(TCanvas *c, Bool_t bLogScale);
-void PrepareDataTree();
 void SubtractBackground();
-void MakePtBins();
+void DoPtFitNoBkg();
+void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFALSE, Int_t bin = -1);
+void PrepareDataTree();
 
-TString FilePath = "Results/PtFit/WithoutBkg/InvMassFitsInBins/";
-
-Double_t edges[43] = {
-	0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 
-	0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 
-	0.20, 0.22, 0.24, 0.26, 0.28, 0.30, 0.32, 0.34, 0.36, 0.38, 
-	0.40, 0.48, 0.56, 0.64, 0.72, 0.80, 0.88, 0.96, 1.04, 1.12, 
-	1.20, 1.60, 2.00
-};
+TString OutputPtFitWithoutBkg = "Results/PtFitWithoutBkg/";
+TString OutputTrees = "Trees/PtFit/";
 
 Double_t N_Jpsi_val = 0;
 Double_t N_Jpsi_err = 0;
-Double_t fPtLow = 0.00;
-Double_t fPtUpp = 2.00;
 
 void PtFitWithoutBkg(){
 
     //PrepareDataTree();
 
-    MakePtBins();
+    SetPtBins(2);
 
-    //SubtractBackground();
+    SubtractBackground();
+
+    PreparePDFs_MC();
+
+    DoPtFitNoBkg();
 
     return;
 }
 
 void SubtractBackground(){
 
-    Int_t nBins = sizeof(edges)/sizeof(edges[0]) - 1;
+    TString path = Form("%sJpsiSignalNoBkg_Binning%i.root", OutputTrees.Data(), BinningOpt);
+    TFile *file = TFile::Open(path.Data(),"read");
+    if(file){
+        Printf("Background already subtracted for this binning.");
+        return;
+    }
 
-    TH1D *hN_Jpsi_val = new TH1D("hN_Jpsi_val", "hN_Jpsi_val", nBins, edges);
+    TList *l = new TList();
+    TH1D *hNJpsiBins = new TH1D("hNJpsiBins", "hNJpsiBins", nBins, ptEdges);
+    l->Add(hNJpsiBins);
 
     Double_t fPt = fPtLow;
     Int_t iBin = 1;
     while(iBin <= nBins){
-        DoInvMassFitMain(edges[iBin-1], edges[iBin], kTRUE, iBin);
-        hN_Jpsi_val->SetBinContent(iBin, N_Jpsi_val);
-        hN_Jpsi_val->SetBinError(iBin, N_Jpsi_err);
+        DoInvMassFitMain(ptEdges[iBin-1], ptEdges[iBin], kTRUE, iBin);
+        hNJpsiBins->SetBinContent(iBin, N_Jpsi_val);
+        hNJpsiBins->SetBinError(iBin, N_Jpsi_err);
         iBin++;
     }
 
     TCanvas *cHist = new TCanvas("cHist", "cHist", 900, 600);
     cHist->SetLogy();    
     // Vertical axis
-    hN_Jpsi_val->GetYaxis()->SetTitle("Counts per bin");
+    hNJpsiBins->GetYaxis()->SetTitle("Counts per bin");
     // Horizontal axis
-    hN_Jpsi_val->GetXaxis()->SetTitle("#it{m}_{#mu#mu} (GeV/#it{c}^{2})");
-    hN_Jpsi_val->GetXaxis()->SetDecimals(1);
+    hNJpsiBins->GetXaxis()->SetTitle("#it{m}_{#mu#mu} (GeV/#it{c}^{2})");
+    hNJpsiBins->GetXaxis()->SetDecimals(1);
     // Draw the histogram
-    hN_Jpsi_val->Scale(1., "width");
-    hN_Jpsi_val->Draw("E0");
+    //hNJpsiBins->Scale(1., "width");
+    hNJpsiBins->Draw("E0");
+
+    // Save results to the output file
+    // Create the output file
+    file = new TFile(path.Data(),"RECREATE");
+    l->Write("HistList", TObject::kSingleKey);
+    file->ls();
 
     return;
 }
+
+void DoPtFitNoBkg(){
+
+    SetPtBinning();
+
+    // Load the file with PDFs
+    TFile *file = TFile::Open(Form("%sPDFs_MC_Binning%i.root", OutputPDFs.Data(), BinningOpt),"read");
+    if(file) Printf("Input file %s loaded.", file->GetName()); 
+
+    TList *list = (TList*) file->Get("HistList");
+    if(list) Printf("List %s loaded.", list->GetName()); 
+
+    // Load histograms
+    // 1) kCohJpsiToMu
+    TH1D *hCohJ = (TH1D*)list->FindObject(NamesPDFs[0].Data());
+    if(hCohJ) Printf("Histogram %s loaded.", hCohJ->GetName());
+
+    // 2) kIncohJpsiToMu
+    TH1D *hIncJ = (TH1D*)list->FindObject(NamesPDFs[1].Data());
+    if(hIncJ) Printf("Histogram %s loaded.", hIncJ->GetName());
+
+    // 3) kCohPsi2sToMuPi
+    TH1D *hCohP = (TH1D*)list->FindObject(NamesPDFs[2].Data());
+    if(hCohP) Printf("Histogram %s loaded.", hCohP->GetName());
+
+    // 4) kincohPsi2sToMuPi
+    TH1D *hIncP = (TH1D*)list->FindObject(NamesPDFs[3].Data());
+    if(hIncP) Printf("Histogram %s loaded.", hIncP->GetName());
+
+    // 6) Dissociative
+    TH1D *hDiss = (TH1D*)list->FindObject(NamesPDFs[5].Data());
+    if(hDiss) Printf("Histogram %s loaded.", hDiss->GetName());
+
+    // Definition of roofit variables
+    RooRealVar fPt("fPt", "fPt", fPtLow, fPtUpp);
+    RooArgSet fSetOfVariables(fPt);
+
+    // Create PDFs
+    // 1) kCohJpsiToMu
+    RooDataHist DHisCohJ("DHisCohJ","DHisCohJ",fPt,hCohJ);
+    RooHistPdf  hPDFCohJ("hPDFCohJ","hPDFCohJ",fSetOfVariables,DHisCohJ,0);
+
+    // 2) kIncohJpsiToMu
+    RooDataHist DHisIncJ("DHisIncJ","DHisIncJ",fPt,hIncJ);
+    RooHistPdf  hPDFIncJ("hPDFIncJ","hPDFIncJ",fSetOfVariables,DHisIncJ,0);
+
+    // 3) kCohPsi2sToMuPi
+    RooDataHist DHisCohP("DHisCohP","DHisCohP",fPt,hCohP);
+    RooHistPdf  hPDFCohP("hPDFCohP","hPDFCohP",fSetOfVariables,DHisCohP,0);
+
+    // 4) kincohPsi2sToMuPi
+    RooDataHist DHisIncP("DHisIncP","DHisIncP",fPt,hIncP);
+    RooHistPdf  hPDFIncP("hPDFIncP","hPDFIncP",fSetOfVariables,DHisIncP,0);
+
+    // 6) Dissociative
+    RooDataHist DHisDiss("DHisDiss","DHisDiss",fPt,hDiss);
+    RooHistPdf  hPDFDiss("hPDFDiss","hPDFDiss",fSetOfVariables,DHisDiss,0);
+
+    // Close the file with PDFs
+    file->Close();
+
+
+    // Get the binned dataset
+    file = TFile::Open(Form("%sJpsiSignalNoBkg_Binning%i.root", OutputTrees.Data(), BinningOpt), "read");
+    if(file) Printf("Input file %s loaded.", file->GetName()); 
+
+    list = (TList*) file->Get("HistList");
+    if(list) Printf("List %s loaded.", list->GetName()); 
+
+    TH1D *hData = (TH1D*)list->FindObject("hNJpsiBins");
+    if(hData) Printf("Histogram %s loaded.", hData->GetName());
+
+    RooDataHist DHisData("DHisData","DHisData",fPt,hData);
+    Printf("Binned data with background subtracted loaded.");
+    // Calculate the number of entries
+    Double_t N_all = 0;
+    for(Int_t i = 1; i <= hData->GetNbinsX(); i++){
+        N_all += hData->GetBinContent(i);
+    }
+    Printf("Data contain %.0f entries in %i bins.", N_all, DHisData.numEntries());
+    file->Close();
+
+    // 8) Create the model for fitting
+    // 8.1) Normalizations:
+    RooRealVar NCohJ("NCohJ","Number of coh J/psi events", 0.90*N_all,0.50*N_all,1.0*N_all);
+    RooRealVar NIncJ("NIncJ","Number of inc J/psi events", 0.05*N_all,0.01*N_all,0.3*N_all);
+    RooRealVar NDiss("NDiss","Number of dis J/psi events", 0.05*N_all,0.01*N_all,0.3*N_all);
+
+    // Load the values of fD coefficients
+    Double_t fDCohCh, fDCohChErr, fDIncCh, fDIncChErr, fDCohNe, fDCohNeErr, fDIncNe, fDIncNeErr;
+    char ch[8];
+    ifstream file_in;
+    file_in.open("Results/FeedDown/FeedDown_PtFit.txt");
+    if(!(file_in.fail())){
+        // Read data from the file
+        Int_t i = 0;
+        std::string str;
+        while(std::getline(file_in,str)){
+            istringstream in_stream(str);
+            // skip first line
+            if(i == 1) in_stream >> ch >> fDCohCh >> fDCohChErr >> fDIncCh >> fDIncChErr >> fDCohNe >> fDCohNeErr >> fDIncNe >> fDIncNeErr;
+            i++;   
+        } 
+        file_in.close();
+        Printf("fD coefficients loaded.");
+    } else {
+        Printf("fD coefficients missing. Terminating...");
+        return;
+    }
+    Double_t fDCoh = (fDCohCh + fDCohNe) / 100;
+    Double_t fDInc = (fDIncCh + fDIncNe) / 100;
+    Printf("********************");
+    Printf("fD_coh = %.4f", fDCoh);
+    Printf("fD_inc = %.4f", fDInc);
+    Printf("********************");
+    
+    RooGenericPdf NCohP("NCohP","Number of coh FD events",Form("NCohJ*%.4f", fDCoh),RooArgSet(NCohJ));
+    RooGenericPdf NIncP("NIncP","Number of inc FD events",Form("NIncJ*%.4f", fDInc),RooArgSet(NIncJ));
+
+    // 8.2) The model:
+    RooAddPdf Mod("Mod","Sum of all PDFs",
+        RooArgList(hPDFCohJ, hPDFIncJ, hPDFCohP, hPDFIncP, hPDFDiss),
+        RooArgList(NCohJ, NIncJ, NCohP, NIncP, NDiss)
+    );
+
+    // 9) Perform fitting
+    RooFitResult* ResFit = Mod.fitTo(DHisData,Extended(kTRUE),Save(),Range(fPtLow,fPtUpp));
+
+    // ###############################################################################################################
+    // ###############################################################################################################
+    // 10) Output to text file
+    TString *str = new TString(Form("%sPtFitNoBkg_Binning%i_%ibins", OutputPtFitWithoutBkg.Data(),BinningOpt, nPtBins));
+    // Integrals of the PDFs in the whole pt range 
+    fPt.setRange("fPtAll",0.0,2.0);
+    RooAbsReal *fN_CohJ_all = hPDFCohJ.createIntegral(fPt,NormSet(fPt),Range("fPtAll"));
+    RooAbsReal *fN_IncJ_all = hPDFIncJ.createIntegral(fPt,NormSet(fPt),Range("fPtAll"));
+    RooAbsReal *fN_Diss_all = hPDFDiss.createIntegral(fPt,NormSet(fPt),Range("fPtAll"));  
+    RooAbsReal *fN_CohP_all = hPDFCohP.createIntegral(fPt,NormSet(fPt),Range("fPtAll")); 
+    RooAbsReal *fN_IncP_all = hPDFIncP.createIntegral(fPt,NormSet(fPt),Range("fPtAll"));
+    // Integrals of the PDFs in the incoherent-enriched sample (IES)
+    fPt.setRange("fPtIES",0.2,2.0);
+    RooAbsReal *fN_CohJ_ies = hPDFCohJ.createIntegral(fPt,NormSet(fPt),Range("fPtIES"));
+    RooAbsReal *fN_IncJ_ies = hPDFIncJ.createIntegral(fPt,NormSet(fPt),Range("fPtIES"));
+    RooAbsReal *fN_Diss_ies = hPDFDiss.createIntegral(fPt,NormSet(fPt),Range("fPtIES"));  
+    RooAbsReal *fN_CohP_ies = hPDFCohP.createIntegral(fPt,NormSet(fPt),Range("fPtIES")); 
+    RooAbsReal *fN_IncP_ies = hPDFIncP.createIntegral(fPt,NormSet(fPt),Range("fPtIES"));  
+    // Integrals of the PDFs with 0.2 < pt < 1.0 GeV/c
+    fPt.setRange("fPtTo1",0.2,1.0);
+    RooAbsReal *fN_CohJ_to1 = hPDFCohJ.createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));
+    RooAbsReal *fN_IncJ_to1 = hPDFIncJ.createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));
+    RooAbsReal *fN_Diss_to1 = hPDFDiss.createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));  
+    RooAbsReal *fN_CohP_to1 = hPDFCohP.createIntegral(fPt,NormSet(fPt),Range("fPtTo1")); 
+    RooAbsReal *fN_IncP_to1 = hPDFIncP.createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));  
+    // Number of events in the whole pt range
+    Double_t N_CohJ_all = fN_CohJ_all->getVal()*NCohJ.getVal();
+    Double_t N_IncJ_all = fN_IncJ_all->getVal()*NIncJ.getVal();
+    Double_t N_Diss_all = fN_Diss_all->getVal()*NDiss.getVal();
+    Double_t N_CohP_all = fN_CohP_all->getVal()*fDCoh*NCohJ.getVal();
+    Double_t N_IncP_all = fN_IncP_all->getVal()*fDInc*NIncJ.getVal();
+    // Number of events in the IES
+    Double_t N_CohJ_ies = fN_CohJ_ies->getVal()*NCohJ.getVal();
+    Double_t N_IncJ_ies = fN_IncJ_ies->getVal()*NIncJ.getVal();
+    Double_t N_Diss_ies = fN_Diss_ies->getVal()*NDiss.getVal();
+    Double_t N_CohP_ies = fN_CohP_ies->getVal()*fDCoh*NCohJ.getVal();
+    Double_t N_IncP_ies = fN_IncP_ies->getVal()*fDInc*NIncJ.getVal();
+    // Number of events with 0.2 < pt < 1.0 GeV/c
+    Double_t N_CohJ_to1 = fN_CohJ_to1->getVal()*NCohJ.getVal();
+    Double_t N_IncJ_to1 = fN_IncJ_to1->getVal()*NIncJ.getVal();
+    Double_t N_Diss_to1 = fN_Diss_to1->getVal()*NDiss.getVal();
+    Double_t N_CohP_to1 = fN_CohP_to1->getVal()*fDCoh*NCohJ.getVal();
+    Double_t N_IncP_to1 = fN_IncP_to1->getVal()*fDInc*NIncJ.getVal();
+    // Total fC correction (for the whole IES)
+    Double_t fC = N_CohJ_ies / (N_IncJ_ies + N_Diss_ies);
+    Double_t N_CohJ_ies_err = fN_CohJ_ies->getVal()*NCohJ.getError();
+    Double_t N_IncJ_ies_err = fN_IncJ_ies->getVal()*NIncJ.getError();
+    Double_t N_Diss_ies_err = fN_Diss_ies->getVal()*NDiss.getError();
+    Double_t denominator_err = TMath::Sqrt(TMath::Power(N_IncJ_ies_err,2) + TMath::Power(N_Diss_ies_err,2));
+    Double_t fC_err = fC * TMath::Sqrt(TMath::Power((N_CohJ_ies_err/N_CohJ_ies),2) + TMath::Power((denominator_err/(N_IncJ_ies + N_Diss_ies)),2));
+    // Total fD correction (for the whole IES)
+    Double_t fDCoh_val = N_CohP_ies / (N_IncJ_ies + N_Diss_ies);
+    Double_t fDInc_val = N_IncP_ies / (N_IncJ_ies + N_Diss_ies);
+    Double_t N_CohP_ies_err = fN_CohP_ies->getVal()*fDCoh*NCohJ.getError();
+    Double_t N_IncP_ies_err = fN_IncP_ies->getVal()*fDInc*NIncJ.getError();
+    Double_t fDCoh_err = fDCoh_val * TMath::Sqrt(TMath::Power((N_CohP_ies_err/N_CohP_ies),2) + TMath::Power((denominator_err/(N_IncJ_ies + N_Diss_ies)),2));
+    Double_t fDInc_err = fDInc_val * TMath::Sqrt(TMath::Power((N_IncP_ies_err/N_IncP_ies),2) + TMath::Power((denominator_err/(N_IncJ_ies + N_Diss_ies)),2));
+    // Integrals of the PDFs in the pt bins
+    RooAbsReal *fN_CohJ_bins[nPtBins] = { NULL };
+    RooAbsReal *fN_IncJ_bins[nPtBins] = { NULL };
+    RooAbsReal *fN_Diss_bins[nPtBins] = { NULL };
+    RooAbsReal *fN_CohP_bins[nPtBins] = { NULL };
+    RooAbsReal *fN_IncP_bins[nPtBins] = { NULL };
+    Double_t N_CohJ_bins[nPtBins] = { 0 };
+    Double_t N_IncJ_bins[nPtBins] = { 0 };
+    Double_t N_Diss_bins[nPtBins] = { 0 };
+    Double_t N_CohP_bins[nPtBins] = { 0 };
+    Double_t N_IncP_bins[nPtBins] = { 0 };
+    Double_t fC_bins_val[nPtBins] = { 0 };
+    Double_t fC_bins_err[nPtBins] = { 0 };
+    Double_t fDCoh_bins_val[nPtBins] = { 0 };
+    Double_t fDCoh_bins_err[nPtBins] = { 0 };
+    Double_t fDInc_bins_val[nPtBins] = { 0 };
+    Double_t fDInc_bins_err[nPtBins] = { 0 };
+    for(Int_t i = 0; i < nPtBins; i++){
+        fPt.setRange(Form("fPtBin%i",i+1), ptBoundaries[i], ptBoundaries[i+1]);
+        Printf("Now calculating for bin %i, (%.3f, %.3f) GeV", i+1, ptBoundaries[i], ptBoundaries[i+1]);
+        fN_CohJ_bins[i] = hPDFCohJ.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
+        fN_IncJ_bins[i] = hPDFIncJ.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
+        fN_Diss_bins[i] = hPDFDiss.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
+        fN_CohP_bins[i] = hPDFCohP.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
+        fN_IncP_bins[i] = hPDFIncP.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));  
+        N_CohJ_bins[i] = fN_CohJ_bins[i]->getVal()*NCohJ.getVal();
+        N_IncJ_bins[i] = fN_IncJ_bins[i]->getVal()*NIncJ.getVal();
+        N_Diss_bins[i] = fN_Diss_bins[i]->getVal()*NDiss.getVal();
+        N_CohP_bins[i] = fN_CohP_bins[i]->getVal()*fDCoh*NCohJ.getVal();
+        N_IncP_bins[i] = fN_IncP_bins[i]->getVal()*fDInc*NIncJ.getVal();
+        fC_bins_val[i] = N_CohJ_bins[i] / (N_IncJ_bins[i] + N_Diss_bins[i]);
+        Double_t N_CohJ_bins_err = fN_CohJ_bins[i]->getVal()*NCohJ.getError();
+        Double_t N_IncJ_bins_err = fN_IncJ_bins[i]->getVal()*NIncJ.getError();
+        Double_t N_Diss_bins_err = fN_Diss_bins[i]->getVal()*NDiss.getError();
+        Double_t denominator_err = TMath::Sqrt(TMath::Power(N_IncJ_bins_err,2) + TMath::Power(N_Diss_bins_err,2));
+        fC_bins_err[i] = fC_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohJ_bins_err/N_CohJ_bins[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins[i] + N_Diss_bins[i])),2));    
+        Double_t N_CohP_bins_err = fN_CohP_bins[i]->getVal()*fDCoh*NCohJ.getError();
+        Double_t N_IncP_bins_err = fN_IncP_bins[i]->getVal()*fDInc*NIncJ.getError();
+        fDCoh_bins_val[i] = N_CohP_bins[i] / (N_IncJ_bins[i] + N_Diss_bins[i]);
+        fDInc_bins_val[i] = N_IncP_bins[i] / (N_IncJ_bins[i] + N_Diss_bins[i]);
+        fDCoh_bins_err[i] = fDCoh_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohP_bins_err/N_CohP_bins[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins[i] + N_Diss_bins[i])),2));
+        fDInc_bins_err[i] = fDInc_bins_val[i] * TMath::Sqrt(TMath::Power((N_IncP_bins_err/N_IncP_bins[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins[i] + N_Diss_bins[i])),2));
+    }
+    // Print to text file
+    ofstream outfile((*str + ".txt").Data());
+    outfile << std::fixed << std::setprecision(2);
+    outfile << Form("Dataset contains %.0f events.\n***\n", N_all);
+    outfile << "In 0.0 < pt 2.0 GeV/c:\n";
+    Double_t sum_all = N_CohJ_all + N_IncJ_all + N_CohP_all + N_IncP_all + N_Diss_all;
+    outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tSum\n";
+    outfile << N_CohJ_all << "\t" << N_IncJ_all << "\t" << N_CohP_all << "\t" << N_IncP_all << "\t" << N_Diss_all << "\t" << sum_all << "\n***\n";
+    outfile << "In 0.2 < pt 2.0 GeV/c:\n";
+    Double_t sum_ies = N_CohJ_ies + N_IncJ_ies + N_CohP_ies + N_IncP_ies + N_Diss_ies;
+    outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tSum \tfC \tfC_err \tfDCoh \tfDC_err\tfDInc \tfDI_err\n";
+    outfile << N_CohJ_ies << "\t" << N_IncJ_ies << "\t" << N_CohP_ies << "\t" << N_IncP_ies << "\t" << N_Diss_ies << "\t" << sum_ies << "\t";
+    outfile << std::fixed << std::setprecision(4);
+    outfile << fC << "\t" << fC_err << "\t" << fDCoh_val << "\t" << fDCoh_err << "\t" << fDInc_val << "\t" << fDInc_err << "\n***\n";
+    outfile << "In 0.2 < pt 1.0 GeV/c:\n";
+    Double_t sum_to1 = N_CohJ_to1 + N_IncJ_to1 + N_CohP_to1 + N_IncP_to1 + N_Diss_to1;
+    outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tSum \n";
+    outfile << std::fixed << std::setprecision(2);
+    outfile << N_CohJ_to1 << "\t" << N_IncJ_to1 << "\t" << N_CohP_to1 << "\t" << N_IncP_to1 << "\t" << N_Diss_to1 << "\t" << sum_to1 << "\n***\n";
+    for(Int_t i = 0; i < nPtBins; i++){
+        outfile << Form("In bin %i, (%.3f, %.3f) GeV/c:\n", i+1, ptBoundaries[i], ptBoundaries[i+1]);
+        outfile << std::fixed << std::setprecision(2);
+        outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tfC \tfC_err \tfDCoh \tfDC_err\tfDInc \tfDI_err\n";
+        outfile << N_CohJ_bins[i] << "\t" << N_IncJ_bins[i] << "\t" 
+                << N_CohP_bins[i] << "\t" << N_IncP_bins[i] << "\t" 
+                << N_Diss_bins[i] << "\t";
+        outfile << std::fixed << std::setprecision(4);
+        outfile << fC_bins_val[i] << "\t" << fC_bins_err[i] << "\t"
+                << fDCoh_bins_val[i] << "\t" << fDCoh_bins_err[i] << "\t"
+                << fDInc_bins_val[i] << "\t" << fDInc_bins_err[i] << "\n***\n";
+    }
+    outfile << "Sum over bins:\n";
+    outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss\n";
+    outfile << std::fixed << std::setprecision(2);
+    Double_t sum_bins[5] = { 0 };
+    for(Int_t i = 0; i < nPtBins; i++){
+        sum_bins[0] += N_CohJ_bins[i];
+        sum_bins[1] += N_IncJ_bins[i];
+        sum_bins[2] += N_CohP_bins[i];
+        sum_bins[3] += N_IncP_bins[i];
+        sum_bins[4] += N_Diss_bins[i];
+    }
+    for(Int_t i = 0; i < 4; i++){
+        outfile << sum_bins[i] << "\t";
+    }
+    outfile << sum_bins[4] << "\n***\n";
+    outfile.close();
+    Printf("*** Results printed to %s. ***", (*str + ".txt").Data());
+    // ###############################################################################################################
+    // ###############################################################################################################
+
+    // 11) Plot the results
+    SetStyle();
+
+    // 11.1) Draw the Correlation Matrix
+    TCanvas *cCM = new TCanvas("cCM","cCM",600,500);
+    DrawCorrelationMatrix(cCM,ResFit);
+
+    // 11.2) Draw the pt fit
+    TCanvas *cPt = new TCanvas("cPt","cPt",900,600);
+    SetCanvas(cPt, kTRUE); 
+
+    RooPlot* PtFrame = fPt.frame(Title("Pt fit"));
+    DHisData.plotOn(PtFrame,Name("DSetData"),MarkerStyle(20), MarkerSize(1.),Binning(fPtBins));
+    Mod.plotOn(PtFrame,Name("Mod"),                           LineColor(215),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrame,Name("hPDFCohJ"),Components(hPDFCohJ), LineColor(222),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrame,Name("hPDFIncJ"),Components(hPDFIncJ), LineColor(kRed),  LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrame,Name("hPDFCohP"),Components(hPDFCohP), LineColor(222),   LineStyle(7),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrame,Name("hPDFIncP"),Components(hPDFIncP), LineColor(kRed),  LineStyle(7),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrame,Name("hPDFDiss"),Components(hPDFDiss), LineColor(15),    LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+
+    PtFrame->SetAxisRange(0,2,"X");
+    // Set X axis
+    PtFrame->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
+    PtFrame->GetXaxis()->SetTitleSize(0.05);
+    PtFrame->GetXaxis()->SetLabelSize(0.05);
+    // Set Y axis
+    PtFrame->GetYaxis()->SetTitle(Form("Counts per bin"));
+    PtFrame->GetYaxis()->SetTitleSize(0.05);
+    PtFrame->GetYaxis()->SetTitleOffset(0.95);
+    PtFrame->GetYaxis()->SetLabelSize(0.05);
+    PtFrame->GetYaxis()->SetLabelOffset(0.01);
+    PtFrame->Draw("][");
+
+    // 12) Draw the legends
+    // Legend 1
+    TLegend *l1 = new TLegend(0.16,0.71,0.52,0.935);
+    l1->SetHeader("ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
+    l1->AddEntry((TObject*)0,Form("J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
+    l1->AddEntry((TObject*)0,Form("|#it{y}| < 0.8"),"");
+    l1->AddEntry((TObject*)0,Form("#it{m}_{#mu#mu} #in (3.0,3.2) GeV/#it{c}^{2}"),"");
+    l1->SetTextSize(0.05);
+    l1->SetBorderSize(0); // no border
+    l1->SetFillStyle(0);  // legend is transparent
+    l1->Draw();
+
+    // Legend 2
+    TLegend *l2 = new TLegend(0.59,0.60,0.9,0.935);
+    //leg2->SetTextSize(0.027);
+    l2->AddEntry("DSetData","Data", "P");
+    l2->AddEntry("Mod","sum","L");
+    l2->AddEntry("hPDFCohJ","coherent J/#psi", "L");
+    l2->AddEntry("hPDFIncJ","incoherent J/#psi", "L");
+    l2->AddEntry("hPDFDiss","inc. J/#psi with nucl. diss.", "L");
+    l2->AddEntry("hPDFCohP","J/#psi from coh. #psi(2#it{S}) decay", "L");
+    l2->AddEntry("hPDFIncP","J/#psi from inc. #psi(2S) decay", "L");
+    //l2->AddEntry((TObject*)0,Form("f_{C} = %.4f #pm %.4f", f_C, f_C_err),""); // (#it{p}_T #in (0.2,2.0) GeV/#it{c})
+    l2->SetTextSize(0.043);
+    l2->SetBorderSize(0);
+    l2->SetFillStyle(0);
+    l2->Draw();
+
+    // 13) Print the results to pdf and png
+    str = new TString(Form("%sPtFitNoBkg_Binning%i", OutputPtFitWithoutBkg.Data(),BinningOpt));
+    cCM->Print((*str + "_CM.pdf").Data());
+    cCM->Print((*str + "_CM.png").Data());
+    cPt->Print((*str + ".pdf").Data());
+    cPt->Print((*str + ".png").Data());
+
+    return;
+}
+
 
 void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t bin){
     // Fit the invariant mass distribution using Double-sided CB function
@@ -119,8 +458,6 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     RooRealVar fPt("fPt","fPt",0,10.);
     RooRealVar fY("fY","fY",-0.8,0.8);
 
-    //fM.setBinning(binM);
-
     // Get the data trees
     TFile *fFileIn = new TFile("Trees/PtFit/PtFitWithoutBkgTree.root"); 
     TTree *fTreeIn = NULL;
@@ -146,20 +483,20 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     TString* path = new TString("Results/InvMassFitMC/");
     path->Append("inc_doubleCB.txt");
 
-    ifstream fTxtFileIn;
-    fTxtFileIn.open(path->Data());
-    if(fTxtFileIn.fail()){
+    ifstream file_in;
+    file_in.open(path->Data());
+    if(file_in.fail()){
         Printf("\n");
         Printf("*** Warning! ***");
         Printf("*** MC values for tail parameters not found. Terminating... *** \n");
         return;
     } else {
         Int_t i_line = 0;
-        while(!fTxtFileIn.eof()){
-            fTxtFileIn >> name >> values[i_line] >> errors[i_line];
+        while(!file_in.eof()){
+            file_in >> name >> values[i_line] >> errors[i_line];
             i_line++;
         }
-        fTxtFileIn.close();
+        file_in.close();
     }
     fAlpha_L = values[0];
     fAlpha_R = values[1];
@@ -216,9 +553,14 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
 
     // ##########################################################
     // Plot the results
+    SetStyle();
+
     // Draw histogram with fit results
     TCanvas *cHist = new TCanvas("cHist","cHist",800,600);
-    SetCanvas(cHist,kFALSE);
+    cHist->SetTopMargin(0.055);
+    cHist->SetBottomMargin(0.12);
+    cHist->SetRightMargin(0.03);
+    cHist->SetLeftMargin(0.11);
 
     RooPlot* fFrameM = fM.frame(Title("Mass fit")); 
     fDataSet->plotOn(fFrameM,Name("fDataSet"),Binning(binM),MarkerStyle(20),MarkerSize(1.));
@@ -285,27 +627,10 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     if(save){
         // Prepare path
         TString *str = NULL;
-        str = new TString(Form("%sbin%i", FilePath.Data(), bin));
+        str = new TString(Form("%sInvMassFitsBins/Binning%i/bin%i", OutputPtFitWithoutBkg.Data(), BinningOpt, bin));
         // Print the plots
-        //cHist->Print((*str + ".pdf").Data());
         cHist->Print((*str + ".png").Data()); 
     }
-
-    return;
-}
-
-void SetCanvas(TCanvas *c, Bool_t bLogScale){
-
-    gStyle->SetOptTitle(0);
-    gStyle->SetOptStat(0);
-    gStyle->SetPalette(1);
-    gStyle->SetPaintTextFormat("4.2f");
-
-    if(bLogScale == kTRUE) c->SetLogy();
-    c->SetTopMargin(0.055);
-    c->SetBottomMargin(0.12);
-    c->SetRightMargin(0.03);
-    c->SetLeftMargin(0.11);
 
     return;
 }
@@ -342,44 +667,6 @@ void PrepareDataTree(){
     }
 
     fFileOut.Write("",TObject::kWriteDelete);
-
-    return;
-}
-
-void MakePtBins(){
-
-    const Int_t nBinTypes = 4;
-    // in pt, GeV/c
-    Double_t bin_widths[nBinTypes] = {0.01, 0.02, 0.08, 0.40}; 
-    Double_t bin_max[nBinTypes] = {0.20, 0.40, 1.20, 2.00}; 
-
-    vector<Double_t> edges;
-    edges.push_back(0.);
-
-    Double_t edge = 0;
-    Int_t curr_bin_type = 0;
-
-    // numeric problems here without "- 0.0001"... 
-    while(edge < bin_max[nBinTypes-1] - 0.0001){
-        edge += bin_widths[curr_bin_type];
-        edges.push_back(edge);
-        Printf("bin type %i, edge %.2f", curr_bin_type, edge);
-        if(edge > bin_max[curr_bin_type] - 0.0001) curr_bin_type++;
-    }
-
-    TString name = "Results/PtFit/WithoutBkg/PtBinEdges.txt";
-    ofstream outfile (name.Data());
-    outfile << std::fixed << std::setprecision(0); 
-    outfile << "Double_t edges[" << edges.size() << "] = {\n\t";
-    outfile << std::fixed << std::setprecision(2); 
-    for(unsigned i = 0; i < edges.size()-1; i++){
-        outfile << edges[i] << ", ";
-        if((i+1) % 10 == 0) outfile << "\n\t";
-    }
-    outfile << edges[edges.size()-1] << "\n};";
-
-    outfile.close();
-    Printf("*** Results printed to %s.***", name.Data());
 
     return;
 }

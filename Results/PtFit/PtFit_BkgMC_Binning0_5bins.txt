@@ -1,0 +1,38 @@
+Dataset contains 4639 events.
+***
+In 0.0 < pt 2.0 GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	Sum
+2575.50	482.63	181.34	35.59	346.34	1047.87	4669.27
+***
+In 0.2 < pt 2.0 GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	Sum 	fC 	fC_err 	fDCoh 	fDC_err	fDInc 	fDI_err
+7.54	385.07	80.48	28.23	328.01	0.07	829.39	0.0106	0.0006	0.1129	0.0066	0.0396	0.0036
+***
+In 0.2 < pt 1.0 GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	Sum 
+7.54	381.08	80.48	28.04	220.46	0.07	717.67
+***
+In bin 1, (0.200, 0.264) GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 	fDCoh 	fDC_err	fDInc 	fDI_err
+7.43	59.11	40.82	4.64	12.80	0.07	0.1033	0.0067	0.5676	0.0369	0.0645	0.0061
+***
+In bin 2, (0.264, 0.335) GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 	fDCoh 	fDC_err	fDInc 	fDI_err
+0.11	69.34	27.76	5.22	17.15	0.00	0.0013	0.0001	0.3209	0.0206	0.0604	0.0057
+***
+In bin 3, (0.335, 0.445) GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 	fDCoh 	fDC_err	fDInc 	fDI_err
+0.00	94.32	11.39	7.09	31.10	0.00	0.0000	-nan	0.0908	0.0056	0.0565	0.0052
+***
+In bin 4, (0.445, 0.658) GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 	fDCoh 	fDC_err	fDInc 	fDI_err
+0.00	109.91	0.51	7.97	66.74	0.00	0.0000	-nan	0.0029	0.0002	0.0451	0.0041
+***
+In bin 5, (0.658, 1.000) GeV/c:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 	fDCoh 	fDC_err	fDInc 	fDI_err
+0.00	48.40	0.00	3.12	92.67	0.00	0.0000	-nan	0.0000	-nan	0.0221	0.0021
+***
+Sum over bins:
+NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr
+7.54	381.08	80.48	28.04	220.46	0.07
+***
