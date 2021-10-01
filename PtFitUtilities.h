@@ -24,6 +24,7 @@
 #include "RooHistPdf.h"
 #include "RooGenericPdf.h"
 #include "RooAddPdf.h"
+#include "RooExtendPdf.h"
 #include "RooFitResult.h"
 #include "RooPlot.h"
 

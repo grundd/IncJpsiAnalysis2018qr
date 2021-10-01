@@ -1,0 +1,2 @@
+AxE[%] 	JCoh 	Err 	JInc 	Err 
+Total	0.0122	0.0006	2.1442	0.0074

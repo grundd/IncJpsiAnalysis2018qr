@@ -22,11 +22,11 @@ NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 	fDCoh 	fDC_err	fDInc 	fDI_
 ***
 In bin 3, (0.375, 0.569) GeV/c:
 NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 	fDCoh 	fDC_err	fDInc 	fDI_err
-0.00	114.79	4.97	8.39	34.76	34.19	0.0000	-nan	0.0332	0.0025	0.0561	0.0061
+0.00	114.79	4.97	8.39	34.76	34.19	0.0000	0.0000	0.0332	0.0025	0.0561	0.0061
 ***
 In bin 4, (0.569, 1.000) GeV/c:
 NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr 	fC 	fC_err 	fDCoh 	fDC_err	fDInc 	fDI_err
-0.00	71.91	0.00	4.93	71.06	60.06	0.0000	-nan	0.0000	0.0000	0.0345	0.0040
+0.00	71.91	0.00	4.93	71.06	60.06	0.0000	0.0000	0.0000	0.0000	0.0345	0.0040
 ***
 Sum over bins:
 NCohJ 	NIncJ 	NCohP 	NIncP 	NDiss 	NBkgr

@@ -158,8 +158,6 @@ void DoInvMassFitMainMC(Int_t opt = 0){
     Int_t nEvents = fDataSet->numEntries();
     Printf("*** Number of events in the dataset: %i ***\n", nEvents);
 
-    //*************************************************** OK
-
     // Roofit variables
     RooRealVar norm_L("norm_L","N_{L}(J/#psi)",nEvents,0,1e06);
     RooRealVar norm_R("norm_R","N_{R}(J/#psi)",nEvents,0,1e06);
@@ -167,13 +165,13 @@ void DoInvMassFitMainMC(Int_t opt = 0){
 
     RooRealVar mean_L("m","m_{J/#psi}",3.097,3.0,3.2);
     RooRealVar sigma_L("sig","#sigma_{J/#psi}",0.0186,0.01,0.2);
-    RooRealVar alpha_L("#alpha_{L}","alpha_{L}",2,0.0,20.0);
-    RooRealVar n_L("n_{L}","n_{L}",2,0,20);
+    RooRealVar alpha_L("#alpha_{L}","alpha_{L}",1.,0.0,20.0);
+    RooRealVar n_L("n_{L}","n_{L}",1.,0,30);
 
     RooGenericPdf mean_R("mean_R","m_{J/#psi}","m",RooArgSet(mean_L));
     RooGenericPdf sigma_R("sigma_R","#sigma_{J/#psi}","sig",RooArgSet(sigma_L));
-    RooRealVar alpha_R("#alpha_{R}","alpha_{R}",-2,-20.0,0.0); 
-    RooRealVar n_R("n_{R}","n_{R}",2,0,20);
+    RooRealVar alpha_R("#alpha_{R}","alpha_{R}",-1.,-20.0,0.0); 
+    RooRealVar n_R("n_{R}","n_{R}",1.,0,30);
 
     RooCBShape CB_left("CB_left","CB_left",fM,mean_L,sigma_L,alpha_L,n_L);
     RooCBShape CB_right("CB_right","CB_right",fM,mean_R,sigma_R,alpha_R,n_R);
@@ -249,8 +247,8 @@ void DoInvMassFitMainMC(Int_t opt = 0){
     leg2->Draw();
 
     // Draw Histogram with log scale
-    TCanvas *cHistlog = new TCanvas("cHistlog","cHistlog",800,600);
-    SetCanvas(cHistlog,kTRUE);
+    TCanvas *cHistLog = new TCanvas("cHistLog","cHistLog",800,600);
+    SetCanvas(cHistLog,kTRUE);
     frameM->Draw();
     leg->Draw();
     leg2->Draw();
@@ -294,6 +292,8 @@ void DoInvMassFitMainMC(Int_t opt = 0){
     // Print the plots
     cHist->Print((*str + ".pdf").Data());
     cHist->Print((*str + ".png").Data());
+    cHistLog->Print((*str + "_log.pdf").Data());
+    cHistLog->Print((*str + "_log.png").Data());
     cCorrMat->Print((*str + "_cm.pdf").Data());
     cCorrMat->Print((*str + "_cm.png").Data());
     

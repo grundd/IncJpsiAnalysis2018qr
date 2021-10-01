@@ -79,7 +79,7 @@ void AccAndEffMC(){
     }
 
     // Calculate AxE in pt bins for FD correction
-    Bool_t bCorrFD = kTRUE;
+    Bool_t bCorrFD = kFALSE;
     if(bCorrFD){
         SetPtBinning();
         TString str1 = Form("%sAxE_FeedDown_%ibins.txt", path.Data(), nPtBins);
@@ -148,6 +148,58 @@ void AccAndEffMC(){
         Printf("*** Results printed to %s.***", str.Data());
     }
 
+    // Direct calculation of FC correction from AxEs: a total value
+    Bool_t bCorrFCDirect = kFALSE;
+    if(bCorrFCDirect){
+        TString str = Form("%sAxE_CorrFC_Total.txt", path.Data());
+        ofstream outfile(str.Data());
+        outfile << std::fixed << std::setprecision(4);
+        outfile << Form("AxE[%%] \tJCoh \tErr \tJInc \tErr \nTotal");
+        // Only kCohJpsiToMu and kIncohJpsiToMu
+        for(Int_t iMC = 0; iMC < 2; iMC++){ 
+            CalculateAxE(iMC, 0, 0);
+            outfile << "\t" << AxE << "\t" << AxE_err;
+        }
+        outfile.close();
+        Printf("*** Results printed to %s.***", str.Data());
+    }
+
+    // Direct calculation of FC correction from AxEs: bins
+    Bool_t bCorrFCDirectBins = kTRUE;
+    if(bCorrFCDirectBins){
+        SetPtBinning();
+        TString str1 = Form("%sAxE_CorrFC_%ibins.txt", path.Data(), nPtBins);
+        TString str2 = Form("%sAxE_CorrFC_%ibins_NGen_SL.txt", path.Data(), nPtBins);
+        ofstream outfile1(str1.Data());
+        ofstream outfile2(str2.Data());
+        outfile1 << std::fixed << std::setprecision(4);
+        outfile2 << std::fixed << std::setprecision(0);
+        outfile1 << Form("AxE[%%] \tJCoh \tErr \tJInc \tErr\n");
+        outfile2 << Form("NGen \tJCoh \tJInc \nTotal");
+        // Go over kCohJpsiToMu and kIncohJpsiToMu to get NGen_tot
+        for(Int_t iMC = 0; iMC < 2; iMC++){
+            CalculateAxE(iMC, 0, 0);
+            outfile2 << "\t" << NGen;
+        }
+        outfile2 << "\n";
+        // For all pt bins:
+        for(Int_t iBin = 1; iBin <= nPtBins; iBin++){
+            outfile1 << iBin;
+            outfile2 << iBin;
+            // For kCohJpsiToMu and kIncohJpsiToMu
+            for(Int_t iMC = 0; iMC < 2; iMC++){
+                CalculateAxE(iMC, 0, 4, iBin);
+                outfile1 << "\t" << AxE << "\t" << AxE_err;
+                outfile2 << "\t" << NGen;
+            }
+            outfile1 << "\n";
+            outfile2 << "\n";
+        }
+        outfile1.close();
+        Printf("*** Results printed to %s.***", str1.Data());
+        Printf("*** Results printed to %s.***", str2.Data());
+    }
+
     return;
 }
 
@@ -201,8 +253,13 @@ void CalculateAxE(Int_t iMC, Int_t iMassCut, Int_t iPtCut, Int_t iPtBin){
     Printf("N_rec = %.0f", NRec);
     Printf("N_gen = %.0f", NGen);
 
-    AxE = NRec / NGen * 100; // in percent already
-    AxE_err = CalculateErrorBayes(NRec, NGen) * 100;
+    if(NGen != 0){
+        AxE = NRec / NGen * 100; // in percent already
+        AxE_err = CalculateErrorBayes(NRec, NGen) * 100;
+    } else {
+        AxE = 0;
+        AxE_err = 0;
+    }
 
     Printf("AxE = (%.4f pm %.4f)%%", AxE, AxE_err);
 
@@ -293,8 +350,14 @@ void CalculateAxE_AOD(Int_t iMC, Int_t iMassCut, Int_t iPtCut){
     Printf("N_rec = %.0f", NRec);
     Printf("N_gen = %.0f", NGen);
 
-    AxE = NRec / NGen * 100;
-    AxE_err = CalculateErrorBayes(NRec, NGen) * 100;
+    if(NGen != 0){
+        AxE = NRec / NGen * 100; // in percent already
+        AxE_err = CalculateErrorBayes(NRec, NGen) * 100;
+    } else {
+        AxE = 0;
+        AxE_err = 0;
+    }
+    
 
     Printf("AxE = (%.4f pm %.4f)%%", AxE, AxE_err);
 

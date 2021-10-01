@@ -15,7 +15,7 @@ void DoPtFit();
 
 void PtFit(){
 
-    SetPtBins(1);
+    SetPtBins(0);
 
     PreparePDFs_MC();
 
@@ -288,7 +288,8 @@ void DoPtFit(){
         Double_t N_IncJ_bins_err = fN_IncJ_bins[i]->getVal()*NIncJ.getError();
         Double_t N_Diss_bins_err = fN_Diss_bins[i]->getVal()*NDiss.getError();
         Double_t denominator_err = TMath::Sqrt(TMath::Power(N_IncJ_bins_err,2) + TMath::Power(N_Diss_bins_err,2));
-        fC_bins_err[i] = fC_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohJ_bins_err/N_CohJ_bins[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins[i] + N_Diss_bins[i])),2));    
+        if(N_CohJ_bins[i] != 0) fC_bins_err[i] = fC_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohJ_bins_err/N_CohJ_bins[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins[i] + N_Diss_bins[i])),2));    
+        else fC_bins_err[i] = 0.;
         Double_t N_CohP_bins_err = fN_CohP_bins[i]->getVal()*fDCoh*NCohJ.getError();
         Double_t N_IncP_bins_err = fN_IncP_bins[i]->getVal()*fDInc*NIncJ.getError();
         fDCoh_bins_val[i] = N_CohP_bins[i] / (N_IncJ_bins[i] + N_Diss_bins[i]);
