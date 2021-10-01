@@ -20,8 +20,8 @@ Documents/
 *.jdl
 
 # Ignore also any pictures
-*.pdf
-*.png
+#*.pdf
+#*.png
 
 # Ignore Libre Office tables
 *.ods
