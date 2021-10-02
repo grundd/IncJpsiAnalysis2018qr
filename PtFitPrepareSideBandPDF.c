@@ -101,8 +101,8 @@ void PlotPDF(){
     hSideBand->SetLineWidth(1.0);
     hSideBand->Draw("P E1");
 
-    c1->Print("Trees/PtFit/SideBandPDF/hSideBand.png");
-    c1->Print("Trees/PtFit/SideBandPDF/hSideBand.pdf");
+    c1->Print("Results/PtFit/SideBandPDF/hSideBand.png");
+    c1->Print("Results/PtFit/SideBandPDF/hSideBand.pdf");
 
     // Plot the result with uniform binning
     TCanvas *c2 = new TCanvas("c2","c2",900,600);
@@ -134,8 +134,8 @@ void PlotPDF(){
     hSideBand2->SetLineWidth(1.0);
     hSideBand2->Draw("P E1");
 
-    c2->Print("Trees/PtFit/SideBandPDF/hSideBand2.png");
-    c2->Print("Trees/PtFit/SideBandPDF/hSideBand2.pdf");
+    c2->Print("Results/PtFit/SideBandPDF/hSideBand2.png");
+    c2->Print("Results/PtFit/SideBandPDF/hSideBand2.pdf");
 
     return;
 }
