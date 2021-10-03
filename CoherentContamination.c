@@ -30,7 +30,7 @@ void CalculateFC_PtBins();
 
 void CoherentContamination(){
 
-    CalculateFC_Total();
+    //CalculateFC_Total();
 
     CalculateFC_PtBins();
 
@@ -101,7 +101,7 @@ void CalculateFC_PtBins(){
             Printf("Reading line %i: %s", i, str.data());
             istringstream in_stream(str);
             // skip first line
-            if(i > 1) in_stream >> ch >> AxE_CohJ_val[i-1] >> AxE_CohJ_err[i-1] >> AxE_IncJ_val[i-1] >> AxE_IncJ_err[i-1];
+            if(i > 0) in_stream >> ch >> AxE_CohJ_val[i-1] >> AxE_CohJ_err[i-1] >> AxE_IncJ_val[i-1] >> AxE_IncJ_err[i-1];
             i++;   
         }
     }
@@ -130,23 +130,36 @@ void CalculateFC_PtBins(){
     in_file2.close();
     Printf("Input file loaded...");
     // Cross-check:
-    //Printf("%.0f", NGen_tot[0]); 
-    //Printf("%.0f", NGen_bin[1][3]);
+    Printf("%.0f", NGen_tot[0]); 
+    Printf("%.0f", NGen_bin[1][3]);
 
     // Calculate FC corrections and print them into text file
     str = Form("%sCoherentContamination_%ibins.txt", path.Data(), nPtBins);
     ofstream outfile(str.Data());
-    outfile << std::fixed << std::setprecision(4);
-    outfile << Form("[%%] \tfC \tErr \n");  
+    outfile << Form("Bin \tCohNGen\tIncNGen\tSigCoh \tSigInc \tAxECoh\tErr \tAxEInc\tErr \tfC [%%] \tErr \n");  
     for(Int_t i = 0; i < nPtBins; i++){  
-        fC_val[i] = sig_SL_j_coh * (NGen_bin[0][i]/NGen_tot[0]) / (sig_SL_j_inc * (NGen_bin[1][i]/NGen_tot[1])) * AxE_CohJ_val[i] / AxE_IncJ_val[i] * 100; // in percent already
+        fC_val[i] = (sig_SL_j_coh * (NGen_bin[0][i]/NGen_tot[0])) / (sig_SL_j_inc * (NGen_bin[1][i]/NGen_tot[1])) * (AxE_CohJ_val[i] / AxE_IncJ_val[i]) * 100; // in percent already
         if(AxE_CohJ_val[i] != 0){
             fC_err[i] = fC_val[i] * TMath::Sqrt(
                 TMath::Power((AxE_CohJ_err[i]/AxE_CohJ_val[i]),2) + 
                 TMath::Power((AxE_IncJ_err[i]/AxE_IncJ_val[i]),2));
         } else fC_err[i] = 0;
-        outfile << i+1 << "\t" << fC_val[i] << "\t" << fC_err[i] << "\n";
+        outfile << std::fixed  << std::setprecision(0);
+        outfile << i+1 << "\t" << NGen_bin[0][i] << "\t" 
+                               << NGen_bin[1][i] << "\t";
+        outfile << std::fixed  << std::setprecision(4)
+                               << sig_SL_j_coh * (NGen_bin[0][i]/NGen_tot[0]) << "\t" 
+                               << sig_SL_j_inc * (NGen_bin[1][i]/NGen_tot[1]) << "\t";
+        outfile << std::fixed  << std::setprecision(2)
+                               << AxE_CohJ_val[i] << "\t" 
+                               << AxE_CohJ_err[i] << "\t" 
+                               << AxE_IncJ_val[i] << "\t" 
+                               << AxE_IncJ_err[i] << "\t"                  
+                               << fC_val[i] << "\t" 
+                               << fC_err[i] << "\n";
     }
+    outfile << std::fixed << std::setprecision(0) << "Total" << "\t" << NGen_tot[0] << "\t" << NGen_tot[1] << "\t";
+    outfile << std::fixed << std::setprecision(3) << sig_SL_j_coh << "\t" << sig_SL_j_inc;
     outfile.close();
     Printf("*** Results printed to %s.***", str.Data());
 
