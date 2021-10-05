@@ -200,11 +200,15 @@ void CalculateFD_PtBins(){
     //Printf("%.0f", NGen_tot[0]); 
     //Printf("%.0f", NGen_bin[4][4]);
 
-    // 3) Define output file
+    // 3a) Define the output file for fD
     TString str = Form("%sFeedDown_%ibins.txt", path.Data(), nPtBins);
     ofstream outfile(str.Data());
     outfile << std::fixed << std::setprecision(4);
     outfile << Form("fD[%%] \tCohCh \tErr \tIncCh \tErr \tCohNe \tErr \tIncNe \tErr \n");
+    // 3b) Define the output file for weighed STARlight cross sections
+    TString str2 = Form("%sSTARlight_WeighedCrossSections_%ibins.txt", path.Data(), nPtBins);
+    ofstream outfile2(str2.Data());
+    outfile2 << Form("Bin \tIncNGen\tCChNgen\tIChNGen\tCNeNgen\tINeNgen\tIncSig \tCChSig \tIChSig \tCNeSig \tINeSig \n"); 
 
     // 4) Loop over bins, calculate fD corrections
     for(Int_t i = 0; i < nPtBins; i++){
@@ -242,11 +246,23 @@ void CalculateFD_PtBins(){
         outfile << "\t" << fD_coh_ch_val[i] << "\t" << fD_coh_ch_err[i] 
                 << "\t" << fD_inc_ch_val[i] << "\t" << fD_inc_ch_err[i] 
                 << "\t" << fD_coh_ne_val[i] << "\t" << fD_coh_ne_err[i] 
-                << "\t" << fD_inc_ne_val[i] << "\t" << fD_inc_ne_err[i] << "\n";   
+                << "\t" << fD_inc_ne_val[i] << "\t" << fD_inc_ne_err[i] << "\n";  
+        outfile2 << i + 1 << std::fixed << std::setprecision(0);
+        outfile2 << "\t" << NGen_bin[0][i] << "\t" << NGen_bin[1][i] << "\t" << NGen_bin[2][i] << "\t" << NGen_bin[3][i] << "\t" << NGen_bin[4][i];
+        outfile2 << std::fixed << std::setprecision(3);
+        outfile2 << "\t" << sig_SL_j_inc * (NGen_bin[0][i]/NGen_tot[0]) 
+                 << "\t" << sig_SL_p_coh * (NGen_bin[1][i]/NGen_tot[1]) 
+                 << "\t" << sig_SL_p_inc * (NGen_bin[2][i]/NGen_tot[2])
+                 << "\t" << sig_SL_p_coh * (NGen_bin[3][i]/NGen_tot[3]) 
+                 << "\t" << sig_SL_p_inc * (NGen_bin[4][i]/NGen_tot[4]) << "\n";
     }
     outfile.close();
     Printf("*** Results printed to %s.***", str.Data());
-
+    outfile2 << std::fixed << std::setprecision(0);
+    outfile2 << "Total" << "\t" << NGen_tot[0] << "\t" << NGen_tot[1] << "\t" << NGen_tot[2] << "\t" << NGen_tot[3] << "\t" << NGen_tot[4] << "\n";
+    outfile2.close();
+    Printf("*** Results printed to %s.***", str2.Data());
+    
     return;
 }
 

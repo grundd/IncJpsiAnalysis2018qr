@@ -323,6 +323,9 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0){
         case 2: // Total sample (pt < 2.0 GeV/c)
             if(fPt < 2.00) bPtCut = kTRUE;
             break;
+        case 3: // Sample with pt from 0.2 to 1 GeV/c 
+            if(fPt > 0.20 && fPt < 1.00) bPtCut = kTRUE;
+            break;
     }
     if(!bPtCut) return kFALSE;
 

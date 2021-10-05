@@ -227,8 +227,8 @@ void DoInvMassFitMain(Int_t opt = 0){
     // DSCB = Double-sided Crystal Ball function
     RooRealVar alpha_L("alpha_L","alpha_L from DSCB",fAlpha_L,0.,10.);
     RooRealVar alpha_R("alpha_R","alpha_R from DSCB",fAlpha_R,-10.,0.);
-    RooRealVar n_L("n_L","n_L from DSCB",fN_L,0.,20.);
-    RooRealVar n_R("n_R","n_R from DSCB",fN_R,0.,20.);
+    RooRealVar n_L("n_L","n_L from DSCB",fN_L,0.,30.);
+    RooRealVar n_R("n_R","n_R from DSCB",fN_R,0.,30.);
     alpha_L.setConstant(kTRUE);
     alpha_R.setConstant(kTRUE);
     n_L.setConstant(kTRUE);

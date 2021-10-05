@@ -13,5 +13,5 @@
 10) oposite charges:	399604
 11) muon pairs only:	349276
 12) mass 2.2 to 4.5:	16448
-13) dimuon pt > 0.2:	4547
-14) mass 3.0 to 3.2:	846
+13) p_T 0.2 to 1.0: 	3676
+14) mass 3.0 to 3.2:	722

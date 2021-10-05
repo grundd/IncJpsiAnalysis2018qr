@@ -88,15 +88,15 @@ Double_t CalculateErrorBayes(Double_t k, Double_t n);
 
 void AccAndEffMC_PtDep(){
 
-    //CalculateAxEPtDep();
+    CalculateAxEPtDep();
 
     // Ratios vs pt rec
     cuts[0] = 0;
-    CalculateRatiosOfNRec();
+    //CalculateRatiosOfNRec();
 
     // Ratios vs pt gen
     cuts[0] = 1;
-    CalculateRatiosOfNRec();
+    //CalculateRatiosOfNRec();
 
     return;
 }
@@ -136,7 +136,7 @@ void CalculateAxEPtDep(){
     hAxE->GetYaxis()->SetTitleOffset(1.3);
     hAxE->GetYaxis()->SetLabelSize(0.056);
     hAxE->GetYaxis()->SetDecimals(3);
-    hAxE->GetYaxis()->SetRangeUser(0.0,hAxE->GetBinContent(1)*1.1);
+    //hAxE->GetYaxis()->SetRangeUser(0.10,hAxE->GetBinContent(1)*1.5); // for pt cut only
     // Horizontal axis
     if(cuts[0] == 0) hAxE->GetXaxis()->SetTitle("#it{p}_{T}^{rec} (GeV/#it{c})");
     if(cuts[0] == 1) hAxE->GetXaxis()->SetTitle("#it{p}_{T}^{gen} (GeV/#it{c})");
@@ -156,6 +156,14 @@ void CalculateAxEPtDep(){
     l->SetBorderSize(0); // no border
     l->SetFillStyle(0);  // legend is transparent
     l->Draw();
+    // Legend 2
+    TLegend *l2 = new TLegend(0.15,0.17,0.35,0.32);
+    l2->AddEntry((TObject*)0,Form("|#it{y}| < 0.8"),""); 
+    l2->AddEntry((TObject*)0,Form("2.2 < #it{m} < 4.5 GeV/#it{c}^{2}"),"");
+    l2->SetTextSize(0.056);
+    l2->SetBorderSize(0); // no border
+    l2->SetFillStyle(0);  // legend is transparent
+    l2->Draw();
 
     // Save the figures and print the results to txt file
     TString CutConfiguration = ConvertCutsToString();
@@ -503,7 +511,7 @@ Bool_t EventPassedMCGen_AxEPtDep(Int_t iPtBin = 0){
 
 void SetPad(TPad* p){
     p->SetTopMargin(0.02);
-    p->SetBottomMargin(0.14);
+    p->SetBottomMargin(0.15);
     p->SetRightMargin(0.03);
     p->SetLeftMargin(0.145);
 

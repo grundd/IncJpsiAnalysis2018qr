@@ -16,42 +16,43 @@
 
 Int_t nBins = 200;
 
-// For |y| < 1.0
-Double_t SigSL_j_inc = 5.247; //mb
-Double_t SigSL_j_coh = 12.504;//mb
-Double_t SigSL_p_inc = 0.92;  //mb
-Double_t SigSL_p_coh = 2.52;  //mb
-// For |y| < 0.8
-Double_t SigSL_j_inc2;   //mb
-Double_t SigSL_j_coh2;   //mb
-Double_t SigSL_p_inc2;   //mb
-Double_t SigSL_p_coh2;   //mb
+Double_t N_gen_tot[4] = { 0 };  // total number of gen events
+Double_t N_gen_rap1[4] = { 0 }; // number of gen events with |y| < 1.0
+Double_t N_gen_rap2[4] = { 0 }; // number of gen events with |y| < 0.8
+Double_t Ratio1[4] = { 0 };      // ratio of N_gen_rap2[i] / N_gen_tot[i]
+Double_t Ratio2[4] = { 0 };      // ratio of N_gen_rap2[i] / N_gen_rap1[i]
 
-void CalculateNewCS(Int_t Dataset);
+// 1): for |y| < 1.0, 2): for |y| < 0.8
+Double_t SigSL_j_inc[2] = {5.247, 0}; //mb
+Double_t SigSL_j_coh[2] = {12.504, 0};//mb
+Double_t SigSL_p_inc[2] = {0.923, 0}; //mb
+Double_t SigSL_p_coh[2] = {2.526, 0}; //mb
+
+void CalculateNewCS(Int_t iMC);
 
 void STARlightCrossSections(){
 
-    for(Int_t i = 1; i <= 4; i++){
+    for(Int_t i = 0; i < 4; i++){
         CalculateNewCS(i);
     }
 
     return;
 }
 
-void CalculateNewCS(Int_t Dataset){
+void CalculateNewCS(Int_t iMC){
 
     TFile *file = NULL;
-    switch(Dataset){
-        case 1:
+    switch(iMC){
+        case 0:
             file = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohJpsiToMu.root", "read");
             break;
-        case 2:
+        case 1:
             file = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohJpsiToMu.root", "read");
             break;
-        case 3:
+        case 2:
             file = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohPsi2sToMuPi.root", "read");
             break;
-        case 4:
+        case 3:
             file = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohPsi2sToMuPi.root", "read");
             break;
     }
@@ -67,31 +68,33 @@ void CalculateNewCS(Int_t Dataset){
     TH1D *hRapDist = new TH1D("hRapDist","hRapDist",nBins,-2,2);
 
     // Loop over tree entries
-    Int_t N_tot = 0; // total number of gen events
-    Int_t N_y10 = 0; // number of gen events with |y| < 1.0
-    Int_t N_y08 = 0; // number of gen events with |y| < 0.8
     Int_t nEntriesAnalysed = 0;
 
     for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
         tGen->GetEntry(iEntry);
 
         hRapDist->Fill(fYGen);
-        N_tot++;
+        N_gen_tot[iMC]++;
         
-        if(TMath::Abs(fYGen) <= 1.0) N_y10++;
-        //else Printf("Event outside |y| <= 1.0.");
+        if(TMath::Abs(fYGen) < 1.0) N_gen_rap1[iMC]++;
 
-        if(TMath::Abs(fYGen) < 0.8) N_y08++;
+        if(TMath::Abs(fYGen) < 0.8) N_gen_rap2[iMC]++;
 
         if((iEntry+1) % 200000 == 0){
             nEntriesAnalysed += 200000;
             //Printf("%i entries analysed.", nEntriesAnalysed);
         }
     }
+
+    Ratio1[iMC] = N_gen_rap2[iMC] / N_gen_tot[iMC];
+    Ratio2[iMC] = N_gen_rap2[iMC] / N_gen_rap1[iMC];
+
     Printf("Done.");
-    Printf("N tot: %i", N_tot); 
-    Printf("N with |y| <= 1.0: %i", N_y10); 
-    Printf("N with |y| < 0.8: %i", N_y08); 
+    Printf("N_tot: %.0f", N_gen_tot[iMC]); 
+    Printf("N_rap1 (with |y| < 1.0): %.0f", N_gen_rap1[iMC]); 
+    Printf("N_rap2 (with |y| < 0.8): %.0f", N_gen_rap2[iMC]); 
+    Printf("Ratio N_rap2/N_tot: %.4f", Ratio1[iMC]);
+    Printf("Ratio N_rap2/N_rap1: %.4f", Ratio2[iMC]);
 
     hRapDist->Draw();
 

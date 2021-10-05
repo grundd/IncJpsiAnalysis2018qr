@@ -74,7 +74,7 @@ void CountEventsAfterSelections(){
         outfile << "10) oposite charges:\t" << counter[8] << "\n";
         outfile << "11) muon pairs only:\t" << counter[9] << "\n";
         outfile << "12) mass 2.2 to 4.5:\t" << counter[10] << "\n";
-        outfile << "13) dimuon pt > 0.2:\t" << counter[11] << "\n";
+        outfile << "13) p_T 0.2 to 1.0: \t" << counter[11] << "\n";
         outfile << "14) mass 3.0 to 3.2:\t" << counter[12] << "\n";
 
         outfile.close();
@@ -228,7 +228,7 @@ Bool_t EventPassedMyCuts(){
     counter[10]++;
 
     // 13) Transverse momentum cut
-    if(!(fPt > 0.20)) return kFALSE;
+    if(!(fPt > 0.20 && fPt < 1.00)) return kFALSE;
     counter[11]++;
 
     // 14) Invariant mass between 3.0 and 3.2 GeV/c^2
