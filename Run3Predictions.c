@@ -1,5 +1,5 @@
 // Run3Predictions.c
-// David Grund, Sep 29, 2021
+// David Grund, Oct 6, 2021
 
 // root headers
 #include "TFile.h"
@@ -8,12 +8,12 @@
 #include "TH1.h"
 #include "TCanvas.h"
 #include "TStyle.h"
+#include "TLegend.h"
 // my headers
 #include "AnalysisManager.h"
 
-Double_t N_Run3_tot = 1100000;
-Double_t sig_SL_j_inc = 5.247; //mb
-Double_t sig_SL_j_coh = 12.504;//mb
+Double_t nEvRun2 = 2836.5;  // events Roman had, with pt < 0.11
+Double_t nEvRun3 = 1100000; // with arbitraty pt
 
 void PrepareData();
 
@@ -21,27 +21,108 @@ void Run3Predictions(){
 
     //PrepareData();
 
-    gStyle->SetOptTitle(0); // suppress title
-    gStyle->SetOptStat(0);  // the type of information printed in the histogram statistics box
-                            // 0 = no information
-    gStyle->SetPalette(1);  // set color map
-    gStyle->SetPaintTextFormat("4.2f"); // precision if plotted with "TEXT"
+    TFile *file_in = TFile::Open("Trees/Run3Predictions/HistPtCoh.root", "read");
+    if(file_in) Printf("Input data loaded.");
 
-    TFile *file = TFile::Open("Trees/Run3Predictions/tPtNew.root", "read");
-    if(file) Printf("File %s loaded.", file->GetName());
+    TList *list_in = dynamic_cast<TList*> (file_in->Get("HistList"));
+    if(list_in) Printf("Input list loaded.");
 
-    TList *list = (TList*) file->Get("HistList");
-    if(list) Printf("List %s loaded.", list->GetName()); 
+    TH1D *hCoh = (TH1D*)list_in->FindObject("hCoh");
+    if(hCoh) Printf("Input histogram loaded.");
 
-    TH1D *hAll = (TH1D*)list->FindObject("hAll");
-    if(hAll) Printf("Histogram %s loaded.", hAll->GetName()); 
+    Int_t nBins = 60;
+
+    TH1D *hCohRun2 = new TH1D("hCohRun2", "hCohRun2", nBins, 0.0, 0.3);
+    TH1D *hCohRun3 = new TH1D("hCohRun3", "hCohRun3", nBins, 0.0, 0.3);
+
+    Double_t fPtGenerated = 0;
+
+    // Generate Run 2 events
+    Int_t nEvRun2Generated = 0;
+    while(nEvRun2Generated < nEvRun2){
+        fPtGenerated = hCoh->GetRandom();
+        hCohRun2->Fill(fPtGenerated);
+        if(fPtGenerated < 0.11) nEvRun2Generated++;
+    }
+    Printf("Run 2 events generated.");
+    Double_t nEv = hCohRun2->Integral(1, 22);
+    Double_t nEvAll = hCohRun2->Integral(1, nBins+1);
+    Printf("Histogram %s contains %.0f events with pt < 0.11.", hCohRun2->GetName(), nEv);
+    Printf("Histogram %s contains %.0f events in total.", hCohRun2->GetName(), nEvAll);
+
+    // Generate Run 3 events
+    Int_t nEvRun3Generated = 0;
+    while(nEvRun3Generated < nEvRun3){
+        fPtGenerated = hCoh->GetRandom();
+        hCohRun3->Fill(fPtGenerated);        
+        nEvRun3Generated++;
+    }
+    Printf("Run 3 events generated.");
+    nEv = hCohRun3->Integral(1, 22);
+    nEvAll = hCohRun3->Integral(1, nBins+1);
+    Printf("Histogram %s contains %.0f events with pt < 0.11.", hCohRun3->GetName(), nEv);
+    Printf("Histogram %s contains %.0f events in total.", hCohRun3->GetName(), nEvAll);
 
     TCanvas *c = new TCanvas("c", "c", 900, 600);
     c->SetLogy();
-    c->SetTopMargin(0.04);
-    c->SetRightMargin(0.04);
+    // Canvas margins
+    c->SetTopMargin(0.03);
+    c->SetBottomMargin(0.14);
+    c->SetRightMargin(0.03);
     c->SetLeftMargin(0.10);
-    hAll->Draw();
+    // TStyle
+    gStyle->SetOptTitle(0);
+    gStyle->SetOptStat(0);
+    gStyle->SetPalette(1);
+    gStyle->SetPaintTextFormat("4.2f");
+    // hCohRun3
+    // Style
+    hCohRun3->SetLineColor(225);
+    hCohRun3->SetLineWidth(2.0);
+    hCohRun3->SetFillColor(225);
+    hCohRun3->SetFillStyle(3357);
+    // Vertical axis
+    hCohRun3->GetYaxis()->SetTitle("Counts per 5 MeV");
+    hCohRun3->GetYaxis()->SetTitleSize(0.05);
+    hCohRun3->GetYaxis()->SetTitleOffset(1.0);
+    hCohRun3->GetYaxis()->SetLabelSize(0.05);
+    hCohRun3->GetYaxis()->SetRangeUser(1.0,1e6);
+    //hAxE->GetYaxis()->SetDecimals(3);
+    // Horizontal axis
+    hCohRun3->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
+    hCohRun3->GetXaxis()->SetTitleSize(0.05);
+    hCohRun3->GetXaxis()->SetTitleOffset(1.2);
+    hCohRun3->GetXaxis()->SetLabelSize(0.05);
+    hCohRun3->GetXaxis()->SetLabelOffset(0.015);
+    hCohRun3->GetXaxis()->SetDecimals(2);
+    // Draw it
+    hCohRun3->Draw("HIST");
+    // hCohRun2
+    // Line style
+    hCohRun2->SetLineColor(221);
+    hCohRun2->SetLineWidth(2.0);
+    hCohRun2->SetFillColor(221);
+    hCohRun2->SetFillStyle(3114);
+    // Draw it
+    hCohRun2->Draw("HIST SAME");
+    // Legend 1
+    TLegend *l1 = new TLegend(0.1,0.90,0.4,0.95);
+    l1->AddEntry((TObject*)0,"#it{p}_{T}-distribution of coherently photoproduced J/#psi measured with ALICE","");
+    l1->SetTextSize(0.042);
+    l1->SetBorderSize(0);
+    l1->SetFillStyle(0);
+    l1->Draw();
+    // Legend 2
+    TLegend *l2 = new TLegend(0.54,0.72,0.76,0.90);
+    l2->AddEntry(hCohRun2,"Run 2 (STARlight simulations)","f");
+    l2->AddEntry(hCohRun3,"Run 3 predictions (STARlight sim)","f");
+    l2->SetTextSize(0.042);
+    l2->SetBorderSize(0);
+    l2->SetFillStyle(0);
+    l2->Draw();
+
+    c->Print("Results/Run3Predictions/CohJpsi_Run3Predictions.pdf");
+    c->Print("Results/Run3Predictions/CohJpsi_Run3Predictions.png");
 
     return;
 }
@@ -51,57 +132,22 @@ void PrepareData(){
     TFile *fCoh = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohJpsiToMu.root", "read");
     if(fCoh) Printf("File %s loaded.", fCoh->GetName());
 
-    TFile *fInc = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kIncohJpsiToMu.root", "read");
-    if(fInc) Printf("File %s loaded.", fInc->GetName());
-
     TTree *tCoh = dynamic_cast<TTree*> (fCoh->Get("AnalysisOutput/fTreeJPsiMCRec"));
     if(tCoh) Printf("tCoh loaded.");
 
-    TTree *tInc = dynamic_cast<TTree*> (fInc->Get("AnalysisOutput/fTreeJPsiMCRec"));
-    if(tInc) Printf("tInc loaded.");
-
-    Double_t ratio = sig_SL_j_coh / (sig_SL_j_coh + sig_SL_j_inc);
-    Double_t N_coh = N_Run3_tot * ratio;
-    Printf("N_coh = %.0f", N_coh);
-    Double_t N_inc = N_Run3_tot * (1 - ratio);
-    Printf("N_inc = %.0f", N_inc);
+    ConnectTreeVariablesMCRec(tCoh);
 
     TList *l = new TList();
-
-    TH1D *hCoh = new TH1D("hCoh","hCoh",200,0.0,2.0); 
-    TH1D *hInc = new TH1D("hInc","hInc",200,0.0,2.0); 
-    
-    ConnectTreeVariablesMCRec(tCoh);
+    TH1D *hCoh = new TH1D("hCoh","hCoh",200,0.0,0.5); 
+    l->Add(hCoh);
 
     for(Int_t iEntry = 0; iEntry < tCoh->GetEntries(); iEntry++){
         tCoh->GetEntry(iEntry);
         hCoh->Fill(fPt);
     }
-  
-    ConnectTreeVariablesMCRec(tInc);
+    Printf("Done.");
 
-    for(Int_t iEntry = 0; iEntry < tInc->GetEntries(); iEntry++){
-        tInc->GetEntry(iEntry);
-        hInc->Fill(fPt);
-    }
-
-    Double_t factorCoh = N_coh / hCoh->GetEntries();
-    Double_t factorInc = N_inc / hInc->GetEntries();
-    hCoh->Scale(factorCoh);
-    hInc->Scale(factorInc);
-
-    TH1D *hAll = (TH1D*)hCoh->Clone("hAll");
-    hAll->Add(hInc);
-
-    l->Add(hCoh);
-    l->Add(hInc);
-    l->Add(hAll);
-
-    Printf("Integral of hCoh: %.0f", hCoh->Integral());
-    Printf("Integral of hInc: %.0f", hInc->Integral());
-    Printf("Integral of hAll: %.0f", hAll->Integral());
-
-    TFile *f = new TFile("Trees/Run3Predictions/tPtNew.root","RECREATE");
+    TFile *f = new TFile("Trees/Run3Predictions/HistPtCoh.root","RECREATE");
     l->Write("HistList", TObject::kSingleKey);
     f->ls();
 

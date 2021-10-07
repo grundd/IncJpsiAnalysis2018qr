@@ -355,6 +355,18 @@ void DoPtFitNoBkg(){
     outfile << sum_bins[4] << "\n***\n";
     outfile.close();
     Printf("*** Results printed to %s. ***", (*str + ".txt").Data());
+
+    // Print to another file from which the values for CalculateCrossSection.c will be loaded
+    str = new TString(Form("%sCohContamination_Binning%i_%ibins", OutputPtFitWithoutBkg.Data(),BinningOpt, nPtBins));
+    ofstream outfile2((*str + ".txt").Data());
+    outfile2 << std::fixed << std::setprecision(3);
+    outfile2 << Form("Bin \tfC [%%]\tErr \n");
+    for(Int_t i = 0; i < nPtBins; i++){
+        outfile2 << i+1 << "\t" << fC_bins_val[i] * 100 << "\t" << fC_bins_err[i] * 100 << "\n";
+    }
+    outfile2.close();
+    Printf("*** Results printed to %s. ***", (*str + ".txt").Data());
+
     // ###############################################################################################################
     // ###############################################################################################################
 

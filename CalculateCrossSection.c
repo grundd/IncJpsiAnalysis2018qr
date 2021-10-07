@@ -253,6 +253,7 @@ void CalculateCrossSectionBins(){
             i++;   
         }
         Printf("3) FD corrections for %ibins loaded.", nPtBins);
+        file_in.close();
     } else {
         Printf("3) ERROR: FD file missing. Terminating...");
         return;
@@ -270,7 +271,25 @@ void CalculateCrossSectionBins(){
     }
 
     // 4) Load FC corr per bin
-    // (...)
+    file_in.open(Form("Results/PtFitWithoutBkg/CohContamination_Binning2_%ibins.txt", nPtBins));
+    // Read data from the file
+    if(!(file_in.fail())){
+        Int_t i = 0;
+        std::string str;
+        while(std::getline(file_in,str)){
+            istringstream in_stream(str);
+            // skip first line
+            if(i > 0) in_stream >> i_bin >> CorrFC[i-1] >> CorrFC_err[i-1];
+            // Cross-check:
+            //Printf("%.4f", CorrFC[i-1]);
+            i++;   
+        }
+        Printf("4) FC corrections for %ibins loaded.", nPtBins);
+        file_in.close();
+    } else {
+        Printf("4) ERROR: FC file missing. Terminating...");
+        return;
+    }
 
     // 5) Total integrated luminosity
     Double_t LumiAll = (Lumi18q + Lumi18r) * 1000; // 1/(mili barn)
@@ -330,6 +349,19 @@ void CalculateCrossSectionBins(){
     }
     outfile.close();
     Printf("Results printed to %s.", FilePath.Data()); 
+
+    TString FilePath2 = Form("Results/CrossSection/%ibins_values_plot.txt", nPtBins);
+    ofstream outfile2(FilePath2.Data());
+    outfile2 << std::fixed << std::setprecision(4);
+    outfile2 << "Bin \ttLow \ttUpp \tSig \tErr \n";
+    for(Int_t i = 0; i < nPtBins; i++){
+        outfile2 << i+1 << "\t" << ptBoundaries[i] * ptBoundaries[i] << "\t" 
+                                << ptBoundaries[i+1] * ptBoundaries[i+1] << "\t" 
+                                << Sigma[i] << "\t"
+                                << Sigma_err[i] << "\n";
+    }
+    outfile2.close();
+    Printf("Results printed to %s.", FilePath2.Data()); 
 
     return;
 }
