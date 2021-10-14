@@ -8,6 +8,7 @@
 #include "TCanvas.h"
 #include "TLegend.h"
 #include "TStyle.h"
+#include "TMath.h"
 // roofit headers
 #include "RooRealVar.h"
 #include "RooDataHist.h"
@@ -22,13 +23,16 @@
 
 using namespace RooFit;
 
-Double_t res;
+Double_t res;   // (pt_rec - pt_gen) / pt_gen [-]
+Double_t diff;  // (pt_rec - pt_gen) [GeV/c]
 Double_t resLow = -0.5;
 Double_t resUpp = 0.5;
 Int_t nBins = 50;
+Int_t nBins2 = 100;
 Double_t BinSize = (resUpp - resLow) / (Double_t)nBins;
 
 void FitResInBins(TH1D *h, Int_t iBin, Int_t FitOpt);
+void CalculateFWHMAndFWTM(TH1D *h, Int_t iBin);
 void CalculateResPerBin();
 
 void ResolutionPt(){
@@ -51,21 +55,89 @@ void ResolutionPt(){
 
     TTree *tResBins[nPtBins] = { NULL };
     TH1D *hResBins[nPtBins] = { NULL };
+    TH1D *hDiffBins[nPtBins] = { NULL };
 
     // Loop over bins
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
         tResBins[iBin] = (TTree*)list->FindObject(Form("tResBin%i", iBin+1));
         hResBins[iBin] = (TH1D*)list->FindObject(Form("hResBin%i", iBin+1));
+        hDiffBins[iBin] = (TH1D*)list->FindObject(Form("hDiffBins%i", iBin+1));
         if(hResBins[iBin]){
             Printf("Tree %s found.", tResBins[iBin]->GetName());
             Printf("Tree %s contains %lli entries.", tResBins[iBin]->GetName(), tResBins[iBin]->GetEntries());
             Printf("Histogram %s found.", hResBins[iBin]->GetName());
+            // Fit the resolution in bin using double-sided CB function
             FitResInBins(hResBins[iBin], iBin+1, 2);
             Printf("\n***\n");
         } 
+        if(hDiffBins[iBin]){
+            // Calculate the FWHM and FWTM for each bin
+            CalculateFWHMAndFWTM(hDiffBins[iBin], iBin+1);
+        }  
     }
 
     return;
+}
+
+void CalculateFWHMAndFWTM(TH1D *h, Int_t iBin){
+
+    TCanvas *c = new TCanvas("c","c",900,600);
+
+    gStyle->SetOptTitle(0);
+    gStyle->SetOptStat(0);
+    gStyle->SetPalette(1);
+    gStyle->SetPaintTextFormat("4.2f");
+
+    c->SetTopMargin(0.06);
+    c->SetBottomMargin(0.14);
+    c->SetRightMargin(0.03);
+    c->SetLeftMargin(0.10);
+
+    // Calculate FWHM
+    Int_t bin1 = h->FindFirstBinAbove(h->GetMaximum()/2);
+    Int_t bin2 = h->FindLastBinAbove(h->GetMaximum()/2);
+    Double_t FWHM = h->GetBinCenter(bin2) - h->GetBinCenter(bin1);
+    // Calculate FWTM
+    bin1 = h->FindFirstBinAbove(h->GetMaximum()/10);
+    bin2 = h->FindLastBinAbove(h->GetMaximum()/10);
+    Double_t FWTM = h->GetBinCenter(bin2) - h->GetBinCenter(bin1);
+    // Draw histogram
+    // Vertical axis
+    h->GetYaxis()->SetTitle("Counts per 3 MeV");
+    h->GetYaxis()->SetTitleSize(0.05);
+    h->GetYaxis()->SetTitleOffset(0.95);
+    h->GetYaxis()->SetLabelSize(0.05);
+    h->GetYaxis()->SetLabelOffset(0.01);
+    h->GetYaxis()->SetMaxDigits(3);
+    // Horizontal axis
+    h->GetXaxis()->SetTitle("#it{p}_{T}^{rec} #minus #it{p}_{T}^{gen} [GeV/#it{c}]");
+    h->GetXaxis()->SetTitleSize(0.05);
+    h->GetXaxis()->SetTitleOffset(1.2);
+    h->GetXaxis()->SetLabelSize(0.05);
+    h->GetXaxis()->SetLabelOffset(0.01); 
+    h->GetXaxis()->SetDecimals(1);
+    h->Draw();
+    // Style
+    h->SetLineWidth(2.);
+    h->SetLineColor(215);
+    // Legend
+    TLegend *l1 = new TLegend(0.02,0.44,0.5,0.92);
+    l1->AddEntry((TObject*)0,Form("ALICE Simulation"),""); 
+    l1->AddEntry((TObject*)0,Form("Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV"),"");
+    l1->AddEntry((TObject*)0,Form("inc J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
+    l1->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.3f, %.3f) GeV/#it{c}", ptBoundaries[iBin-1], ptBoundaries[iBin]),"");
+    l1->AddEntry((TObject*)0,Form("FWHM = %.0f MeV/#it{c}", FWHM * 1000),"");
+    l1->AddEntry((TObject*)0,Form("FWTM = %.0f MeV/#it{c}", FWTM * 1000),"");
+    l1->AddEntry((TObject*)0,Form("FWTM/FWHM = %.2f", FWTM / FWHM),"");
+    l1->SetTextSize(0.05);
+    l1->SetBorderSize(0);
+    l1->SetFillStyle(0);
+    l1->Draw();
+
+    TString *str = new TString(Form("Results/ResolutionPt/FWHM_%ibins/bin%i", nPtBins, iBin));
+    //TString *str = new TString("Results/ResolutionPt/gauss_fit");
+    c->Print((*str + ".pdf").Data());
+    c->Print((*str + ".png").Data());
 }
 
 void FitResInBins(TH1D *h, Int_t iBin, Int_t FitOpt){
@@ -137,7 +209,7 @@ void FitResInBins(TH1D *h, Int_t iBin, Int_t FitOpt){
     frame->GetXaxis()->SetTitleSize(0.05);
     frame->GetXaxis()->SetTitleOffset(1.2);
     frame->GetXaxis()->SetLabelSize(0.05);
-    frame->GetXaxis()->SetLabelOffset(0.01);
+    frame->GetXaxis()->SetLabelOffset(0.01); 
     frame->GetXaxis()->SetDecimals(1);
     frame->Draw();
 
@@ -145,7 +217,7 @@ void FitResInBins(TH1D *h, Int_t iBin, Int_t FitOpt){
     l1->AddEntry((TObject*)0,Form("ALICE Simulation"),""); 
     l1->AddEntry((TObject*)0,Form("Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV"),"");
     l1->AddEntry((TObject*)0,Form("inc J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
-    l1->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.3f, %.3f) GeV/c", ptBoundaries[iBin-1], ptBoundaries[iBin]),"");
+    l1->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.3f, %.3f) GeV/#it{c}", ptBoundaries[iBin-1], ptBoundaries[iBin]),"");
     l1->AddEntry((TObject*)0,Form("#mu = %.4f #pm %.4f", mean_L.getVal(), mean_L.getError()),"");
     l1->AddEntry((TObject*)0,Form("#sigma = %.4f #pm %.4f", sigma_L.getVal(), sigma_L.getError()),"");
     l1->SetTextSize(0.05);
@@ -175,7 +247,7 @@ void FitResInBins(TH1D *h, Int_t iBin, Int_t FitOpt){
     l1->Draw();
     l2->Draw();
 
-    TString *str = new TString(Form("Results/ResolutionPt/%ibins/bin%i", nPtBins, iBin));
+    TString *str = new TString(Form("Results/ResolutionPt/Fit_%ibins/bin%i", nPtBins, iBin));
     //TString *str = new TString("Results/ResolutionPt/gauss_fit");
     c->Print((*str + ".pdf").Data());
     c->Print((*str + ".png").Data());
@@ -199,13 +271,17 @@ void CalculateResPerBin(){
     TList *l = new TList();
 
     TH1D *hResBins[nPtBins] = { NULL };
+    TH1D *hDiffBins[nPtBins] = { NULL };
     TTree *tResBins[nPtBins] = { NULL };
 
     for(Int_t i = 0; i < nPtBins; i++){
         hResBins[i] = new TH1D(Form("hResBin%i", i+1), Form("hResBin%i", i+1), nBins, resLow, resUpp);
+        hDiffBins[i] = new TH1D(Form("hDiffBins%i", i+1), Form("hDiffBins%i", i+1), nBins2, -0.15, 0.15);
         tResBins[i] = new TTree(Form("tResBin%i", i+1), Form("tResBin%i", i+1));
         tResBins[i]->Branch("res", &res, "res/D");
+        tResBins[i]->Branch("diff", &diff, "diff/D");
         l->Add(hResBins[i]);
+        l->Add(hDiffBins[i]);
         l->Add(tResBins[i]);
     }
 
@@ -216,7 +292,9 @@ void CalculateResPerBin(){
         for(Int_t iBin = 0; iBin < nPtBins; iBin++){
             if(EventPassedMCRec(0,4,iBin+1) && fPtGen > ptBoundaries[iBin] && fPtGen < ptBoundaries[iBin+1]){
                 res = (fPt - fPtGen) / fPtGen;
+                diff = fPt - fPtGen;
                 hResBins[iBin]->Fill(res);
+                hDiffBins[iBin]->Fill(diff);
                 tResBins[iBin]->Fill();
             } 
         }

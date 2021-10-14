@@ -15,7 +15,7 @@ void DoPtFit();
 
 void PtFit(){
 
-    SetPtBins(0);
+    SetPtBins(1);
 
     PreparePDFs_MC();
 

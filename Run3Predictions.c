@@ -14,6 +14,27 @@
 
 Double_t nEvRun2 = 2836.5;  // events Roman had, with pt < 0.11
 Double_t nEvRun3 = 1100000; // with arbitraty pt
+Double_t SigRun2_val[6] = {1290., 1035., 743., 465., 229., 51.}; 
+Double_t SigRun2_err[6] = {108., 77., 50., 37., 20., 6.}
+Double_t ptBoundariesRoman[9] = {0.000, 
+                                 0.027, 
+                                 0.040, 
+                                 0.051, 
+                                 0.063, 
+                                 0.079, 
+                                 0.110, // Roman binning ends here
+                                 0.155,
+                                 0.200
+                                 };
+Double_t tBoundariesRoman[7] = {0.00000, 
+                                0.00072, 
+                                0.0016, 
+                                0.0026, 
+                                0.0040, 
+                                0.0062, 
+                                0.0121
+                                };
+Double_t LumiRun3 = 13; // 1/nanobarn
 
 void PrepareData();
 

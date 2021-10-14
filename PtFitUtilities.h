@@ -252,7 +252,7 @@ void DrawCorrelationMatrix(TCanvas *cCM, RooFitResult* ResFit){
     // Set X axis
     hCorr->GetXaxis()->SetBinLabel(1,"#it{N}_{coh}");
     hCorr->GetXaxis()->SetBinLabel(2,"#it{N}_{diss}");
-    hCorr->GetXaxis()->SetBinLabel(3,"#it{N}_{coh}");
+    hCorr->GetXaxis()->SetBinLabel(3,"#it{N}_{inc}");
     // Set Y axis
     hCorr->GetYaxis()->SetBinLabel(1,"#it{N}_{inc}");
     hCorr->GetYaxis()->SetBinLabel(2,"#it{N}_{diss}");
