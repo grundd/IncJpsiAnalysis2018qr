@@ -26,3 +26,6 @@ Documents/
 # Ignore Libre Office tables
 *.ods
 
+# Ignore the whole STARlight folder
+STARlight/
+

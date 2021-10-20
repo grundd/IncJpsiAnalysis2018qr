@@ -21,6 +21,8 @@ TString OutputTrees = "Trees/PtFit/";
 
 Double_t N_Jpsi_val = 0;
 Double_t N_Jpsi_err = 0;
+Double_t N_Bkgr_val = 0;
+Double_t N_Bkgr_err = 0;
 
 void PtFitWithoutBkg(){
 
@@ -48,7 +50,9 @@ void SubtractBackground(){
 
     TList *l = new TList();
     TH1D *hNJpsiBins = new TH1D("hNJpsiBins", "hNJpsiBins", nBins, ptEdges);
+    TH1D *hNBkgrBins = new TH1D("hNBkgrBins", "hNBkgrBins", nBins, ptEdges);
     l->Add(hNJpsiBins);
+    l->Add(hNBkgrBins);
 
     Double_t fPt = fPtLow;
     Int_t iBin = 1;
@@ -56,6 +60,8 @@ void SubtractBackground(){
         DoInvMassFitMain(ptEdges[iBin-1], ptEdges[iBin], kTRUE, iBin);
         hNJpsiBins->SetBinContent(iBin, N_Jpsi_val);
         hNJpsiBins->SetBinError(iBin, N_Jpsi_err);
+        hNBkgrBins->SetBinContent(iBin, N_Bkgr_val);
+        hNBkgrBins->SetBinError(iBin, N_Bkgr_err);
         iBin++;
     }
 
@@ -573,16 +579,21 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     // Perform fit
     RooFitResult* fResFit = DSCBAndBkgPdf.fitTo(*fDataSet,Extended(kTRUE),Range(fMCutLow,fMCutUpp),Save());
 
-    // Calculate the number of J/psi events
     Double_t N_Jpsi_out[2];
+    Double_t N_Bkgr_out[2];
     fM.setRange("JpsiMassRange",3.0,3.2);
+    // Calculate the number of J/psi events
     RooAbsReal *intDSCB = DoubleSidedCB.createIntegral(fM,NormSet(fM),Range("JpsiMassRange"));
-    // Integral of the normalized PDF, DSCB => will range from 0 to 1
-
     N_Jpsi_out[0] = intDSCB->getVal()*N_Jpsi.getVal();
     N_Jpsi_out[1] = intDSCB->getVal()*N_Jpsi.getError();
     N_Jpsi_val = N_Jpsi_out[0];
     N_Jpsi_err = N_Jpsi_out[1];
+    // Calculate the number of Bkgr events
+    RooAbsReal *intBkgr = BkgPdf.createIntegral(fM,NormSet(fM),Range("JpsiMassRange"));
+    N_Bkgr_out[0] = intBkgr->getVal()*N_bkg.getVal();
+    N_Bkgr_out[1] = intBkgr->getVal()*N_bkg.getError();
+    N_Bkgr_val = N_Bkgr_out[0];
+    N_Bkgr_err = N_Bkgr_out[1];
 
     // ##########################################################
     // Plot the results
