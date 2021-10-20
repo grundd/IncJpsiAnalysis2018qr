@@ -2,8 +2,8 @@
 // David Grund, Oct 19, 2021
 
 // cpp headers
-#include <fstream>
-#include <stdio.h> // printf
+#include <fstream> // print output to txt file
+#include <iomanip> // std::setprecision()
 // root headers
 #include "TFile.h"
 #include "TTree.h"
@@ -12,6 +12,8 @@
 #include "TMath.h"
 #include "TCanvas.h"
 #include "TStyle.h"
+// my headers
+#include "AnalysisManager.h"
 
 Double_t fPt2Gm, fPt2VM, fPt2Pm;
 Double_t fPtGm, fPtVM, fPtPm;
@@ -19,17 +21,71 @@ Int_t nGenEv = 500000;
 Int_t nBins = 1000;
 Double_t fPt2Low, fPt2Upp;
 
-TString TxtPtGamma = "SL_simulations_10-19-2021/PtGamma.txt";
-TString TxtPtVMPom = "SL_simulations_10-19-2021/PtVMpomeron.txt";
+TString TxtPtGamma = "DependenceOnT/SL_simulations_10-19-2021/PtGamma.txt";
+TString TxtPtVMPom = "DependenceOnT/SL_simulations_10-19-2021/PtVMpomeron.txt";
 
 void PlotResults(Int_t opt);
+void CalculateAvgTPerBin();
 void PrepareTree();
 
 void Plot2DHistogramPtAndT(){
 
     //PrepareTree();
 
+    PlotResults(0);
+
     PlotResults(1);
+
+    CalculateAvgTPerBin();
+
+    return;
+}
+
+void CalculateAvgTPerBin(){
+
+    TFile *f = TFile::Open("DependenceOnT/SL_simulations_10-19-2021/tree.root", "read");
+    if(f) Printf("File %s loaded.", f->GetName());
+
+    TList *l = (TList*) f->Get("TreeList");
+    if(l) Printf("List %s loaded.", l->GetName()); 
+
+    TTree *tPtVMPom = (TTree*)l->FindObject("tPtVMPom");
+    if(tPtVMPom) Printf("Tree %s loaded.", tPtVMPom->GetName());
+
+    tPtVMPom->SetBranchAddress("fPt2VM", &fPt2VM);
+    tPtVMPom->SetBranchAddress("fPt2Pm", &fPt2Pm);
+    tPtVMPom->SetBranchAddress("fPtVM", &fPtVM);
+    tPtVMPom->SetBranchAddress("fPtPm", &fPtPm);    
+
+    SetPtBinning();
+
+    Double_t nPt2VMPerBin[nPtBins] = { 0 };
+    Double_t SumOfTPerBin[nPtBins] = { 0 };
+    Double_t AvgOfTPerBin[nPtBins] = { 0 };
+
+    for(Int_t iEntry = 0; iEntry < nGenEv; iEntry++){
+        tPtVMPom->GetEntry(iEntry);
+        for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+            if(fPtVM > ptBoundaries[iBin] && fPtVM <= ptBoundaries[iBin + 1]){
+                nPt2VMPerBin[iBin]++;
+                SumOfTPerBin[iBin] += fPt2Pm;
+            }
+        }
+    }
+
+    TString str = Form("DependenceOnT/output_%ibins.txt", nPtBins);
+    ofstream outfile(str.Data());
+    outfile << std::fixed << std::setprecision(6);
+
+    // Calculate the average values
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        AvgOfTPerBin[iBin] = SumOfTPerBin[iBin] / nPt2VMPerBin[iBin];
+        Printf("Bin %i: avg t value = %.6f", iBin+1, AvgOfTPerBin[iBin]);
+        outfile << iBin+1 << "\t" << AvgOfTPerBin[iBin] << "\n";
+    }
+
+    outfile.close();
+    Printf("*** Results printed to %s.***", str.Data());
 
     return;
 }
@@ -44,7 +100,7 @@ void PlotResults(Int_t opt){
         fPt2Upp = 1.00; // GeV^2
     }
 
-    TFile *f = TFile::Open("SL_simulations_10-19-2021/tree.root", "read");
+    TFile *f = TFile::Open("DependenceOnT/SL_simulations_10-19-2021/tree.root", "read");
     if(f) Printf("File %s loaded.", f->GetName());
 
     TList *l = (TList*) f->Get("TreeList");
@@ -89,13 +145,13 @@ void PlotResults(Int_t opt){
     c->SetLeftMargin(0.1);
 
     // a vertical axis
-    Hist->GetYaxis()->SetTitle("#it{p}_{T, pom}^{2} (GeV/#it{c})");
+    Hist->GetYaxis()->SetTitle("|#it{t}| or #it{p}_{T, pom}^{2} (GeV^{2}/#it{c}^{2})");
     Hist->GetYaxis()->SetTitleSize(0.05);
     Hist->GetYaxis()->SetLabelSize(0.05);
     Hist->GetYaxis()->SetTitleOffset(0.915);
     Hist->GetYaxis()->SetDecimals(1);
     // a horizontal axis
-    Hist->GetXaxis()->SetTitle("#it{p}_{T, J/#psi}^{2} (GeV/#it{c})");
+    Hist->GetXaxis()->SetTitle("#it{p}_{T, J/#psi}^{2} (GeV^{2}/#it{c}^{2})");
     Hist->GetXaxis()->SetTitleSize(0.05);
     Hist->GetXaxis()->SetTitleOffset(1.3);
     Hist->GetXaxis()->SetLabelSize(0.05);
@@ -104,6 +160,14 @@ void PlotResults(Int_t opt){
     // draw the histogram
     Hist->GetZaxis()->SetLabelSize(0.05);
     Hist->Draw("COLZ");
+
+    if(opt == 0){
+        c->Print("DependenceOnT/HistPtVsT_0.png");
+        c->Print("DependenceOnT/HistPtVsT_0.pdf");
+    } else if(opt == 1){
+        c->Print("DependenceOnT/HistPtVsT_1.png");
+        c->Print("DependenceOnT/HistPtVsT_1.pdf");
+    }
 
     return;
 }
@@ -153,7 +217,7 @@ void PrepareTree(){
     l->Add(tPtGamma);
     l->Add(tPtVMPom);
 
-    TFile *f = new TFile("SL_simulations_10-19-2021/tree.root","RECREATE");
+    TFile *f = new TFile("DependenceOnT/SL_simulations_10-19-2021/tree.root","RECREATE");
     l->Write("TreeList", TObject::kSingleKey);
     f->ls();
 

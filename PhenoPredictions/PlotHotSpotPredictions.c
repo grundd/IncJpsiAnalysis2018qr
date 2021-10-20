@@ -10,6 +10,7 @@
 
 // root headers
 #include <TGraphErrors.h>
+#include <TGraphAsymmErrors.h>
 #include <TH1.h>
 #include <TCanvas.h>
 #include <TLegend.h>
@@ -19,7 +20,16 @@
 Double_t PhotonFlux = 84.9;
 Double_t Sig_val[5] = { 0 };
 Double_t Sig_err[5] = { 0 };
+Double_t tAvgValues[5] = {0.054826, 0.090448, 0.152451, 0.296726, 0.616564};
 Double_t tBoundaries[6] = { 0 };
+
+// For TGraphAsymmErrors:
+Double_t sig_value[5] = { 0 };
+Double_t sig_errLo[5] = { 0 };
+Double_t sig_errUp[5] = { 0 };
+Double_t t_value[5] = { 0 };
+Double_t t_errLo[5] = { 0 };
+Double_t t_errUp[5] = { 0 };
 
 void PlotHotSpotPredictions()
 {
@@ -27,13 +37,13 @@ void PlotHotSpotPredictions()
     const Int_t nData = 75;
     Double_t abs_t[nData];
     Double_t coh_n[nData];
-    Double_t coh_n_err[nData];    
+    Double_t coh_n_err[nData];
     Double_t inc_n[nData];
-    Double_t inc_n_err[nData];    
+    Double_t inc_n_err[nData];
     Double_t coh_hs[nData];
-    Double_t coh_hs_err[nData];    
+    Double_t coh_hs_err[nData];
     Double_t inc_hs[nData];
-    Double_t inc_hs_err[nData];    
+    Double_t inc_hs_err[nData];
 
     // read the input file for hot-spot model predictions
     ifstream ifs;
@@ -74,15 +84,22 @@ void PlotHotSpotPredictions()
         ifs.close();
     }
     // Scale the measured results with photon flux and fill the histogram
-    TH1D *hData = new TH1D("hData","hData",5,tBoundaries);
+    //TH1D *hData = new TH1D("hData","hData",5,tBoundaries);
     for(Int_t i = 0; i < 5; i++){
-        Sig_val[i] = Sig_val[i] / 2. / PhotonFlux;
-        Sig_err[i] = Sig_err[i] / 2. / PhotonFlux;
-        Printf("Cross section in bin %i: %.5f pm %.5f.", i+1, Sig_val[i], Sig_err[i]);
-        hData->SetBinContent(i+1, Sig_val[i]);
-        hData->SetBinError(i+1, Sig_err[i]);
+        sig_value[i] = Sig_val[i] / 2. / PhotonFlux;
+        sig_errLo[i] = Sig_err[i] / 2. / PhotonFlux;
+        sig_errUp[i] = Sig_err[i] / 2. / PhotonFlux;
+        Printf("Cross section in bin %i: %.5f pm %.5f.", i+1, sig_value[i], sig_errLo[i]);
+        t_value[i] = tAvgValues[i];
+        t_errLo[i] = tAvgValues[i] - tBoundaries[i];
+        t_errUp[i] = tBoundaries[i+1] - tAvgValues[i];
+        //hData->SetBinContent(i+1, Sig_val[i]);
+        //hData->SetBinError(i+1, Sig_err[i]);
     }
-    hData->SetMarkerStyle(20);
+    TGraphAsymmErrors *grData = new TGraphAsymmErrors(5,t_value,sig_value,t_errLo,t_errUp,sig_errLo,sig_errUp);
+    //hData->SetMarkerStyle(20);
+    grData->SetMarkerStyle(21);
+    grData->SetMarkerColor(kBlack);
 
     // Define graphs for incoherent
     // https://root.cern.ch/doc/master/classTGraphErrors.html#a0f51786d0f0e210869a53ab58c0a3ffb 
@@ -131,12 +148,14 @@ void PlotHotSpotPredictions()
     // https://root.cern.ch/doc/master/classTGraphPainter.html
     gr_inc_hs->Draw("ACX");
     gr_inc_n->Draw("CX SAME");
-    hData->Draw("E1 SAME");
+    //hData->Draw("E1 SAME");
+    grData->Draw("P SAME");
     // Legend
     TLegend *l = new TLegend(0.2,0.2,0.5,0.4);
     l->AddEntry(gr_inc_hs,"GG-hs, incoherent","L");
     l->AddEntry(gr_inc_n,"GG-n, incoherent","L");
-    l->AddEntry(hData,"ALICE measurement","P");
+    //l->AddEntry(hData,"ALICE measurement","P");
+    l->AddEntry(grData,"ALICE measurement","P");
     l->SetTextSize(0.05);
     l->SetBorderSize(0); // no border
     l->SetFillStyle(0);  // legend is transparent
