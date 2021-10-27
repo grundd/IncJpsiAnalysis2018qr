@@ -238,48 +238,72 @@ void DoPtFitNoBkg(){
     RooAbsReal *fN_CohP_to1 = hPDFCohP.createIntegral(fPt,NormSet(fPt),Range("fPtTo1")); 
     RooAbsReal *fN_IncP_to1 = hPDFIncP.createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));  
     // Number of events in the whole pt range
-    Double_t N_CohJ_all = fN_CohJ_all->getVal()*NCohJ.getVal();
-    Double_t N_IncJ_all = fN_IncJ_all->getVal()*NIncJ.getVal();
-    Double_t N_Diss_all = fN_Diss_all->getVal()*NDiss.getVal();
-    Double_t N_CohP_all = fN_CohP_all->getVal()*fDCoh*NCohJ.getVal();
-    Double_t N_IncP_all = fN_IncP_all->getVal()*fDInc*NIncJ.getVal();
-    // Number of events in the IES
-    Double_t N_CohJ_ies = fN_CohJ_ies->getVal()*NCohJ.getVal();
-    Double_t N_IncJ_ies = fN_IncJ_ies->getVal()*NIncJ.getVal();
-    Double_t N_Diss_ies = fN_Diss_ies->getVal()*NDiss.getVal();
-    Double_t N_CohP_ies = fN_CohP_ies->getVal()*fDCoh*NCohJ.getVal();
-    Double_t N_IncP_ies = fN_IncP_ies->getVal()*fDInc*NIncJ.getVal();
+        // values
+        Double_t N_CohJ_all_val = fN_CohJ_all->getVal()*NCohJ.getVal();
+        Double_t N_IncJ_all_val = fN_IncJ_all->getVal()*NIncJ.getVal();
+        Double_t N_Diss_all_val = fN_Diss_all->getVal()*NDiss.getVal();
+        Double_t N_CohP_all_val = fN_CohP_all->getVal()*fDCoh*NCohJ.getVal();
+        Double_t N_IncP_all_val = fN_IncP_all->getVal()*fDInc*NIncJ.getVal();
+        // errors
+        Double_t N_CohJ_all_err = fN_CohJ_all->getVal()*NCohJ.getError();
+        Double_t N_IncJ_all_err = fN_IncJ_all->getVal()*NIncJ.getError();
+        Double_t N_Diss_all_err = fN_Diss_all->getVal()*NDiss.getError();
+        Double_t N_CohP_all_err = fN_CohP_all->getVal()*fDCoh*NCohJ.getError();
+        Double_t N_IncP_all_err = fN_IncP_all->getVal()*fDInc*NIncJ.getError();
+    // Number of events with 0.2 < pt < 2.0 GeV/c
+        // values
+        Double_t N_CohJ_ies_val = fN_CohJ_ies->getVal()*NCohJ.getVal();
+        Double_t N_IncJ_ies_val = fN_IncJ_ies->getVal()*NIncJ.getVal();
+        Double_t N_Diss_ies_val = fN_Diss_ies->getVal()*NDiss.getVal();
+        Double_t N_CohP_ies_val = fN_CohP_ies->getVal()*fDCoh*NCohJ.getVal();
+        Double_t N_IncP_ies_val = fN_IncP_ies->getVal()*fDInc*NIncJ.getVal();
+        // errors
+        Double_t N_CohJ_ies_err = fN_CohJ_ies->getVal()*NCohJ.getError();
+        Double_t N_IncJ_ies_err = fN_IncJ_ies->getVal()*NIncJ.getError();
+        Double_t N_Diss_ies_err = fN_Diss_ies->getVal()*NDiss.getError();
+        Double_t N_CohP_ies_err = fN_CohP_ies->getVal()*fDCoh*NCohJ.getError();
+        Double_t N_IncP_ies_err = fN_IncP_ies->getVal()*fDInc*NIncJ.getError();  
     // Number of events with 0.2 < pt < 1.0 GeV/c
-    Double_t N_CohJ_to1 = fN_CohJ_to1->getVal()*NCohJ.getVal();
-    Double_t N_IncJ_to1 = fN_IncJ_to1->getVal()*NIncJ.getVal();
-    Double_t N_Diss_to1 = fN_Diss_to1->getVal()*NDiss.getVal();
-    Double_t N_CohP_to1 = fN_CohP_to1->getVal()*fDCoh*NCohJ.getVal();
-    Double_t N_IncP_to1 = fN_IncP_to1->getVal()*fDInc*NIncJ.getVal();
-    // Total fC correction (for the whole IES)
-    Double_t fC = N_CohJ_ies / (N_IncJ_ies + N_Diss_ies);
-    Double_t N_CohJ_ies_err = fN_CohJ_ies->getVal()*NCohJ.getError();
-    Double_t N_IncJ_ies_err = fN_IncJ_ies->getVal()*NIncJ.getError();
-    Double_t N_Diss_ies_err = fN_Diss_ies->getVal()*NDiss.getError();
+        // values
+        Double_t N_CohJ_to1_val = fN_CohJ_to1->getVal()*NCohJ.getVal();
+        Double_t N_IncJ_to1_val = fN_IncJ_to1->getVal()*NIncJ.getVal();
+        Double_t N_Diss_to1_val = fN_Diss_to1->getVal()*NDiss.getVal();
+        Double_t N_CohP_to1_val = fN_CohP_to1->getVal()*fDCoh*NCohJ.getVal();
+        Double_t N_IncP_to1_val = fN_IncP_to1->getVal()*fDInc*NIncJ.getVal();
+        // errors
+        Double_t N_CohJ_to1_err = fN_CohJ_to1->getVal()*NCohJ.getError();
+        Double_t N_IncJ_to1_err = fN_IncJ_to1->getVal()*NIncJ.getError();
+        Double_t N_Diss_to1_err = fN_Diss_to1->getVal()*NDiss.getError();
+        Double_t N_CohP_to1_err = fN_CohP_to1->getVal()*fDCoh*NCohJ.getError();
+        Double_t N_IncP_to1_err = fN_IncP_to1->getVal()*fDInc*NIncJ.getError();
+    // Total fC correction (for the whole IES, with 0.2 < pt < 2.0 GeV/c)
+    Double_t fC = N_CohJ_ies_val / (N_IncJ_ies_val + N_Diss_ies_val);
     Double_t denominator_err = TMath::Sqrt(TMath::Power(N_IncJ_ies_err,2) + TMath::Power(N_Diss_ies_err,2));
-    Double_t fC_err = fC * TMath::Sqrt(TMath::Power((N_CohJ_ies_err/N_CohJ_ies),2) + TMath::Power((denominator_err/(N_IncJ_ies + N_Diss_ies)),2));
-    // Total fD correction (for the whole IES)
-    Double_t fDCoh_val = N_CohP_ies / (N_IncJ_ies + N_Diss_ies);
-    Double_t fDInc_val = N_IncP_ies / (N_IncJ_ies + N_Diss_ies);
-    Double_t N_CohP_ies_err = fN_CohP_ies->getVal()*fDCoh*NCohJ.getError();
-    Double_t N_IncP_ies_err = fN_IncP_ies->getVal()*fDInc*NIncJ.getError();
-    Double_t fDCoh_err = fDCoh_val * TMath::Sqrt(TMath::Power((N_CohP_ies_err/N_CohP_ies),2) + TMath::Power((denominator_err/(N_IncJ_ies + N_Diss_ies)),2));
-    Double_t fDInc_err = fDInc_val * TMath::Sqrt(TMath::Power((N_IncP_ies_err/N_IncP_ies),2) + TMath::Power((denominator_err/(N_IncJ_ies + N_Diss_ies)),2));
+    Double_t fC_err = fC * TMath::Sqrt(TMath::Power((N_CohJ_ies_err/N_CohJ_ies_val),2) + TMath::Power((denominator_err/(N_IncJ_ies_val + N_Diss_ies_val)),2));
+    // Total fD correction (for the whole IES, with 0.2 < pt < 2.0 GeV/c)
+    Double_t fDCoh_val = N_CohP_ies_val / (N_IncJ_ies_val + N_Diss_ies_val);
+    Double_t fDInc_val = N_IncP_ies_val / (N_IncJ_ies_val + N_Diss_ies_val);
+    Double_t fDCoh_err = fDCoh_val * TMath::Sqrt(TMath::Power((N_CohP_ies_err/N_CohP_ies_val),2) + TMath::Power((denominator_err/(N_IncJ_ies_val + N_Diss_ies_val)),2));
+    Double_t fDInc_err = fDInc_val * TMath::Sqrt(TMath::Power((N_IncP_ies_err/N_IncP_ies_val),2) + TMath::Power((denominator_err/(N_IncJ_ies_val + N_Diss_ies_val)),2));
     // Integrals of the PDFs in the pt bins
     RooAbsReal *fN_CohJ_bins[nPtBins] = { NULL };
     RooAbsReal *fN_IncJ_bins[nPtBins] = { NULL };
     RooAbsReal *fN_Diss_bins[nPtBins] = { NULL };
     RooAbsReal *fN_CohP_bins[nPtBins] = { NULL };
     RooAbsReal *fN_IncP_bins[nPtBins] = { NULL };
-    Double_t N_CohJ_bins[nPtBins] = { 0 };
-    Double_t N_IncJ_bins[nPtBins] = { 0 };
-    Double_t N_Diss_bins[nPtBins] = { 0 };
-    Double_t N_CohP_bins[nPtBins] = { 0 };
-    Double_t N_IncP_bins[nPtBins] = { 0 };
+    // values
+    Double_t N_CohJ_bins_val[nPtBins] = { 0 };
+    Double_t N_IncJ_bins_val[nPtBins] = { 0 };
+    Double_t N_Diss_bins_val[nPtBins] = { 0 };
+    Double_t N_CohP_bins_val[nPtBins] = { 0 };
+    Double_t N_IncP_bins_val[nPtBins] = { 0 };
+    // errors
+    Double_t N_CohJ_bins_err[nPtBins] = { 0 };
+    Double_t N_IncJ_bins_err[nPtBins] = { 0 };
+    Double_t N_Diss_bins_err[nPtBins] = { 0 };
+    Double_t N_CohP_bins_err[nPtBins] = { 0 };
+    Double_t N_IncP_bins_err[nPtBins] = { 0 };
+    // coefficients
     Double_t fC_bins_val[nPtBins] = { 0 };
     Double_t fC_bins_err[nPtBins] = { 0 };
     Double_t fDCoh_bins_val[nPtBins] = { 0 };
@@ -294,51 +318,69 @@ void DoPtFitNoBkg(){
         fN_Diss_bins[i] = hPDFDiss.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
         fN_CohP_bins[i] = hPDFCohP.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
         fN_IncP_bins[i] = hPDFIncP.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));  
-        N_CohJ_bins[i] = fN_CohJ_bins[i]->getVal()*NCohJ.getVal();
-        N_IncJ_bins[i] = fN_IncJ_bins[i]->getVal()*NIncJ.getVal();
-        N_Diss_bins[i] = fN_Diss_bins[i]->getVal()*NDiss.getVal();
-        N_CohP_bins[i] = fN_CohP_bins[i]->getVal()*fDCoh*NCohJ.getVal();
-        N_IncP_bins[i] = fN_IncP_bins[i]->getVal()*fDInc*NIncJ.getVal();
-        fC_bins_val[i] = N_CohJ_bins[i] / (N_IncJ_bins[i] + N_Diss_bins[i]);
-        Double_t N_CohJ_bins_err = fN_CohJ_bins[i]->getVal()*NCohJ.getError();
-        Double_t N_IncJ_bins_err = fN_IncJ_bins[i]->getVal()*NIncJ.getError();
-        Double_t N_Diss_bins_err = fN_Diss_bins[i]->getVal()*NDiss.getError();
-        Double_t denominator_err = TMath::Sqrt(TMath::Power(N_IncJ_bins_err,2) + TMath::Power(N_Diss_bins_err,2));
-        if(N_CohJ_bins[i] != 0) fC_bins_err[i] = fC_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohJ_bins_err/N_CohJ_bins[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins[i] + N_Diss_bins[i])),2));    
+        // values  
+        N_CohJ_bins_val[i] = fN_CohJ_bins[i]->getVal()*NCohJ.getVal();
+        N_IncJ_bins_val[i] = fN_IncJ_bins[i]->getVal()*NIncJ.getVal();
+        N_Diss_bins_val[i] = fN_Diss_bins[i]->getVal()*NDiss.getVal();
+        N_CohP_bins_val[i] = fN_CohP_bins[i]->getVal()*fDCoh*NCohJ.getVal();
+        N_IncP_bins_val[i] = fN_IncP_bins[i]->getVal()*fDInc*NIncJ.getVal();
+        // errors
+        N_CohJ_bins_err[i] = fN_CohJ_bins[i]->getVal()*NCohJ.getError();
+        N_IncJ_bins_err[i] = fN_IncJ_bins[i]->getVal()*NIncJ.getError();
+        N_Diss_bins_err[i] = fN_Diss_bins[i]->getVal()*NDiss.getError();
+        N_CohP_bins_err[i] = fN_CohP_bins[i]->getVal()*fDCoh*NCohJ.getError();
+        N_IncP_bins_err[i] = fN_IncP_bins[i]->getVal()*fDInc*NIncJ.getError();
+        // fC correction        
+        fC_bins_val[i] = N_CohJ_bins_val[i] / (N_IncJ_bins_val[i] + N_Diss_bins_val[i]);
+        Double_t denominator_err = TMath::Sqrt(TMath::Power(N_IncJ_bins_err[i],2) + TMath::Power(N_Diss_bins_err[i],2));
+        if(N_CohJ_bins_val[i] != 0) fC_bins_err[i] = fC_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohJ_bins_err[i]/N_CohJ_bins_val[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins_val[i] + N_Diss_bins_val[i])),2));    
         else fC_bins_err[i] = 0.;
-        Double_t N_CohP_bins_err = fN_CohP_bins[i]->getVal()*fDCoh*NCohJ.getError();
-        Double_t N_IncP_bins_err = fN_IncP_bins[i]->getVal()*fDInc*NIncJ.getError();
-        fDCoh_bins_val[i] = N_CohP_bins[i] / (N_IncJ_bins[i] + N_Diss_bins[i]);
-        fDInc_bins_val[i] = N_IncP_bins[i] / (N_IncJ_bins[i] + N_Diss_bins[i]);
-        fDCoh_bins_err[i] = fDCoh_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohP_bins_err/N_CohP_bins[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins[i] + N_Diss_bins[i])),2));
-        fDInc_bins_err[i] = fDInc_bins_val[i] * TMath::Sqrt(TMath::Power((N_IncP_bins_err/N_IncP_bins[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins[i] + N_Diss_bins[i])),2));
+        fDCoh_bins_val[i] = N_CohP_bins_val[i] / (N_IncJ_bins_val[i] + N_Diss_bins_val[i]);
+        fDInc_bins_val[i] = N_IncP_bins_val[i] / (N_IncJ_bins_val[i] + N_Diss_bins_val[i]);
+        fDCoh_bins_err[i] = fDCoh_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohP_bins_err[i]/N_CohP_bins_val[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins_val[i] + N_Diss_bins_val[i])),2));
+        fDInc_bins_err[i] = fDInc_bins_val[i] * TMath::Sqrt(TMath::Power((N_IncP_bins_err[i]/N_IncP_bins_val[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins_val[i] + N_Diss_bins_val[i])),2));
     }
     // Print to text file
     ofstream outfile((*str + ".txt").Data());
     outfile << std::fixed << std::setprecision(2);
     outfile << Form("Dataset contains %.0f events.\n***\n", N_all);
     outfile << "In 0.0 < pt 2.0 GeV/c:\n";
-    Double_t sum_all = N_CohJ_all + N_IncJ_all + N_CohP_all + N_IncP_all + N_Diss_all;
+    Double_t sum_all = N_CohJ_all_val + N_IncJ_all_val + N_CohP_all_val + N_IncP_all_val + N_Diss_all_val;
     outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tSum\n";
-    outfile << N_CohJ_all << "\t" << N_IncJ_all << "\t" << N_CohP_all << "\t" << N_IncP_all << "\t" << N_Diss_all << "\t" << sum_all << "\n***\n";
+    outfile << N_CohJ_all_val << "\t" 
+            << N_IncJ_all_val << "\t" 
+            << N_CohP_all_val << "\t" 
+            << N_IncP_all_val << "\t" 
+            << N_Diss_all_val << "\t" 
+            << sum_all << "\n***\n";
     outfile << "In 0.2 < pt 2.0 GeV/c:\n";
-    Double_t sum_ies = N_CohJ_ies + N_IncJ_ies + N_CohP_ies + N_IncP_ies + N_Diss_ies;
+    Double_t sum_ies = N_CohJ_ies_val + N_IncJ_ies_val + N_CohP_ies_val + N_IncP_ies_val + N_Diss_ies_val;
     outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tSum \tfC \tfC_err \tfDCoh \tfDC_err\tfDInc \tfDI_err\n";
-    outfile << N_CohJ_ies << "\t" << N_IncJ_ies << "\t" << N_CohP_ies << "\t" << N_IncP_ies << "\t" << N_Diss_ies << "\t" << sum_ies << "\t";
+    outfile << N_CohJ_ies_val << "\t" 
+            << N_IncJ_ies_val << "\t" 
+            << N_CohP_ies_val << "\t" 
+            << N_IncP_ies_val << "\t" 
+            << N_Diss_ies_val << "\t" 
+            << sum_ies << "\t";
     outfile << std::fixed << std::setprecision(4);
     outfile << fC << "\t" << fC_err << "\t" << fDCoh_val << "\t" << fDCoh_err << "\t" << fDInc_val << "\t" << fDInc_err << "\n***\n";
     outfile << "In 0.2 < pt 1.0 GeV/c:\n";
-    Double_t sum_to1 = N_CohJ_to1 + N_IncJ_to1 + N_CohP_to1 + N_IncP_to1 + N_Diss_to1;
+    Double_t sum_to1 = N_CohJ_to1_val + N_IncJ_to1_val + N_CohP_to1_val + N_IncP_to1_val + N_Diss_to1_val;
     outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tSum \n";
     outfile << std::fixed << std::setprecision(2);
-    outfile << N_CohJ_to1 << "\t" << N_IncJ_to1 << "\t" << N_CohP_to1 << "\t" << N_IncP_to1 << "\t" << N_Diss_to1 << "\t" << sum_to1 << "\n***\n";
+    outfile << N_CohJ_to1_val << "\t" 
+            << N_IncJ_to1_val << "\t" 
+            << N_CohP_to1_val << "\t" 
+            << N_IncP_to1_val << "\t" 
+            << N_Diss_to1_val << "\t" 
+            << sum_to1 << "\n***\n";
     for(Int_t i = 0; i < nPtBins; i++){
         outfile << Form("In bin %i, (%.3f, %.3f) GeV/c:\n", i+1, ptBoundaries[i], ptBoundaries[i+1]);
         outfile << std::fixed << std::setprecision(2);
         outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tfC \tfC_err \tfDCoh \tfDC_err\tfDInc \tfDI_err\n";
-        outfile << N_CohJ_bins[i] << "\t" << N_IncJ_bins[i] << "\t" 
-                << N_CohP_bins[i] << "\t" << N_IncP_bins[i] << "\t" 
-                << N_Diss_bins[i] << "\t";
+        outfile << N_CohJ_bins_val[i] << "\t" << N_IncJ_bins_val[i] << "\t" 
+                << N_CohP_bins_val[i] << "\t" << N_IncP_bins_val[i] << "\t" 
+                << N_Diss_bins_val[i] << "\t";
         outfile << std::fixed << std::setprecision(4);
         outfile << fC_bins_val[i] << "\t" << fC_bins_err[i] << "\t"
                 << fDCoh_bins_val[i] << "\t" << fDCoh_bins_err[i] << "\t"
@@ -349,11 +391,11 @@ void DoPtFitNoBkg(){
     outfile << std::fixed << std::setprecision(2);
     Double_t sum_bins[5] = { 0 };
     for(Int_t i = 0; i < nPtBins; i++){
-        sum_bins[0] += N_CohJ_bins[i];
-        sum_bins[1] += N_IncJ_bins[i];
-        sum_bins[2] += N_CohP_bins[i];
-        sum_bins[3] += N_IncP_bins[i];
-        sum_bins[4] += N_Diss_bins[i];
+        sum_bins[0] += N_CohJ_bins_val[i];
+        sum_bins[1] += N_IncJ_bins_val[i];
+        sum_bins[2] += N_CohP_bins_val[i];
+        sum_bins[3] += N_IncP_bins_val[i];
+        sum_bins[4] += N_Diss_bins_val[i];
     }
     for(Int_t i = 0; i < 4; i++){
         outfile << sum_bins[i] << "\t";
@@ -361,6 +403,44 @@ void DoPtFitNoBkg(){
     outfile << sum_bins[4] << "\n***\n";
     outfile.close();
     Printf("*** Results printed to %s. ***", (*str + ".txt").Data());
+
+    // Print the Latex table
+    outfile.open((*str + "_TeX.txt").Data());
+    outfile << std::fixed << std::setprecision(1);
+    outfile << R"($p_\mathrm{T} \in (0.2,1.0)$~GeV/$c$ & $)"
+            << N_CohJ_to1_val << R"( \pm )" << N_CohJ_to1_err << "$ \t& $"
+            << N_CohP_to1_val << R"( \pm )" << N_CohP_to1_err << "$ \t& $"
+            << N_IncJ_to1_val << R"( \pm )" << N_IncJ_to1_err << "$ \t& $"
+            << N_IncP_to1_val << R"( \pm )" << N_IncP_to1_err << "$ \t& $"
+            << N_Diss_to1_val << R"( \pm )" << N_Diss_to1_err << "$ \t& $";
+    Double_t sum_to1_err = TMath::Sqrt(TMath::Power(N_CohJ_to1_err, 2)
+                                        + TMath::Power(N_CohP_to1_err, 2)
+                                        + TMath::Power(N_IncJ_to1_err, 2)
+                                        + TMath::Power(N_IncP_to1_err, 2)
+                                        + TMath::Power(N_Diss_to1_err, 2));
+    outfile << sum_to1 << R"( \pm )" << sum_to1_err << R"($ & - \\)"
+            << "\n";
+    for(Int_t i = 0; i < nPtBins; i++){
+        outfile << std::fixed << std::setprecision(1)
+                << Form("Bin %i", i+1) << "\t& $"
+                << N_CohJ_bins_val[i] << R"( \pm )" << N_CohJ_bins_err[i] << "$ \t& $"
+                << N_CohP_bins_val[i] << R"( \pm )" << N_CohP_bins_err[i] << "$ \t& $"
+                << N_IncJ_bins_val[i] << R"( \pm )" << N_IncJ_bins_err[i] << "$ \t& $"
+                << N_IncP_bins_val[i] << R"( \pm )" << N_IncP_bins_err[i] << "$ \t& $"
+                << N_Diss_bins_val[i] << R"( \pm )" << N_Diss_bins_err[i] << "$ \t& $";
+        Double_t signal_sum = N_CohJ_bins_val[i] + N_CohP_bins_val[i] + N_IncJ_bins_val[i] + N_IncP_bins_val[i] + N_Diss_bins_val[i];
+        Double_t signal_err = TMath::Sqrt(TMath::Power(N_CohJ_bins_err[i], 2)
+                                        + TMath::Power(N_CohP_bins_err[i], 2)
+                                        + TMath::Power(N_IncJ_bins_err[i], 2)
+                                        + TMath::Power(N_IncP_bins_err[i], 2)
+                                        + TMath::Power(N_Diss_bins_err[i], 2));
+        outfile << signal_sum << R"( \pm )" << signal_err << "$ \t& $"
+                << std::fixed << std::setprecision(3)
+                << fC_bins_val[i]*100 << R"( \pm )" << fC_bins_err[i]*100 << R"( $ - \\ )"
+                << "\n";
+    }
+    outfile.close();
+    Printf("*** Results printed to %s. ***", (*str + "_TeX.txt").Data());
 
     // Print to another file from which the values for CalculateCrossSection.c will be loaded
     str = new TString(Form("%sCohContamination_Binning%i_%ibins", OutputPtFitWithoutBkg.Data(),BinningOpt, nPtBins));
@@ -402,7 +482,8 @@ void DoPtFitNoBkg(){
     PtFrame->GetXaxis()->SetTitleSize(0.05);
     PtFrame->GetXaxis()->SetLabelSize(0.05);
     // Set Y axis
-    PtFrame->GetYaxis()->SetTitle(Form("Counts per bin"));
+    //PtFrame->GetYaxis()->SetTitle(Form("Counts per bin"));
+    PtFrame->GetYaxis()->SetTitle(Form("d#it{N}/d#it{p}_{T}"));
     PtFrame->GetYaxis()->SetTitleSize(0.05);
     PtFrame->GetYaxis()->SetTitleOffset(0.95);
     PtFrame->GetYaxis()->SetLabelSize(0.05);
