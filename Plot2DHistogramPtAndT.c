@@ -7,11 +7,13 @@
 // root headers
 #include "TFile.h"
 #include "TTree.h"
+#include "TH1.h"
 #include "TH2.h"
 #include "TString.h"
 #include "TMath.h"
 #include "TCanvas.h"
 #include "TStyle.h"
+#include "TLegend.h"
 // my headers
 #include "AnalysisManager.h"
 
@@ -26,17 +28,20 @@ TString TxtPtVMPom = "DependenceOnT/SL_simulations_10-19-2021/PtVMpomeron.txt";
 
 void PlotResults(Int_t opt);
 void CalculateAvgTPerBin();
+void CorrectionPt2ToT();
 void PrepareTree();
 
 void Plot2DHistogramPtAndT(){
 
     //PrepareTree();
 
-    PlotResults(0);
+    //PlotResults(0);
 
-    PlotResults(1);
+    //PlotResults(1);
 
-    CalculateAvgTPerBin();
+    //CalculateAvgTPerBin();
+
+    CorrectionPt2ToT();
 
     return;
 }
@@ -168,6 +173,96 @@ void PlotResults(Int_t opt){
         c->Print("DependenceOnT/HistPtVsT_1.png");
         c->Print("DependenceOnT/HistPtVsT_1.pdf");
     }
+
+    return;
+}
+
+void CorrectionPt2ToT(){
+
+    TFile *f = TFile::Open("DependenceOnT/SL_simulations_10-19-2021/tree.root", "read");
+    if(f) Printf("File %s loaded.", f->GetName());
+
+    TList *l = (TList*) f->Get("TreeList");
+    if(l) Printf("List %s loaded.", l->GetName()); 
+
+    TTree *tPtGamma = (TTree*)l->FindObject("tPtGamma");
+    if(tPtGamma) Printf("Tree %s loaded.", tPtGamma->GetName());
+
+    TTree *tPtVMPom = (TTree*)l->FindObject("tPtVMPom");
+    if(tPtVMPom) Printf("Tree %s loaded.", tPtVMPom->GetName());
+
+    tPtGamma->SetBranchAddress("fPt2Gm", &fPt2Gm);
+    tPtGamma->SetBranchAddress("fPtGm", &fPtGm);
+
+    tPtVMPom->SetBranchAddress("fPt2VM", &fPt2VM);
+    tPtVMPom->SetBranchAddress("fPt2Pm", &fPt2Pm);
+    tPtVMPom->SetBranchAddress("fPtVM", &fPtVM);
+    tPtVMPom->SetBranchAddress("fPtPm", &fPtPm);
+
+    SetPtBinning();
+
+    Double_t tBoundaries[nPtBins + 1] = { 0 };
+    for(Int_t i = 0; i < nPtBins + 1; i++) tBoundaries[i] = ptBoundaries[i]*ptBoundaries[i];
+
+    TH1D *hEventsInT = new TH1D("hEventsInT", "hEventsInT", nPtBins, tBoundaries);
+    TH1D *hEventsInPt2 = new TH1D("hEventsInPt2", "hEventsInPt2", nPtBins, tBoundaries);
+    TH1D *hCorrection = NULL;
+
+    for(Int_t iEntry = 0; iEntry < nGenEv; iEntry++){
+        tPtVMPom->GetEntry(iEntry);
+        hEventsInT->Fill(fPt2Pm);
+        hEventsInPt2->Fill(fPt2VM);
+    } 
+
+    hCorrection = (TH1D*)hEventsInPt2->Clone("hCorrection");
+    hCorrection->SetTitle("hCorrection");
+    hCorrection->Sumw2();
+    hCorrection->Divide(hEventsInT);   
+
+    hCorrection->SetMarkerStyle(21);
+    hCorrection->SetMarkerColor(kBlue);
+    hCorrection->SetMarkerSize(1.0);
+    hCorrection->SetLineColor(kBlue);
+    hCorrection->SetLineWidth(2.0);
+
+    gStyle->SetOptTitle(0);
+    gStyle->SetOptStat(0);
+    gStyle->SetPalette(1);
+    gStyle->SetPaintTextFormat("4.2f");
+
+    TCanvas *c = new TCanvas("c", "c", 900, 600);
+    c->SetLogz();
+    c->SetTopMargin(0.03);
+    c->SetBottomMargin(0.145);
+    c->SetRightMargin(0.02);
+    c->SetLeftMargin(0.14);
+
+    // a vertical axis
+    hCorrection->GetYaxis()->SetTitle("#it{N}[#it{p}_{T,J/#psi}^{2} #in (|#it{t}|_{min}, |#it{t}|_{max})]/#it{N}[#it{p}_{T,pom}^{2} #in (|#it{t}|_{min}, |#it{t}|_{max})]");
+    hCorrection->GetYaxis()->SetTitleSize(0.048);
+    hCorrection->GetYaxis()->SetLabelSize(0.05);
+    hCorrection->GetYaxis()->SetTitleOffset(1.4);
+    hCorrection->GetYaxis()->SetDecimals(3);
+    // a horizontal axis
+    hCorrection->GetXaxis()->SetTitle("|#it{t}| or #it{p}_{T, pom}^{2} (GeV^{2})");
+    hCorrection->GetXaxis()->SetTitleSize(0.05);
+    hCorrection->GetXaxis()->SetTitleOffset(1.3);
+    hCorrection->GetXaxis()->SetLabelSize(0.05);
+    hCorrection->GetXaxis()->SetDecimals(1);
+    // draw the histogram
+    hCorrection->Draw("P E1");
+    // Legend
+    TLegend *leg = new TLegend(0.32,0.76,0.65,0.96);
+    leg->AddEntry((TObject*)0,Form("STARlight Simulation"),""); 
+    leg->AddEntry((TObject*)0,Form("Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV"),"");
+    leg->AddEntry((TObject*)0,Form("inc J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
+    leg->SetTextSize(0.056);
+    leg->SetBorderSize(0); // no border
+    leg->SetFillStyle(0);  // legend is transparent
+    leg->Draw();
+
+    c->Print("DependenceOnT/CorrectionPt2ToT.png");
+    c->Print("DependenceOnT/CorrectionPt2ToT.pdf");
 
     return;
 }

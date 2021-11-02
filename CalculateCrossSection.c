@@ -42,6 +42,12 @@ Double_t CorrFC_tot = 0;
 Double_t CorrFC_tot_err = 0;
 Double_t Sigma_tot = 0;
 Double_t Sigma_tot_err = 0;
+// Other systematic uncertainties (in percent)
+Double_t Syst_Lumi = 2.7;
+Double_t Syst_V0AD = 3.0;
+Double_t Syst_EMdi = 2.0;
+Double_t Syst_Trck = 2.8;
+Double_t Syst_TrEf = 1.3;
 
 // For temporarily loading bin numbers when reading the text files
 Int_t i_bin;
@@ -312,7 +318,12 @@ void CalculateCrossSectionBins(){
             TMath::Power(NYield_err[iBin] / NYield[iBin], 2) +
             TMath::Power(AxE_err[iBin] / AxE[iBin], 2) +
             TMath::Power(Factors_err[iBin] / Factors[iBin], 2) +
-            TMath::Power(BR_err / BR, 2));
+            TMath::Power(BR_err / BR, 2) + 
+            TMath::Power(Syst_Lumi / 100., 2) + 
+            TMath::Power(Syst_V0AD / 100., 2) + 
+            TMath::Power(Syst_EMdi / 100., 2) + 
+            TMath::Power(Syst_Trck / 100., 2) + 
+            TMath::Power(Syst_TrEf / 100., 2));
     }
 
     // Define output text file to print results

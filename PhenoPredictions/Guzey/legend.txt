@@ -1,0 +1,1 @@
+|t|	sigma_el(min)	sigma_el(max)	sigma_diss(min)	sigma_diss(max)	sigma_tot(min)	sigma_tot(max)

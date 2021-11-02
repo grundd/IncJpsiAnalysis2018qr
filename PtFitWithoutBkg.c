@@ -412,13 +412,7 @@ void DoPtFitNoBkg(){
             << N_CohP_to1_val << R"( \pm )" << N_CohP_to1_err << "$ \t& $"
             << N_IncJ_to1_val << R"( \pm )" << N_IncJ_to1_err << "$ \t& $"
             << N_IncP_to1_val << R"( \pm )" << N_IncP_to1_err << "$ \t& $"
-            << N_Diss_to1_val << R"( \pm )" << N_Diss_to1_err << "$ \t& $";
-    Double_t sum_to1_err = TMath::Sqrt(TMath::Power(N_CohJ_to1_err, 2)
-                                        + TMath::Power(N_CohP_to1_err, 2)
-                                        + TMath::Power(N_IncJ_to1_err, 2)
-                                        + TMath::Power(N_IncP_to1_err, 2)
-                                        + TMath::Power(N_Diss_to1_err, 2));
-    outfile << sum_to1 << R"( \pm )" << sum_to1_err << R"($ & - \\)"
+            << N_Diss_to1_val << R"( \pm )" << N_Diss_to1_err << R"($ & - \\)" 
             << "\n";
     for(Int_t i = 0; i < nPtBins; i++){
         outfile << std::fixed << std::setprecision(1)
@@ -427,16 +421,9 @@ void DoPtFitNoBkg(){
                 << N_CohP_bins_val[i] << R"( \pm )" << N_CohP_bins_err[i] << "$ \t& $"
                 << N_IncJ_bins_val[i] << R"( \pm )" << N_IncJ_bins_err[i] << "$ \t& $"
                 << N_IncP_bins_val[i] << R"( \pm )" << N_IncP_bins_err[i] << "$ \t& $"
-                << N_Diss_bins_val[i] << R"( \pm )" << N_Diss_bins_err[i] << "$ \t& $";
-        Double_t signal_sum = N_CohJ_bins_val[i] + N_CohP_bins_val[i] + N_IncJ_bins_val[i] + N_IncP_bins_val[i] + N_Diss_bins_val[i];
-        Double_t signal_err = TMath::Sqrt(TMath::Power(N_CohJ_bins_err[i], 2)
-                                        + TMath::Power(N_CohP_bins_err[i], 2)
-                                        + TMath::Power(N_IncJ_bins_err[i], 2)
-                                        + TMath::Power(N_IncP_bins_err[i], 2)
-                                        + TMath::Power(N_Diss_bins_err[i], 2));
-        outfile << signal_sum << R"( \pm )" << signal_err << "$ \t& $"
+                << N_Diss_bins_val[i] << R"( \pm )" << N_Diss_bins_err[i] << "$ \t& $"
                 << std::fixed << std::setprecision(3)
-                << fC_bins_val[i]*100 << R"( \pm )" << fC_bins_err[i]*100 << R"( $ - \\ )"
+                << fC_bins_val[i]*100 << R"( \pm )" << fC_bins_err[i]*100 << R"($ \\)"
                 << "\n";
     }
     outfile.close();
