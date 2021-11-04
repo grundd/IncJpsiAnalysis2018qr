@@ -8,7 +8,7 @@
 //################################## PT BINNING ####################################
 //##################################################################################
 
-const Int_t nPtBins = 4;
+const Int_t nPtBins = 5;
 Int_t iMethodBinning = 3;
 
 Double_t *ptBoundaries = NULL;
@@ -304,6 +304,9 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0){
             break;
         case 1:
             if(fM > 3.0 && fM < 3.2) bMassCut = kTRUE;
+            break;
+        case 2:
+            if(fM > 1.5 && fM < 7.0) bMassCut = kTRUE;
             break;
     }
     if(!bMassCut) return kFALSE;
