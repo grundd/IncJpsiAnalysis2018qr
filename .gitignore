@@ -29,3 +29,5 @@ Documents/
 # Ignore the whole STARlight folder
 STARlight/
 
+.token.txt
+
