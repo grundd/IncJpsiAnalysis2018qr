@@ -53,12 +53,12 @@ Double_t fN_R_err[nPtBins] = { 0 };
 Double_t fN_yield_val[nPtBins] = { 0 };
 Double_t fN_yield_err[nPtBins] = { 0 };
 
-Bool_t low = kFALSE;
-Bool_t upp = kFALSE;
-Bool_t alphL = kFALSE;
-Bool_t alphR = kFALSE;
-Bool_t nL = kFALSE;
-Bool_t nR = kFALSE;
+Bool_t low = kTRUE;
+Bool_t upp = kTRUE;
+Bool_t alphL = kTRUE;
+Bool_t alphR = kTRUE;
+Bool_t nL = kTRUE;
+Bool_t nR = kTRUE;
 
 void FillParametersAndYields(){
 
