@@ -35,9 +35,9 @@ void PrepareDataTree();
 
 void InvMassFit(){
 
-    PrepareDataTree();
+    //PrepareDataTree();
 
-    Bool_t main_fits = kFALSE;
+    Bool_t main_fits = kTRUE;
     if(main_fits){
         DoInvMassFitMain(0);
         DoInvMassFitMain(1);
@@ -45,7 +45,7 @@ void InvMassFit(){
         DoInvMassFitMain(3);
     }
     // bins:
-    Bool_t bins = kFALSE;
+    Bool_t bins = kTRUE;
     if(bins){
         SetPtBinning(); // PtBinning method must be chosen in PtBinsManager.h
         DoInvMassFitMain(4);

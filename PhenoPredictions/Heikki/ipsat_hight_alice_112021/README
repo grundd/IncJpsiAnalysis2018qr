@@ -1,0 +1,39 @@
+Predictions for coherent and incoherent JPsi production cross sectoin in Pb+Pb UPC
+sqrt(s)=5020 GeV, y=0
+Photon-nucleon center-of-mass energy W=125GeV
+Heikki Mäntysaari <heikki.mantysaari@jyu.fi>
+Nov 5, 2021
+
+Main reference: H. Mäntysaari, B. Schenke, Revealing proton shape fluctuations with incoherent diffraction at high energy
+arXiv:1607.01711, Phys.Lett.B 772 (2017) 832-838
+
+Calculations with and without proton substructure. 
+Directory "with_proton_flux" contains predcitions including the photon flux: d\sigma / dt dy for the process
+Pb+Pb -> Jpsi + Pb + Pb (or Pb* in case of incoherent)
+
+File format:
+-t [GeV^2]   d\sigma/dtdy [mb]/GeV^2
+
+Directory "no_photon_flux" contains the same predictions but wihtout the photon flux, so for the process gamma + Pb -> JPsi + Pb (or Pb^*)
+
+File format is exactly the same
+
+Intereference effect is note included, it should have a small effect here.
+
+
+
+
+== Technical details ==
+
+Calculation using IPsat dipole-proton amplitude
+Fitted to HERA in arXiv:1804.05311
+
+JPsi wave function: Boosted Gaussian with parameters from 1804.05311
+
+Minor differences compared to the above cited article:
+* Correct off-forward phase (1/2-z)r.Delta is used in scattering amplitude instead of (1-z)r.Delta
+* Updated IPsat fit is used
+
+Internal git commit: b419497fffb1c15fd982f4c670050ed220484272
+
+Effects at the cross section level are small

@@ -57,6 +57,12 @@ void InvMassFitMC(){
             DoInvMassFitMainMC(8);
         }
     }
+    // debug bin 3 (value of n_R)
+    Bool_t debug = kFALSE;
+    if(debug){
+        SetPtBinning();
+        DoInvMassFitMainMC(6);
+    }
 
     Printf("Done.");
 
@@ -73,8 +79,8 @@ void DoInvMassFitMainMC(Int_t opt = 0){
     Double_t fPtCutLow  = -999;
     Double_t fPtCutUpp  = -999;
     Double_t fYCut      = 0.80;
-    Double_t fMCutLow   = 2.95;
-    Double_t fMCutUpp   = 3.25;
+    Double_t fMCutLow   = 2.90;
+    Double_t fMCutUpp   = 3.30;
 
     switch(opt){
         case 0: // Incoherent-enriched sample
@@ -171,7 +177,7 @@ void DoInvMassFitMainMC(Int_t opt = 0){
     RooGenericPdf mean_R("mean_R","m_{J/#psi}","m",RooArgSet(mean_L));
     RooGenericPdf sigma_R("sigma_R","#sigma_{J/#psi}","sig",RooArgSet(sigma_L));
     RooRealVar alpha_R("#alpha_{R}","alpha_{R}",-1.,-20.0,0.0); 
-    RooRealVar n_R("n_{R}","n_{R}",1.,0,30);
+    RooRealVar n_R("n_{R}","n_{R}",8.,0,30);
 
     RooCBShape CB_left("CB_left","CB_left",fM,mean_L,sigma_L,alpha_L,n_L);
     RooCBShape CB_right("CB_right","CB_right",fM,mean_R,sigma_R,alpha_R,n_R);

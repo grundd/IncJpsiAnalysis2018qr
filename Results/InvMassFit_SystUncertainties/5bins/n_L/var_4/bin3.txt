@@ -1,0 +1,5 @@
+The whole mass region:
+N_J/psi:	101.744 pm 11.6126
+J/psi peak (3.0 < m < 3.2 GeV):
+N_J/psi:	101.429 pm 11.5766
+N_bkg:  	40.1437 pm 1.6214

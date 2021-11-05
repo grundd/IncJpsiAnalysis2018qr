@@ -2,6 +2,7 @@
 // David Grund, Oct 30, 2021
 
 // c++ headers
+#include <iostream>
 #include <fstream>
 #include <sstream> 
 #include <string>   // getline
@@ -64,6 +65,12 @@ Double_t sig_dis_max[nData2];
 Double_t sig_tot_min[nData2];
 Double_t sig_tot_max[nData2];
 
+// Heikki predictions
+const Int_t nData3 = 183;
+Double_t abs_t_3[nData3];
+Double_t sig_inc_fluct[nData3];
+Double_t sig_inc_noflu[nData3];
+
 void ReadInputMeasurement();
 void ReadInputHSModel();
 void ReadInputGuzey();
@@ -76,6 +83,8 @@ void PhenoPredictions()
     ReadInputHSModel();
 
     ReadInputGuzey();
+
+    ReadInputHeikki();
 
     // Scale the measured results with photon flux and fill the histogram
     for(Int_t i = 0; i < nPtBins; i++){
@@ -134,7 +143,14 @@ void PhenoPredictions()
     gr2_area->SetFillColor(212);
 
     // Define graphs for incoherent predictions of Heikki's model
-    // (...)
+    TGraph *gr3_fluct = new TGraph(nData3, abs_t_3, sig_inc_fluct);
+    TGraph *gr3_noflu = new TGraph(nData3, abs_t_3, sig_inc_noflu);
+    gr3_fluct->SetLineStyle(9);
+    gr3_fluct->SetLineColor(1);
+    gr3_fluct->SetLineWidth(3);
+    gr3_noflu->SetLineStyle(8);
+    gr3_noflu->SetLineColor(91);
+    gr3_noflu->SetLineWidth(3);
 
     // TStyle settings
     gStyle->SetOptStat(0);
@@ -174,7 +190,8 @@ void PhenoPredictions()
         gr1_inc_n->Draw("CX SAME");
     }
     if(plot3){
-
+        gr3_fluct->Draw("L SAME");
+        gr3_noflu->Draw("L SAME");
     }
     grData->Draw("P SAME");
     // Legend
@@ -194,6 +211,7 @@ void PhenoPredictions()
 
     //grData->Print();
     //gr2_area->Print();
+    gr3_fluct->Print();
 
     c->Print("PhenoPredictions/fig/ComparisonWithPheno.pdf");
     c->Print("PhenoPredictions/fig/ComparisonWithPheno.png");
@@ -263,7 +281,7 @@ void ReadInputHSModel()
         ifs >> coh_hs_err[i];        
         ifs >> inc_hs[i];
         ifs >> inc_hs_err[i];
-        //cout << i << " " << abs_t[i] << " " <<inc_n[i]<< " " <<inc_hs[i] << endl;
+        //std::cout << i << " " << abs_t[i] << " " <<inc_n[i]<< " " <<inc_hs[i] << endl;
     }
     ifs.close();
     Printf("Predictions of HS model loaded.");
@@ -284,7 +302,7 @@ void ReadInputGuzey()
         ifs >> sig_dis_max[i];
         ifs >> sig_tot_min[i];
         ifs >> sig_tot_max[i];
-        //cout << i << " " << abs_t_2[i] << " " << sig_dis_min[i]<< " " << sig_dis_max[i] << endl;
+        //std::cout << i << " " << abs_t_2[i] << " " << sig_dis_min[i]<< " " << sig_dis_max[i] << endl;
     }
     ifs.close();
     Printf("Predictions of Guzey's model loaded.");
@@ -292,7 +310,25 @@ void ReadInputGuzey()
     return;
 }
 
-void ReadInputHeikki(){
+void ReadInputHeikki()
+{
+    // read the input file for Guzey's model predictions
+    ifstream ifs;
+    ifs.open("PhenoPredictions/Heikki/ipsat_hight_alice_112021/no_photon_flux/incoherent_fluct");
+    for(Int_t i = 0; i < nData3; i++){
+        ifs >> abs_t_3[i];
+        ifs >> sig_inc_fluct[i];
+        //std::cout << i << " " << abs_t_3[i] << " " << sig_inc_fluct[i] << endl;
+    }
+    ifs.close();
+    ifs.open("PhenoPredictions/Heikki/ipsat_hight_alice_112021/no_photon_flux/incoherent_nofluct");
+    for(Int_t i = 0; i < nData3; i++){
+        ifs >> abs_t_3[i];
+        ifs >> sig_inc_noflu[i];
+        //std::cout << i << " " << abs_t_3[i] << " " << sig_inc_noflu[i] << endl;
+    }
+    ifs.close();
+    Printf("Predictions of Heikki's model loaded.");
 
     return;
 }
