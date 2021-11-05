@@ -53,12 +53,12 @@ Double_t fN_R_err[nPtBins] = { 0 };
 Double_t fN_yield_val[nPtBins] = { 0 };
 Double_t fN_yield_err[nPtBins] = { 0 };
 
-Bool_t low = kTRUE;
-Bool_t upp = kTRUE;
-Bool_t alphL = kTRUE;
-Bool_t alphR = kTRUE;
-Bool_t nL = kTRUE;
-Bool_t nR = kTRUE;
+Bool_t low = kFALSE;
+Bool_t upp = kFALSE;
+Bool_t alphL = kFALSE;
+Bool_t alphR = kFALSE;
+Bool_t nL = kFALSE;
+Bool_t nR = kFALSE;
 
 void FillParametersAndYields(){
 
@@ -84,10 +84,10 @@ void FillParametersAndYields(){
     // Print the results
     TString path_output = Form("Results/InvMassFit_SystUncertainties/%ibins/input_values_%ibins.txt", nPtBins, nPtBins);
     ofstream outfile(path_output.Data());
-    outfile << std::fixed << std::setprecision(4);
     outfile << "bin \talpha_L\terr\talpha_R\terr\tn_L\terr\tn_R\terr\tYield\terr\n";
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
         outfile << iBin+1 << "\t" 
+                << std::fixed << std::setprecision(4)
                 << fAlpha_L_val[iBin] << "\t" 
                 << fAlpha_L_err[iBin] << "\t" 
                 << fAlpha_R_val[iBin] << "\t" 
