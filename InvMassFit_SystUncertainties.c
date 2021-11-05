@@ -51,6 +51,13 @@ Double_t fN_R_5bins_err[5] = {1.607, 3.293, 24.219,2.360, 1.582};
 Double_t fN_yield_5bins_val[5] = {101.832, 102.229, 101.802, 100.780, 100.541};
 Double_t fN_yield_5bins_err[5] = {11.2235, 11.0328, 11.6187, 11.9406, 11.7888};
 
+Bool_t low = kFALSE;
+Bool_t upp = kFALSE;
+Bool_t alphL = kFALSE;
+Bool_t alphR = kFALSE;
+Bool_t nL = kFALSE;
+Bool_t nR = kFALSE;
+
 void InvMassFit_SystUncertainties(){
 
     //PrepareDataTree();
@@ -58,7 +65,6 @@ void InvMassFit_SystUncertainties(){
     SetPtBinning();
 
     // 1) vary the lower boundary
-    Bool_t low = kFALSE;
     if(low){
         const Int_t n1 = 6;
         Double_t low_bound[n1] = {2.0, 2.1, 2.2, 2.3, 2.4, 2.5};
@@ -131,7 +137,6 @@ void InvMassFit_SystUncertainties(){
     }
 
     // 2) vary the upper boundary
-    Bool_t upp = kFALSE;
     if(upp){
         const Int_t n2 = 7;
         Double_t upp_bound[n2] = {4.0, 4.2, 4.4, 4.5, 4.6, 4.8, 5.0};
@@ -204,17 +209,17 @@ void InvMassFit_SystUncertainties(){
     }
 
     // 3a) vary the alpha_L parameter
-    Bool_t alphL = kFALSE;
     if(alphL){
-        Double_t alpha_L_5bins[5][6] = { 0 };
+        const Int_t n3a = 6;
+        Double_t alpha_L_5bins[5][n3a] = { 0 };
         TString str3a = "Results/InvMassFit_SystUncertainties/alpha_L/";
-        TString str3a_all[5][6];
-        Double_t signal_3a_val[5][6] = { 0 };
-        Double_t signal_3a_err[5][6] = { 0 };
-        Double_t signal_3a_devAbs[5][6] = { 0 };
-        Double_t signal_3a_devRel[5][6] = { 0 };
+        TString str3a_all[5][n3a];
+        Double_t signal_3a_val[5][n3a] = { 0 };
+        Double_t signal_3a_err[5][n3a] = { 0 };
+        Double_t signal_3a_devAbs[5][n3a] = { 0 };
+        Double_t signal_3a_devRel[5][n3a] = { 0 };
         for(Int_t iBin = 0; iBin < 5; iBin++){
-            for(Int_t iVar = 0; iVar < 6; iVar++){
+            for(Int_t iVar = 0; iVar < n3a; iVar++){
                 str3a_all[iBin][iVar] = str3a + Form("var_%i/", iVar+1);
                 if(iVar == 0) alpha_L_5bins[iBin][iVar] = fAlpha_L_5bins_val[iBin] - fAlpha_L_5bins_err[iBin];
                 if(iVar == 1) alpha_L_5bins[iBin][iVar] = fAlpha_L_5bins_val[iBin] - 2./3. * fAlpha_L_5bins_err[iBin];
@@ -231,7 +236,7 @@ void InvMassFit_SystUncertainties(){
             std::cout << std::setprecision(3);
             for(Int_t iBin = 0; iBin < 5; iBin++){
                 std::cout << iBin << "\t";
-                for(Int_t iVar = 0; iVar < 6; iVar++){
+                for(Int_t iVar = 0; iVar < n3a; iVar++){
                    std::cout << alpha_L_5bins[iBin][iVar] << "\t";
                 }
                 std::cout << "\n";
@@ -239,20 +244,88 @@ void InvMassFit_SystUncertainties(){
         }
         // Do invariant mass fits
         for(Int_t iBin = 0; iBin < 5; iBin++){
-            for(Int_t iVar = 0; iVar < 6; iVar++){
+            for(Int_t iVar = 0; iVar < n3a; iVar++){
                 DoInvMassFitMain(iBin+4,2.2,4.5,alpha_L_5bins[iBin][iVar],fAlpha_R_5bins_val[iBin], fN_L_5bins_val[iBin], fN_R_5bins_val[iBin], str3a_all[iBin][iVar]);    
+                signal_3a_val[iBin][iVar] = N_Jpsi_out[0];
+                signal_3a_err[iBin][iVar] = N_Jpsi_out[1];
+                signal_3a_devAbs[iBin][iVar] = TMath::Abs(fN_yield_5bins_val[iBin] - signal_3a_val[iBin][iVar]);
+                signal_3a_devRel[iBin][iVar] = signal_3a_devAbs[iBin][iVar] / fN_yield_5bins_val[iBin] * 100.;
             }
         }
+        // Print the output to txt file
+        ofstream outfile((str3a + "output.txt").Data());
+        outfile << std::fixed << std::setprecision(3);
+        outfile << "parameters val (alpha_L) \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3a; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3a; iVar++){
+                outfile << alpha_L_5bins[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal val \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3a; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3a; iVar++){
+                outfile << signal_3a_val[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal err \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3a; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3a; iVar++){
+                outfile << signal_3a_err[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal deviation absolute\n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3a; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3a; iVar++){
+                outfile << signal_3a_devAbs[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << Form("signal deviation relative [%%]\n");
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3a; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3a; iVar++){
+                outfile << signal_3a_devRel[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile.close();
+        Printf("Results printed to %s.", (str3a + "output.txt").Data()); 
     }
 
     // 3b) vary the alpha_R parameter
-    Bool_t alphR = kFALSE;
     if(alphR){
-        Double_t alpha_R_5bins[5][6] = { 0 };
+        const Int_t n3b = 6;
+        Double_t alpha_R_5bins[5][n3b] = { 0 };
         TString str3b = "Results/InvMassFit_SystUncertainties/alpha_R/";
-        TString str3b_all[5][6];
+        TString str3b_all[5][n3b];
+        Double_t signal_3b_val[5][n3b] = { 0 };
+        Double_t signal_3b_err[5][n3b] = { 0 };
+        Double_t signal_3b_devAbs[5][n3b] = { 0 };
+        Double_t signal_3b_devRel[5][n3b] = { 0 };
         for(Int_t iBin = 0; iBin < 5; iBin++){
-            for(Int_t iVar = 0; iVar < 6; iVar++){
+            for(Int_t iVar = 0; iVar < n3b; iVar++){
                 str3b_all[iBin][iVar] = str3b + Form("var_%i/", iVar+1);
                 if(iVar == 0) alpha_R_5bins[iBin][iVar] = fAlpha_R_5bins_val[iBin] - fAlpha_R_5bins_err[iBin];
                 if(iVar == 1) alpha_R_5bins[iBin][iVar] = fAlpha_R_5bins_val[iBin] - 2./3. * fAlpha_R_5bins_err[iBin];
@@ -269,7 +342,7 @@ void InvMassFit_SystUncertainties(){
             std::cout << std::setprecision(3);
             for(Int_t iBin = 0; iBin < 5; iBin++){
                 std::cout << iBin << "\t";
-                for(Int_t iVar = 0; iVar < 6; iVar++){
+                for(Int_t iVar = 0; iVar < n3b; iVar++){
                    std::cout << alpha_R_5bins[iBin][iVar] << "\t";
                 }
                 std::cout << "\n";
@@ -277,20 +350,88 @@ void InvMassFit_SystUncertainties(){
         }
         // Do invariant mass fits
         for(Int_t iBin = 0; iBin < 5; iBin++){
-            for(Int_t iVar = 0; iVar < 6; iVar++){
+            for(Int_t iVar = 0; iVar < n3b; iVar++){
                 DoInvMassFitMain(iBin+4,2.2,4.5,fAlpha_L_5bins_val[iBin], alpha_R_5bins[iBin][iVar], fN_L_5bins_val[iBin], fN_R_5bins_val[iBin], str3b_all[iBin][iVar]);    
+                signal_3b_val[iBin][iVar] = N_Jpsi_out[0];
+                signal_3b_err[iBin][iVar] = N_Jpsi_out[1];
+                signal_3b_devAbs[iBin][iVar] = TMath::Abs(fN_yield_5bins_val[iBin] - signal_3b_val[iBin][iVar]);
+                signal_3b_devRel[iBin][iVar] = signal_3b_devAbs[iBin][iVar] / fN_yield_5bins_val[iBin] * 100.;
             }
         }
+        // Print the output to txt file
+        ofstream outfile((str3b + "output.txt").Data());
+        outfile << std::fixed << std::setprecision(3);
+        outfile << "parameters val (alpha_R) \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3b; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3b; iVar++){
+                outfile << alpha_R_5bins[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal val \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3b; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3b; iVar++){
+                outfile << signal_3b_val[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal err \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3b; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3b; iVar++){
+                outfile << signal_3b_err[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal deviation absolute\n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3b; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3b; iVar++){
+                outfile << signal_3b_devAbs[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << Form("signal deviation relative [%%]\n");
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3b; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3b; iVar++){
+                outfile << signal_3b_devRel[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile.close();
+        Printf("Results printed to %s.", (str3b + "output.txt").Data()); 
     }
 
     // 3c) vary the n_L parameter
-    Bool_t nL = kFALSE;
     if(nL){
-        Double_t n_L_5bins[5][6] = { 0 };
+        const Int_t n3c = 6;
+        Double_t n_L_5bins[5][n3c] = { 0 };
         TString str3c = "Results/InvMassFit_SystUncertainties/n_L/";
-        TString str3c_all[5][6];
+        TString str3c_all[5][n3c];
+        Double_t signal_3c_val[5][n3c] = { 0 };
+        Double_t signal_3c_err[5][n3c] = { 0 };
+        Double_t signal_3c_devAbs[5][n3c] = { 0 };
+        Double_t signal_3c_devRel[5][n3c] = { 0 };
         for(Int_t iBin = 0; iBin < 5; iBin++){
-            for(Int_t iVar = 0; iVar < 6; iVar++){
+            for(Int_t iVar = 0; iVar < n3c; iVar++){
                 str3c_all[iBin][iVar] = str3c + Form("var_%i/", iVar+1);
                 if(iVar == 0) n_L_5bins[iBin][iVar] = fN_L_5bins_val[iBin] - fN_L_5bins_err[iBin];
                 if(iVar == 1) n_L_5bins[iBin][iVar] = fN_L_5bins_val[iBin] - 2./3. * fN_L_5bins_err[iBin];
@@ -307,7 +448,7 @@ void InvMassFit_SystUncertainties(){
             std::cout << std::setprecision(3);
             for(Int_t iBin = 0; iBin < 5; iBin++){
                 std::cout << iBin << "\t";
-                for(Int_t iVar = 0; iVar < 6; iVar++){
+                for(Int_t iVar = 0; iVar < n3c; iVar++){
                    std::cout << n_L_5bins[iBin][iVar] << "\t";
                 }
                 std::cout << "\n";
@@ -315,20 +456,88 @@ void InvMassFit_SystUncertainties(){
         }
         // Do invariant mass fits
         for(Int_t iBin = 0; iBin < 5; iBin++){
-            for(Int_t iVar = 0; iVar < 6; iVar++){
+            for(Int_t iVar = 0; iVar < n3c; iVar++){
                 DoInvMassFitMain(iBin+4,2.2,4.5,fAlpha_L_5bins_val[iBin], fAlpha_R_5bins_val[iBin], n_L_5bins[iBin][iVar], fN_R_5bins_val[iBin], str3c_all[iBin][iVar]);    
+                signal_3c_val[iBin][iVar] = N_Jpsi_out[0];
+                signal_3c_err[iBin][iVar] = N_Jpsi_out[1];
+                signal_3c_devAbs[iBin][iVar] = TMath::Abs(fN_yield_5bins_val[iBin] - signal_3c_val[iBin][iVar]);
+                signal_3c_devRel[iBin][iVar] = signal_3c_devAbs[iBin][iVar] / fN_yield_5bins_val[iBin] * 100.;
             }
         }
+        // Print the output to txt file
+        ofstream outfile((str3c + "output.txt").Data());
+        outfile << std::fixed << std::setprecision(3);
+        outfile << "parameters val (n_L) \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3c; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3c; iVar++){
+                outfile << n_L_5bins[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal val \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3c; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3c; iVar++){
+                outfile << signal_3c_val[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal err \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3c; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3c; iVar++){
+                outfile << signal_3c_err[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal deviation absolute\n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3c; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3c; iVar++){
+                outfile << signal_3c_devAbs[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << Form("signal deviation relative [%%]\n");
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3c; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3c; iVar++){
+                outfile << signal_3c_devRel[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile.close();
+        Printf("Results printed to %s.", (str3c + "output.txt").Data()); 
     }
 
     // 3d) vary the n_R parameter
-    Bool_t nR = kFALSE;
     if(nR){
-        Double_t n_R_5bins[5][6] = { 0 };
+        const Int_t n3d = 6;
+        Double_t n_R_5bins[5][n3d] = { 0 };
         TString str3d = "Results/InvMassFit_SystUncertainties/n_R/";
-        TString str3d_all[5][6];
+        TString str3d_all[5][n3d];
+        Double_t signal_3d_val[5][n3d] = { 0 };
+        Double_t signal_3d_err[5][n3d] = { 0 };
+        Double_t signal_3d_devAbs[5][n3d] = { 0 };
+        Double_t signal_3d_devRel[5][n3d] = { 0 };
         for(Int_t iBin = 0; iBin < 5; iBin++){
-            for(Int_t iVar = 0; iVar < 6; iVar++){
+            for(Int_t iVar = 0; iVar < n3d; iVar++){
                 str3d_all[iBin][iVar] = str3d + Form("var_%i/", iVar+1);
                 if(iVar == 0) n_R_5bins[iBin][iVar] = fN_R_5bins_val[iBin] - fN_R_5bins_err[iBin];
                 if(iVar == 1) n_R_5bins[iBin][iVar] = fN_R_5bins_val[iBin] - 2./3. * fN_R_5bins_err[iBin];
@@ -345,7 +554,7 @@ void InvMassFit_SystUncertainties(){
             std::cout << std::setprecision(3);
             for(Int_t iBin = 0; iBin < 5; iBin++){
                 std::cout << iBin << "\t";
-                for(Int_t iVar = 0; iVar < 6; iVar++){
+                for(Int_t iVar = 0; iVar < n3d; iVar++){
                    std::cout << n_R_5bins[iBin][iVar] << "\t";
                 }
                 std::cout << "\n";
@@ -353,10 +562,74 @@ void InvMassFit_SystUncertainties(){
         }
         // Do invariant mass fits
         for(Int_t iBin = 0; iBin < 5; iBin++){
-            for(Int_t iVar = 0; iVar < 6; iVar++){
+            for(Int_t iVar = 0; iVar < n3d; iVar++){
                 DoInvMassFitMain(iBin+4,2.2,4.5,fAlpha_L_5bins_val[iBin], fAlpha_R_5bins_val[iBin], fN_L_5bins_val[iBin], n_R_5bins[iBin][iVar], str3d_all[iBin][iVar]);    
+                signal_3d_val[iBin][iVar] = N_Jpsi_out[0];
+                signal_3d_err[iBin][iVar] = N_Jpsi_out[1];
+                signal_3d_devAbs[iBin][iVar] = TMath::Abs(fN_yield_5bins_val[iBin] - signal_3d_val[iBin][iVar]);
+                signal_3d_devRel[iBin][iVar] = signal_3d_devAbs[iBin][iVar] / fN_yield_5bins_val[iBin] * 100.;
             }
         }
+        // Print the output to txt file
+        ofstream outfile((str3d + "output.txt").Data());
+        outfile << std::fixed << std::setprecision(3);
+        outfile << "parameters val (n_R) \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3d; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3d; iVar++){
+                outfile << n_R_5bins[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal val \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3d; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3d; iVar++){
+                outfile << signal_3d_val[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal err \n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3d; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3d; iVar++){
+                outfile << signal_3d_err[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << "signal deviation absolute\n";
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3d; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3d; iVar++){
+                outfile << signal_3d_devAbs[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile << Form("signal deviation relative [%%]\n");
+        outfile << "bin \t";
+        for(Int_t iVar = 0; iVar < n3d; iVar++) outfile << Form("var_%i\t", iVar+1);
+        outfile << "\n";
+        for(Int_t iBin = 0; iBin < 5; iBin++){
+            outfile << iBin+1 << "\t";
+            for(Int_t iVar = 0; iVar < n3d; iVar++){
+                outfile << signal_3d_devRel[iBin][iVar] << "\t";
+            }
+            outfile << "\n";
+        }
+        outfile.close();
+        Printf("Results printed to %s.", (str3d + "output.txt").Data()); 
     }
 
     Printf("Done.");
