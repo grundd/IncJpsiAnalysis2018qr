@@ -315,15 +315,16 @@ void CalculateCrossSectionBins(){
         Factors_err[iBin] = TMath::Sqrt(TMath::Power(CorrFD_sum_err[iBin]/100,2) + TMath::Power(CorrFC_err[iBin]/100,2));
         Sigma[iBin] = NYield[iBin] / (Factors[iBin] * EffVetoes * AxE[iBin]/100 * BR * RapWidth * Pt2Widths[iBin] * LumiAll);
         Sigma_err[iBin] = Sigma[iBin] * TMath::Sqrt(
-            TMath::Power(NYield_err[iBin] / NYield[iBin], 2) +
-            TMath::Power(AxE_err[iBin] / AxE[iBin], 2) +
-            TMath::Power(Factors_err[iBin] / Factors[iBin], 2) +
-            TMath::Power(BR_err / BR, 2) + 
-            TMath::Power(Syst_Lumi / 100., 2) + 
-            TMath::Power(Syst_V0AD / 100., 2) + 
-            TMath::Power(Syst_EMdi / 100., 2) + 
-            TMath::Power(Syst_Trck / 100., 2) + 
-            TMath::Power(Syst_TrEf / 100., 2));
+            TMath::Power(NYield_err[iBin] / NYield[iBin], 2)
+            //TMath::Power(AxE_err[iBin] / AxE[iBin], 2) +
+            //TMath::Power(Factors_err[iBin] / Factors[iBin], 2) +
+            //TMath::Power(BR_err / BR, 2) + 
+            //TMath::Power(Syst_Lumi / 100., 2) + 
+            //TMath::Power(Syst_V0AD / 100., 2) + 
+            //TMath::Power(Syst_EMdi / 100., 2) + 
+            //TMath::Power(Syst_Trck / 100., 2) + 
+            //TMath::Power(Syst_TrEf / 100., 2)
+            );
     }
 
     // Define output text file to print results
@@ -336,7 +337,7 @@ void CalculateCrossSectionBins(){
     outfile << Form("Delta y = %.1f\n", RapWidth);
     outfile << Form("EffVetoes = %.1f%%\n", EffVetoes*100);
     outfile << "Per bins:\n";
-    outfile << Form("Bin\tPtLow \tPtUpp \tPt^2_w \tN \tN_er \tAxE \tAxE_er\tFD [%%]\tFD_err \tFC [%%]\tFC_er \tf [%%]\tf_er \tsig \tsig_er \n");
+    outfile << Form("Bin\tPtLow \tPtUpp \tPt^2_w \tN \tN_er \tAxE \tAxE_er\tFD [%%]\tFD_err \tFC [%%]\tFC_er \tf [%%]\tf_er \tsig \tsig_er stat.\n");
     for(Int_t i = 0; i < nPtBins; i++){
         outfile << i+1 << "\t";
         outfile << ptBoundaries[i] << "\t";

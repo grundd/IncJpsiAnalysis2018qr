@@ -15,6 +15,7 @@
 #include <TLegend.h>
 #include <TStyle.h>
 #include <TString.h>
+#include <TMath.h>
 
 // my headers
 #include "AnalysisManager.h"
@@ -25,14 +26,18 @@
 
 Bool_t plot1 = kTRUE;
 Bool_t plot2 = kTRUE;
-Bool_t plot3 = kTRUE;
+Bool_t plot3 = kFALSE;
 
 Double_t PhotonFlux = 84.9;
 // To read the values from the files:
 Double_t sig_val[nPtBins] = { 0 };
-Double_t sig_err[nPtBins] = { 0 };
+Double_t sig_err_stat[nPtBins] = { 0 };
+Double_t *sig_err_syst = NULL;
 Double_t t_avg_val[nPtBins] = { 0 };
 Double_t t_boundaries[nPtBins+1] = { 0 };
+
+Double_t syst_uncr_4bins[4] = {6.2, 6.0, 6.3, 6.0};
+Double_t syst_uncr_5bins[5] = {6.5, 6.3, 6.4, 6.0, 6.1};
 
 // For TGraphAsymmErrors:
 Double_t sig_value[nPtBins] = { 0 };
@@ -86,11 +91,15 @@ void PhenoPredictions()
 
     ReadInputHeikki();
 
+    // Connect the systematic uncertainties
+    if(nPtBins == 4) sig_err_syst = &syst_uncr_4bins[0];
+    if(nPtBins == 5) sig_err_syst = &syst_uncr_5bins[0];
+
     // Scale the measured results with photon flux and fill the histogram
     for(Int_t i = 0; i < nPtBins; i++){
         sig_value[i] = sig_val[i] / 2. / PhotonFlux;
-        sig_errLo[i] = sig_err[i] / 2. / PhotonFlux;
-        sig_errUp[i] = sig_err[i] / 2. / PhotonFlux;
+        sig_errLo[i] = TMath::Sqrt(TMath::Power(sig_err_stat[i] / 2. / PhotonFlux, 2) + TMath::Power(sig_err_syst[i] / 100. * sig_value[i], 2));
+        sig_errUp[i] = TMath::Sqrt(TMath::Power(sig_err_stat[i] / 2. / PhotonFlux, 2) + TMath::Power(sig_err_syst[i] / 100. * sig_value[i], 2));
         Printf("Cross section in bin %i: %.5f pm %.5f.", i+1, sig_value[i], sig_errLo[i]);
         t_value[i] = t_avg_val[i];
         t_errLo[i] = t_avg_val[i] - t_boundaries[i];
@@ -202,7 +211,7 @@ void PhenoPredictions()
         l->AddEntry(gr1_inc_n,"GG-n, incoherent","L");
     }
     if(plot2){
-        l->AddEntry(gr2_min,"GSZ, el+diss","L");
+        l->AddEntry(gr2_min,"GSZ, el + diss","L");
     }
     l->SetTextSize(0.048);
     l->SetBorderSize(0); // no border
@@ -211,10 +220,11 @@ void PhenoPredictions()
 
     //grData->Print();
     //gr2_area->Print();
-    gr3_fluct->Print();
+    //gr3_fluct->Print();
+    grData->Print();
 
-    c->Print("PhenoPredictions/fig/ComparisonWithPheno.pdf");
-    c->Print("PhenoPredictions/fig/ComparisonWithPheno.png");
+    c->Print(Form("PhenoPredictions/fig/ComparisonWithPheno_%ibins.pdf", nPtBins));
+    c->Print(Form("PhenoPredictions/fig/ComparisonWithPheno_%ibins.png", nPtBins));
 
     return;
 }
@@ -235,7 +245,7 @@ void ReadInputMeasurement()
             // skip first line
             Int_t bin;
             Double_t tLow;
-            if(i > 0) istr >> bin >> tLow >> t_boundaries[i] >> sig_val[i-1] >> sig_err[i-1];
+            if(i > 0) istr >> bin >> tLow >> t_boundaries[i] >> sig_val[i-1] >> sig_err_stat[i-1];
             i++;   
         }
         ifs.close();

@@ -244,7 +244,7 @@ void CorrectionPt2ToT(){
     hCorrection->GetYaxis()->SetTitleOffset(1.4);
     hCorrection->GetYaxis()->SetDecimals(3);
     // a horizontal axis
-    hCorrection->GetXaxis()->SetTitle("|#it{t}| or #it{p}_{T, pom}^{2} (GeV^{2})");
+    hCorrection->GetXaxis()->SetTitle("|#it{t}| or #it{p}_{T, pom}^{2} (GeV^{2}/#it{c}^{2})");
     hCorrection->GetXaxis()->SetTitleSize(0.05);
     hCorrection->GetXaxis()->SetTitleOffset(1.3);
     hCorrection->GetXaxis()->SetLabelSize(0.05);
@@ -261,8 +261,10 @@ void CorrectionPt2ToT(){
     leg->SetFillStyle(0);  // legend is transparent
     leg->Draw();
 
-    c->Print("DependenceOnT/CorrectionPt2ToT.png");
-    c->Print("DependenceOnT/CorrectionPt2ToT.pdf");
+    TString str = Form("DependenceOnT/CorrectionPt2ToT_%ibins", nPtBins);
+
+    c->Print((str + ".pdf").Data());
+    c->Print((str + ".png").Data());
 
     return;
 }
