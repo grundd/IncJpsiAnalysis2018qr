@@ -333,8 +333,8 @@ void PlotEnergyDistribution(Int_t iMassCut){
         l1->SetFillStyle(0);
         l1->Draw();
         // Save canvas
-        c1->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_h2D.pdf", nPtBins, iBin+1));
-        c1->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_h2D.png", nPtBins, iBin+1));
+        c1->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/MassInterval%i/bin%i_h2D.pdf", nPtBins, iMassCut, iBin+1));
+        c1->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/MassInterval%i/bin%i_h2D.png", nPtBins, iMassCut, iBin+1));
 
         // Print 1D histograms
         TCanvas *c2 = new TCanvas("c2","c2",700,600);
@@ -382,8 +382,8 @@ void PlotEnergyDistribution(Int_t iMassCut){
         l3->SetFillStyle(0);
         l3->Draw();
         // Save canvas
-        c2->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_h1D.pdf", nPtBins, iBin+1));
-        c2->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_h1D.png", nPtBins, iBin+1));
+        c2->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/MassInterval%i/bin%i_h1D.pdf", nPtBins, iMassCut, iBin+1));
+        c2->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/MassInterval%i/bin%i_h1D.png", nPtBins, iMassCut, iBin+1));
     }
 
     return;
