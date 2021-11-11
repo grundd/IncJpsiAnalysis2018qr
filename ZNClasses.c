@@ -67,11 +67,11 @@ void ZNClasses(){
 
     //PrepareData();
 
-    //CalculateClasses(0); // Around J/psi peak: 3.0 < m < 3.2 GeV
+    CalculateClasses(0); // Around J/psi peak: 3.0 < m < 3.2 GeV
 
-    //CalculateClasses(1); // Side-bands: 2.5 < m < 3.0 GeV && 3.2 < m < 4.0 GeV
+    CalculateClasses(1); // Side-bands: 2.5 < m < 3.0 GeV && 3.2 < m < 4.0 GeV
 
-    InvMassFitsInClasses();
+    //InvMassFitsInClasses();
 
     //PlotEnergyDistribution();
 
@@ -217,6 +217,27 @@ void CalculateClasses(Int_t iMassCut){
     }
     outfile.close();
     Printf("Results printed to %s.", FilePath.Data()); 
+
+    // Print to TeX table
+    TString FilePath_TeX = Form("Results/ZNClasses/%ibins_MassInterval%i_TeX.txt", nPtBins, iMassCut);
+    ofstream outfile_TeX(FilePath_TeX.Data());
+    outfile_TeX << Form("Bin \tTotal \t0n0n[-]\tXn0n[-]\t0nXn[-]\tXnXn[-]\t0n0n[%%]\tXn0n[%%]\t0nXn[%%]\tXnXn[%%]\n");    
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        outfile_TeX << std::fixed << std::setprecision(0)
+                    << iBin+1 << " &\t"
+                    << nEvTotal[iBin] << " &\t"
+                    << nEvFired_none[iBin] << " &\t"
+                    << nEvFired_OnlyZNA[iBin] << " &\t"
+                    << nEvFired_OnlyZNC[iBin] << " &\t"
+                    << nEvFired_both[iBin] << " &\t$"
+                    << std::fixed << std::setprecision(1)
+                    << PercFiredNone_val[iBin] << R"( \pm )" << PercFiredNone_err[iBin] << "$ &\t$"
+                    << PercFiredZNAOnly_val[iBin] << R"( \pm )" << PercFiredZNAOnly_err[iBin] << "$ &\t$"
+                    << PercFiredZNCOnly_val[iBin] << R"( \pm )" << PercFiredZNCOnly_err[iBin] << "$ &\t$"
+                    << PercFiredNone_val[iBin] << R"( \pm )" << PercFiredNone_err[iBin] << R"($ \\)" << "\n";
+    }
+    outfile_TeX.close();
+    Printf("Results printed to %s.", FilePath_TeX.Data()); 
 
     return;
 }
