@@ -1,4 +1,4 @@
-// FeedDown_PtBins.c
+// FeedDown.c
 // David Grund, Sep 24, 2021
 
 // cpp headers
@@ -141,7 +141,7 @@ void CalculateFD_Total(Bool_t bAOD){
         outfile << "\t" << fD_coh_ch_val[i] << "\t" << fD_coh_ch_err[i] 
                 << "\t" << fD_inc_ch_val[i] << "\t" << fD_inc_ch_err[i] 
                 << "\t" << fD_coh_ne_val[i] << "\t" << fD_coh_ne_err[i] 
-                << "\t" << fD_inc_ne_val[i] << "\t" << fD_inc_ne_err[i] << "\n";   
+                << "\t" << fD_inc_ne_val[i] << "\t" << fD_inc_ne_err[i] << "\n";
     }
     outfile.close();
     Printf("*** Results printed to %s.***", str.Data());
