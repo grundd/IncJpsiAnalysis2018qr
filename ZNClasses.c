@@ -234,7 +234,7 @@ void CalculateClasses(Int_t iMassCut){
                     << PercFiredNone_val[iBin] << R"( \pm )" << PercFiredNone_err[iBin] << "$ &\t$"
                     << PercFiredZNAOnly_val[iBin] << R"( \pm )" << PercFiredZNAOnly_err[iBin] << "$ &\t$"
                     << PercFiredZNCOnly_val[iBin] << R"( \pm )" << PercFiredZNCOnly_err[iBin] << "$ &\t$"
-                    << PercFiredNone_val[iBin] << R"( \pm )" << PercFiredNone_err[iBin] << R"($ \\)" << "\n";
+                    << PercFiredBoth_val[iBin] << R"( \pm )" << PercFiredBoth_err[iBin] << R"($ \\)" << "\n";
     }
     outfile_TeX.close();
     Printf("Results printed to %s.", FilePath_TeX.Data()); 
