@@ -33,7 +33,7 @@ using namespace RooFit;
 void PrepareData();
 void CalculateClasses(Int_t iMassCut);
 void InvMassFitsInClasses();
-void PlotEnergyDistribution();
+void PlotEnergyDistribution(Int_t iMassCut);
 // Supporting functions
 Bool_t EventPassedZN(Int_t iMassCut, Int_t iPtCut, Int_t iPtBin);
 Double_t CalculateErrorBayes(Double_t k, Double_t n);
@@ -67,13 +67,15 @@ void ZNClasses(){
 
     //PrepareData();
 
-    CalculateClasses(0); // Around J/psi peak: 3.0 < m < 3.2 GeV
-
-    CalculateClasses(1); // Side-bands: 2.5 < m < 3.0 GeV && 3.2 < m < 4.0 GeV
-
     //InvMassFitsInClasses();
 
-    //PlotEnergyDistribution();
+    // Around J/psi peak: 3.0 < m < 3.2 GeV
+    CalculateClasses(0);
+    PlotEnergyDistribution(0);
+
+    // Side-bands: 2.5 < m < 3.0 GeV && 3.2 < m < 4.0 GeV
+    CalculateClasses(1); 
+    PlotEnergyDistribution(1);    
 
     return;
 }
@@ -223,8 +225,9 @@ void CalculateClasses(Int_t iMassCut){
     ofstream outfile_TeX(FilePath_TeX.Data());
     outfile_TeX << Form("Bin \tTotal \t0n0n[-]\tXn0n[-]\t0nXn[-]\tXnXn[-]\t0n0n[%%]\tXn0n[%%]\t0nXn[%%]\tXnXn[%%]\n");    
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        outfile_TeX << std::fixed << std::setprecision(0)
-                    << iBin+1 << " &\t"
+        outfile_TeX << std::fixed << std::setprecision(3)
+                    << "$(" << ptBoundaries[iBin-1] << "," << ptBoundaries[iBin] << ")$ &\t"
+                    << std::fixed << std::setprecision(0)
                     << nEvTotal[iBin] << " &\t"
                     << nEvFired_none[iBin] << " &\t"
                     << nEvFired_OnlyZNA[iBin] << " &\t"
@@ -255,16 +258,14 @@ void InvMassFitsInClasses(){
     return;
 }
 
-void PlotEnergyDistribution(){
+void PlotEnergyDistribution(Int_t iMassCut){
 
     // Histograms
-    Int_t nBins = 96;
+    Int_t nBins = 60;
+    Int_t nBins2 = 80;
     Double_t EnLow = -4;
     Double_t EnUpp = 8;
     Double_t EnUpp2 = 12;
-    TH2D *hZN_energies = new TH2D("hZN_energies", "correlation between ZNA and ZNC energies", nBins, EnLow, EnUpp, nBins, EnLow, EnUpp);
-    TH1D *hZNA_energy = new TH1D("hZNA_energy", "hist of ZNA energies", nBins, EnLow, EnUpp2);
-    TH1D *hZNC_energy = new TH1D("hZNC_energy", "hist of ZNC energies", nBins, EnLow, EnUpp2);
 
     TFile *fFileIn = TFile::Open("Trees/ZNClasses/ZNClasses.root", "read");
     if(fFileIn) Printf("Input data loaded.");
@@ -284,100 +285,106 @@ void PlotEnergyDistribution(){
 
     SetPtBinning();
 
-    for(Int_t iEntry = 0; iEntry < fTreeIn->GetEntries(); iEntry++){
-        fTreeIn->GetEntry(iEntry);
-
-        // (...)
-
-    }    
-
-    TCanvas *c1 = new TCanvas("c1","c1",700,600);
-    c1->SetTopMargin(0.08);
-    c1->SetBottomMargin(0.11);
-    c1->SetLeftMargin(0.09);
-    //c1->SetRightMargin(0.04);
-    c1->SetTitle("ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV");
-
     gStyle->SetOptTitle(0);
     gStyle->SetOptStat(0);
     gStyle->SetPalette(kBird); // https://root.cern/doc/master/classTColor.html#C05
     gStyle->SetPaintTextFormat("4.2f");
 
-    //hZN_energies->SetMarkerSize(1.5);
-    // X-axis
-    hZN_energies->GetXaxis()->SetTitle("ZNA energy (TeV)");
-    hZN_energies->GetXaxis()->SetTitleSize(0.05);
-    hZN_energies->GetXaxis()->SetLabelSize(0.05);
-    // Y-axis
-    hZN_energies->GetYaxis()->SetTitle("ZNC energy (TeV)");
-    hZN_energies->GetYaxis()->SetTitleSize(0.05);
-    hZN_energies->GetYaxis()->SetLabelSize(0.05);
-    hZN_energies->GetYaxis()->SetTitleOffset(0.7);
-    // Z-axis
-    hZN_energies->GetZaxis()->SetLabelSize(0.042);
-    // Draw    
-    hZN_energies->Draw("COLZ");
-    // Legend
-    TLegend *l1 = new TLegend(0.12,0.93,0.6,1.0);
-    l1->AddEntry((TObject*)0,"ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","");
-    l1->SetTextSize(0.05);
-    l1->SetBorderSize(0);
-    l1->SetFillStyle(0);
-    l1->Draw();
-    // Save canvas
-    c1->Print("results/ZNPlot/ZN_energy_2D_hist.pdf");
-    c1->Print("results/ZNPlot/ZN_energy_2D_hist.png");
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
 
-    TCanvas *c2 = new TCanvas("c2","c2",700,600);
-    c2->SetTopMargin(0.02);
-    c2->SetBottomMargin(0.11);
-    c2->SetLeftMargin(0.13);
-    c2->SetRightMargin(0.04);
-    c2->SetLogy();
+        TH2D *hZN_energies = new TH2D("hZN_energies", "correlation between ZNA and ZNC energies", nBins, EnLow, EnUpp, nBins, EnLow, EnUpp);
+        TH1D *hZNA_energy = new TH1D("hZNA_energy", "hist of ZNA energies", nBins, EnLow, EnUpp2);
+        TH1D *hZNC_energy = new TH1D("hZNC_energy", "hist of ZNC energies", nBins, EnLow, EnUpp2);    
 
-    // X-axis
-    hZNA_energy->GetXaxis()->SetTitle("ZN energy (TeV)");
-    hZNA_energy->GetXaxis()->SetTitleSize(0.05);
-    hZNA_energy->GetXaxis()->SetLabelSize(0.05);
-    // Y-axis
-    hZNA_energy->GetYaxis()->SetTitle("Counts per 125 GeV");
-    hZNA_energy->GetYaxis()->SetTitleSize(0.05);
-    hZNA_energy->GetYaxis()->SetLabelSize(0.05);
-    hZNA_energy->GetYaxis()->SetTitleOffset(1.2);
-    // Style hist ZNA
-    hZNA_energy->SetLineColor(kRed);
-    hZNA_energy->SetLineWidth(1);
-    hZNA_energy->SetMarkerStyle(21);
-    hZNA_energy->SetMarkerColor(kRed);
-    hZNA_energy->SetMarkerSize(0.5);
-    // Style hist ZNC
-    hZNC_energy->SetLineColor(kBlue);
-    hZNC_energy->SetLineWidth(1);
-    hZNC_energy->SetMarkerStyle(21);
-    hZNC_energy->SetMarkerColor(kBlue);
-    hZNC_energy->SetMarkerSize(0.5);
-    // Draw
-    hZNA_energy->Draw("E0");
-    hZNC_energy->Draw("SAME E0");
-    // Legend
-    TLegend *l2 = new TLegend(0.215,0.91,0.99,0.96);
-    l2->AddEntry((TObject*)0,"ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","");
-    l2->SetTextSize(0.05);
-    l2->SetBorderSize(0);
-    l2->SetFillStyle(0);
-    l2->Draw();
-    TLegend *l3 = new TLegend(0.65,0.78,0.99,0.9);
-    l3->AddEntry(hZNA_energy,"ZNA energy","PL");
-    l3->AddEntry(hZNC_energy,"ZNC energy","PL");
-    //l3->AddEntry((TObject*)0,"#bf{This thesis}","");
-    l3->SetTextSize(0.05);
-    l3->SetBorderSize(0);
-    l3->SetFillStyle(0);
-    l3->Draw();
-    // Save canvas
-    // to do
-    //c2->Print("results/ZNPlot/ZN_energy_1D_hist.pdf");
-    //c2->Print("results/ZNPlot/ZN_energy_1D_hist.png");
+        for(Int_t iEntry = 0; iEntry < fTreeIn->GetEntries(); iEntry++){
+            fTreeIn->GetEntry(iEntry);
+
+            if(EventPassedZN(iMassCut,1,iBin+1)){
+                hZN_energies->Fill(fZNA_energy/1000, fZNC_energy/1000);
+                hZNA_energy->Fill(fZNA_energy/1000);
+                hZNC_energy->Fill(fZNC_energy/1000);
+            }
+        }   
+        // Print 2D histogram
+        TCanvas *c1 = new TCanvas("c1","c1",700,600);
+        c1->SetTopMargin(0.08);
+        c1->SetBottomMargin(0.11);
+        c1->SetLeftMargin(0.09);
+        //c1->SetRightMargin(0.04);
+        c1->SetTitle("ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV"); 
+        // X-axis
+        hZN_energies->GetXaxis()->SetTitle("ZNA energy (TeV)");
+        hZN_energies->GetXaxis()->SetTitleSize(0.05);
+        hZN_energies->GetXaxis()->SetLabelSize(0.05);
+        // Y-axis
+        hZN_energies->GetYaxis()->SetTitle("ZNC energy (TeV)");
+        hZN_energies->GetYaxis()->SetTitleSize(0.05);
+        hZN_energies->GetYaxis()->SetLabelSize(0.05);
+        hZN_energies->GetYaxis()->SetTitleOffset(0.7);
+        // Z-axis
+        hZN_energies->GetZaxis()->SetLabelSize(0.042);
+        // Draw    
+        hZN_energies->Draw("COLZ");
+        // Legend
+        TLegend *l1 = new TLegend(0.12,0.93,0.6,1.0);
+        l1->AddEntry((TObject*)0,"ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","");
+        l1->SetTextSize(0.05);
+        l1->SetBorderSize(0);
+        l1->SetFillStyle(0);
+        l1->Draw();
+        // Save canvas
+        c1->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_h2D.pdf", nPtBins, iBin+1));
+        c1->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_h2D.png", nPtBins, iBin+1));
+
+        // Print 1D histograms
+        TCanvas *c2 = new TCanvas("c2","c2",700,600);
+        c2->SetTopMargin(0.02);
+        c2->SetBottomMargin(0.11);
+        c2->SetLeftMargin(0.13);
+        c2->SetRightMargin(0.04);
+        c2->SetLogy();
+        // X-axis
+        hZNA_energy->GetXaxis()->SetTitle("ZN energy (TeV)");
+        hZNA_energy->GetXaxis()->SetTitleSize(0.05);
+        hZNA_energy->GetXaxis()->SetLabelSize(0.05);
+        // Y-axis
+        hZNA_energy->GetYaxis()->SetTitle("Counts per 200 GeV");
+        hZNA_energy->GetYaxis()->SetTitleSize(0.05);
+        hZNA_energy->GetYaxis()->SetLabelSize(0.05);
+        hZNA_energy->GetYaxis()->SetTitleOffset(1.2);
+        // Style hist ZNA
+        hZNA_energy->SetLineColor(kRed);
+        hZNA_energy->SetLineWidth(1);
+        hZNA_energy->SetMarkerStyle(21);
+        hZNA_energy->SetMarkerColor(kRed);
+        hZNA_energy->SetMarkerSize(0.5);
+        // Style hist ZNC
+        hZNC_energy->SetLineColor(kBlue);
+        hZNC_energy->SetLineWidth(1);
+        hZNC_energy->SetMarkerStyle(21);
+        hZNC_energy->SetMarkerColor(kBlue);
+        hZNC_energy->SetMarkerSize(0.5);
+        // Draw
+        hZNA_energy->Draw("E0");
+        hZNC_energy->Draw("SAME E0");
+        // Legend
+        TLegend *l2 = new TLegend(0.215,0.91,0.99,0.96);
+        l2->AddEntry((TObject*)0,"ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","");
+        l2->SetTextSize(0.05);
+        l2->SetBorderSize(0);
+        l2->SetFillStyle(0);
+        l2->Draw();
+        TLegend *l3 = new TLegend(0.65,0.78,0.99,0.9);
+        l3->AddEntry(hZNA_energy,"ZNA energy","PL");
+        l3->AddEntry(hZNC_energy,"ZNC energy","PL");
+        l3->SetTextSize(0.05);
+        l3->SetBorderSize(0);
+        l3->SetFillStyle(0);
+        l3->Draw();
+        // Save canvas
+        c2->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_h1D.pdf", nPtBins, iBin+1));
+        c2->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_h1D.png", nPtBins, iBin+1));
+    }
 
     return;
 }
@@ -509,7 +516,7 @@ void DoInvMassFitMain(Int_t ZNClass, Double_t fPtCutLow, Double_t fPtCutUpp, Int
     sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
 
     // Binning:
-    Int_t nBins = 75; // so that each bin between 2.5 and 4.0 GeV is 20 MeV wide
+    Int_t nBins = 50; // so that each bin between 2.5 and 4.0 GeV is 20 MeV wide
     RooBinning binM(nBins,fMCutLow,fMCutUpp);
     Double_t BinSizeDouble = (fMCutUpp - fMCutLow) * 1000 / nBins; // in MeV
     BinSizeDouble = BinSizeDouble + 0.5;

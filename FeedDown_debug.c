@@ -16,6 +16,12 @@ TString DatasetsMC[6] = {"CohJ","IncJ","CohPCh","IncPCh","CohPNe","IncPNe"};
 Double_t CrosSecSL[6] = { 0 };
 Double_t BR_val[4] = {0.3468, 0.3468, 0.2538, 0.2538};
 Double_t BR_err[4] = {0.0030, 0.0030, 0.0032, 0.0032};
+Double_t fD_val[4] = { 0 };
+Double_t fD_err[4] = { 0 };
+Double_t nEvCoh = 0;
+Double_t nEvInc = 0;
+Double_t fD_tot_val = 0;
+Double_t fD_tot_err = 0;
 
 Double_t NRec;
 Double_t NGen;
@@ -87,7 +93,7 @@ void CalculateFeedDownAll(){
     // Calculate fD in bins
     ofstream outfile((path + "FD_coeff.txt").Data());
     outfile << std::fixed << std::setprecision(3);
-    outfile << "Bin \tCohCh \terr \tIncCh \terr \tCohNe \terr \tIncNe \terr \n";
+    outfile << "Bin \tCohCh \terr \tIncCh \terr \tCohNe \terr \tIncNe \terr \tfD tot \terr\n";
 
     ofstream outTeX_fD((path + "TeX_fD.txt").Data());
     outTeX_fD << std::fixed << std::setprecision(2);
@@ -97,17 +103,24 @@ void CalculateFeedDownAll(){
 
     ofstream out_nEv((path + "FD_nEv.txt").Data());
     out_nEv << std::fixed << std::setprecision(2);
-    out_nEv << "Bin \tIncJ \tCohPCh \tIncPCh \tCohPNe \tIncPNe \n";
+    out_nEv << "Bin \tIncJ \tCohPCh \tIncPCh \tCohPNe \tIncPNe \tCohTot \tIncTot\n";
 
     ofstream outTeX_nEv((path + "TeX_nEv.txt").Data());
     outTeX_nEv << std::fixed << std::setprecision(2);
 
     for(Int_t iBin = 1; iBin <= iUpToBin; iBin++){
         outfile << iBin << "\t";
-        outTeX_fD << iBin;
-        outTeX_AxE << iBin;
         out_nEv << iBin << "\t";
-        outTeX_nEv << iBin;
+        // TeX files
+        outTeX_fD << std::fixed << std::setprecision(3);
+        outTeX_fD << "$(" << ptBoundaries[iBin-1] << "," << ptBoundaries[iBin] << ")$";
+        outTeX_fD << std::fixed << std::setprecision(2);
+        outTeX_AxE << std::fixed << std::setprecision(3);
+        outTeX_AxE << "$(" << ptBoundaries[iBin-1] << "," << ptBoundaries[iBin] << ")$";
+        outTeX_AxE << std::fixed << std::setprecision(2);
+        outTeX_nEv << std::fixed << std::setprecision(3);
+        outTeX_nEv << "$(" << ptBoundaries[iBin-1] << "," << ptBoundaries[iBin] << ")$";
+        outTeX_nEv << std::fixed << std::setprecision(2);
         for(Int_t iChannel = 1; iChannel <= iUpToChannel; iChannel++){
             outTeX_fD << " &\t";
             outTeX_AxE << " &\t";
@@ -118,7 +131,6 @@ void CalculateFeedDownAll(){
             Double_t NGen_tot_J, NGen_bin_J, NRec_bin_J, NGen_tot_P, NGen_bin_P, NRec_bin_P;
             Double_t AxE_J_val, AxE_J_err, AxE_P_val, AxE_P_err; 
             Double_t CrossSectionJ, CrossSectionP;
-            Double_t fD_val, fD_err;
             Double_t fD_Roman_val, fD_Roman_err; // calculated using the formula from Roman's AN
             Double_t nEvJ, nEvP;
             // N_tot with |y| < 1.0 for IncJ
@@ -144,8 +156,8 @@ void CalculateFeedDownAll(){
             // Calculate fD for iChannel (in percent)
             CrossSectionJ = CrosSecSL[1] * NGen_bin_J / NGen_tot_J;
             CrossSectionP = CrosSecSL[iChannel+1] * NGen_bin_P / NGen_tot_P;
-            fD_val = CrossSectionP / CrossSectionJ * AxE_P_val / AxE_J_val * BR_val[iChannel-1] * 100;
-            fD_err = fD_val * TMath::Sqrt(TMath::Power(AxE_J_err/AxE_J_val, 2) + TMath::Power(AxE_P_err/AxE_P_val, 2) + TMath::Power(BR_err[iChannel-1]/BR_val[iChannel-1], 2));
+            fD_val[iChannel-1] = CrossSectionP / CrossSectionJ * AxE_P_val / AxE_J_val * BR_val[iChannel-1] * 100;
+            fD_err[iChannel-1] = fD_val[iChannel-1] * TMath::Sqrt(TMath::Power(AxE_J_err/AxE_J_val, 2) + TMath::Power(AxE_P_err/AxE_P_val, 2) + TMath::Power(BR_err[iChannel-1]/BR_val[iChannel-1], 2));
             fD_Roman_val = CrosSecSL[iChannel+1] / CrosSecSL[1] * NGen_tot_J / NGen_tot_P * NRec_bin_P / NRec_bin_J * BR_val[iChannel-1] * 100;
             // Calculate the predicted number of J and P events
             // multiply by 1000 to get lumi in 1/(mili barns)
@@ -161,28 +173,39 @@ void CalculateFeedDownAll(){
             Printf("Cross section for %s: %.4f", DatasetsMC[iChannel+1].Data(), CrossSectionP);
             Printf("AxE for %s: (%.4f pm %.4f)%%", DatasetsMC[1].Data(), AxE_J_val, AxE_J_err);
             Printf("AxE for %s: (%.4f pm %.4f)%%", DatasetsMC[iChannel+1].Data(), AxE_P_val, AxE_P_err);
-            Printf("fD = (%.4f pm %.4f)%%", fD_val, fD_err);
+            Printf("fD = (%.4f pm %.4f)%%", fD_val[iChannel-1], fD_err[iChannel-1]);
             Printf("Roman's formula: fD = %.4f%%", fD_Roman_val);
             Printf("Number of %s events: %.3f", DatasetsMC[1].Data(), nEvJ);
             Printf("Number of %s events: %.3f", DatasetsMC[iChannel+1].Data(), nEvP);
             Printf("******************************************************");
-            outfile << fD_val << "\t" << fD_err << "\t";
-            outTeX_fD << "$" << fD_val << R"( \pm )" << fD_err << "$";
+            outfile << fD_val[iChannel-1] << "\t" << fD_err[iChannel-1] << "\t";
+            outTeX_fD << "$" << fD_val[iChannel-1] << R"( \pm )" << fD_err[iChannel-1] << "$";
             outTeX_AxE << "$" << AxE_P_val << R"( \pm )" << AxE_P_err << "$";
             if(iChannel == 1){
                 out_nEv << nEvJ << "\t" << nEvP << "\t";
-                outTeX_nEv << nEvJ << " &\t" << nEvP << " &\t";
+                outTeX_nEv << nEvJ << " &\t" << nEvP;
             } 
             else{
                 out_nEv << nEvP << "\t";
-                outTeX_nEv << nEvP << " &\t";
+                outTeX_nEv << nEvP;
             } 
+            // To calculate total fD correction per bin
+            fD_tot_val += fD_val[iChannel-1];
+            fD_tot_err += TMath::Power(fD_err[iChannel-1],2);
+            // To calculate total fD for coh and inc channel
+            if(iChannel % 2 == 1) nEvCoh += nEvP;
+            if(iChannel % 2 == 0) nEvInc += nEvP;
         }
-        outfile << "\n";
-        outTeX_fD << R"( \\)" << "\n";
+        outfile << fD_tot_val << "\t" << TMath::Sqrt(fD_tot_err) << "\n";
+        outTeX_fD << " &\t$" << fD_tot_val << R"( \pm )" << TMath::Sqrt(fD_tot_err) << R"($ \\)" << "\n";
         outTeX_AxE << R"( \\)" << "\n";
-        out_nEv << "\n";
-        outTeX_nEv << R"( \\)" << "\n";
+        out_nEv << nEvCoh << "\t" << nEvInc << "\n";
+        outTeX_nEv << " &\t" << nEvCoh << " &\t" << nEvInc << R"( \\)" << "\n";
+        // Set all counters to zero
+        fD_tot_val = 0;
+        fD_tot_err = 0;
+        nEvCoh = 0;
+        nEvInc = 0;
     }
     outfile.close();
     Printf("*** Results printed to %s.***", (path + "FD_coeff.txt").Data());
