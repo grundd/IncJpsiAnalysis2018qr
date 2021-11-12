@@ -8,7 +8,6 @@
 #include "TH1.h"
 #include "TH2.h"
 #include "TFile.h"
-#include "TTree.h"
 #include "TMath.h"
 #include "TString.h"
 #include "TAxis.h"
@@ -31,9 +30,9 @@ using namespace RooFit;
 
 // Main functions
 void PrepareData();
-void CalculateClasses(Int_t iMassCut);
 void InvMassFitsInClasses();
-void PlotEnergyDistribution(Int_t iMassCut);
+void CalculateClasses(Int_t iMassCut);
+void PlotEnergyDistribution();
 // Supporting functions
 Bool_t EventPassedZN(Int_t iMassCut, Int_t iPtCut, Int_t iPtBin);
 Double_t CalculateErrorBayes(Double_t k, Double_t n);
@@ -41,27 +40,79 @@ void DoInvMassFitMain(Int_t ZNClass, Double_t fPtCutLow, Double_t fPtCutUpp, Int
 void DrawCorrelationMatrix(TCanvas *cCorrMat, RooFitResult* fResFit);
 void SetCanvas(TCanvas *c, Bool_t bLogScale);
 
-Double_t nEvTotal[nPtBins] = { 0 };        // total number of events per bin
-Double_t nEvFired[nPtBins] = { 0 };        // number of events per bin with at least one fired ZN
-Double_t nEvFired_ZNA[nPtBins] = { 0 };    // number of events per bin with fired ZNA
-Double_t nEvFired_ZNC[nPtBins] = { 0 };    // number of events per bin with fired ZNC
-Double_t nEvFired_OnlyZNA[nPtBins] = { 0 };// number of events per bin with fired ZNA only
-Double_t nEvFired_OnlyZNC[nPtBins] = { 0 };// number of events per bin with fired ZNC only
-Double_t nEvFired_both[nPtBins] = { 0 };   // number of events per bin with fired both ZN
-Double_t nEvFired_none[nPtBins] = { 0 };   // number of events per bin with no fired ZN
-Double_t nSums[8] = { 0 };
-
+// All events (J/psi and background mixed)
+// No. of events
+Double_t nEv_all_total[nPtBins] = { 0 };    // total number of events per bin
+Double_t nEv_all_fired[nPtBins] = { 0 };    // number of events per bin with at least one of the ZN modules fired
+Double_t nEv_all_ZNA[nPtBins] = { 0 };      // number of events per bin with fired ZNA
+Double_t nEv_all_ZNC[nPtBins] = { 0 };      // number of events per bin with fired ZNC
+Double_t nEv_all_Xn0n[nPtBins] = { 0 };     // number of events per bin with fired ZNA only
+Double_t nEv_all_0nXn[nPtBins] = { 0 };     // number of events per bin with fired ZNC only
+Double_t nEv_all_XnXn[nPtBins] = { 0 };     // number of events per bin with fired both ZN modules
+Double_t nEv_all_0n0n[nPtBins] = { 0 };     // number of events per bin with no fired ZN modules
+Double_t nEv_all_sums[8] = { 0 };           // sum of the channels above over bins
 // Percentages (relative to the total number of events in a bin)
-Double_t PercFiredBoth_val[nPtBins] = { 0 }; 
-Double_t PercFiredNone_val[nPtBins] = { 0 }; 
-Double_t PercFiredZNAOnly_val[nPtBins] = { 0 }; 
-Double_t PercFiredZNCOnly_val[nPtBins] = { 0 }; 
-Double_t PercFiredBoth_err[nPtBins] = { 0 }; 
-Double_t PercFiredNone_err[nPtBins] = { 0 }; 
-Double_t PercFiredZNAOnly_err[nPtBins] = { 0 }; 
-Double_t PercFiredZNCOnly_err[nPtBins] = { 0 }; 
+Double_t Perc_all_XnXn_val[nPtBins] = { 0 }; 
+Double_t Perc_all_XnXn_err[nPtBins] = { 0 }; 
+Double_t Perc_all_0n0n_val[nPtBins] = { 0 }; 
+Double_t Perc_all_0n0n_err[nPtBins] = { 0 }; 
+Double_t Perc_all_Xn0n_val[nPtBins] = { 0 };
+Double_t Perc_all_Xn0n_err[nPtBins] = { 0 }; 
+Double_t Perc_all_0nXn_val[nPtBins] = { 0 }; 
+Double_t Perc_all_0nXn_err[nPtBins] = { 0 }; 
+// Jpsi events
+// No. of events
+Double_t nEv_J_total_val[nPtBins] = { 0 }; 
+Double_t nEv_J_total_err[nPtBins] = { 0 }; 
+Double_t nEv_J_Xn0n_val[nPtBins] = { 0 }; 
+Double_t nEv_J_Xn0n_err[nPtBins] = { 0 };     
+Double_t nEv_J_0nXn_val[nPtBins] = { 0 }; 
+Double_t nEv_J_0nXn_err[nPtBins] = { 0 }; 
+Double_t nEv_J_XnXn_val[nPtBins] = { 0 }; 
+Double_t nEv_J_XnXn_err[nPtBins] = { 0 };     
+Double_t nEv_J_0n0n_val[nPtBins] = { 0 };
+Double_t nEv_J_0n0n_err[nPtBins] = { 0 };          
+// Percentages: J/psi
+Double_t Perc_J_XnXn_val[nPtBins] = { 0 }; 
+Double_t Perc_J_XnXn_err[nPtBins] = { 0 }; 
+Double_t Perc_J_0n0n_val[nPtBins] = { 0 }; 
+Double_t Perc_J_0n0n_err[nPtBins] = { 0 }; 
+Double_t Perc_J_Xn0n_val[nPtBins] = { 0 };
+Double_t Perc_J_Xn0n_err[nPtBins] = { 0 }; 
+Double_t Perc_J_0nXn_val[nPtBins] = { 0 }; 
+Double_t Perc_J_0nXn_err[nPtBins] = { 0 }; 
+// Background events
+// No. of events
+Double_t nEv_bkg_total_val[nPtBins] = { 0 };
+Double_t nEv_bkg_total_err[nPtBins] = { 0 }; 
+Double_t nEv_bkg_Xn0n_val[nPtBins] = { 0 }; 
+Double_t nEv_bkg_Xn0n_err[nPtBins] = { 0 };     
+Double_t nEv_bkg_0nXn_val[nPtBins] = { 0 };
+Double_t nEv_bkg_0nXn_err[nPtBins] = { 0 };     
+Double_t nEv_bkg_XnXn_val[nPtBins] = { 0 };   
+Double_t nEv_bkg_XnXn_err[nPtBins] = { 0 };     
+Double_t nEv_bkg_0n0n_val[nPtBins] = { 0 };  
+Double_t nEv_bkg_0n0n_err[nPtBins] = { 0 };
+// Percentages: background
+Double_t Perc_bkg_XnXn_val[nPtBins] = { 0 }; 
+Double_t Perc_bkg_XnXn_err[nPtBins] = { 0 }; 
+Double_t Perc_bkg_0n0n_val[nPtBins] = { 0 }; 
+Double_t Perc_bkg_0n0n_err[nPtBins] = { 0 }; 
+Double_t Perc_bkg_Xn0n_val[nPtBins] = { 0 };
+Double_t Perc_bkg_Xn0n_err[nPtBins] = { 0 }; 
+Double_t Perc_bkg_0nXn_val[nPtBins] = { 0 }; 
+Double_t Perc_bkg_0nXn_err[nPtBins] = { 0 }; 
 
 TString classes[4] = {"0n0n", "Xn0n", "0nXn", "XnXn"};
+
+// #############################################
+// Options and variables for the inv. mass fits:
+Int_t UpToBin = nPtBins;
+Int_t UpToClass = 4;
+Bool_t SigmaFixed = kTRUE;
+Double_t N_Jpsi_out[2];
+Double_t N_bkgr_out[2];
+// #############################################
 
 void ZNClasses(){
 
@@ -69,13 +120,10 @@ void ZNClasses(){
 
     //InvMassFitsInClasses();
 
-    // Around J/psi peak: 3.0 < m < 3.2 GeV
-    CalculateClasses(0);
-    PlotEnergyDistribution(0);
+    CalculateClasses(0); // 3.0 < m < 3.2 GeV
+    CalculateClasses(1); // 2.5 < m < 3.0 GeV && 3.2 < m < 4.0 GeV
 
-    // Side-bands: 2.5 < m < 3.0 GeV && 3.2 < m < 4.0 GeV
-    CalculateClasses(1); 
-    PlotEnergyDistribution(1);    
+    PlotEnergyDistribution(); // 3.0 < m < 3.2 GeV
 
     return;
 }
@@ -114,133 +162,284 @@ void CalculateClasses(Int_t iMassCut){
                     if(TMath::Abs(fZNA_time[i]) < 2) ZNA_fired = kTRUE;
                     if(TMath::Abs(fZNC_time[i]) < 2) ZNC_fired = kTRUE;
                 }
-                nEvTotal[iBin]++;
-                if(ZN_fired) nEvFired[iBin]++;
-                if(ZNA_fired && ZNC_fired) nEvFired_both[iBin]++;
-                if(ZNA_fired) nEvFired_ZNA[iBin]++;
-                if(ZNC_fired) nEvFired_ZNC[iBin]++;
-                if(ZNA_fired && !ZNC_fired) nEvFired_OnlyZNA[iBin]++;
-                if(ZNC_fired && !ZNA_fired) nEvFired_OnlyZNC[iBin]++;
-                if(!ZNA_fired && !ZNC_fired) nEvFired_none[iBin]++;
+                nEv_all_total[iBin]++;
+                if(ZN_fired) nEv_all_fired[iBin]++;
+                if(ZNA_fired && ZNC_fired) nEv_all_XnXn[iBin]++;
+                if(ZNA_fired) nEv_all_ZNA[iBin]++;
+                if(ZNC_fired) nEv_all_ZNC[iBin]++;
+                if(ZNA_fired && !ZNC_fired) nEv_all_Xn0n[iBin]++;
+                if(ZNC_fired && !ZNA_fired) nEv_all_0nXn[iBin]++;
+                if(!ZNA_fired && !ZNC_fired) nEv_all_0n0n[iBin]++;
             }
         }
-
         if((iEntry+1) % 500 == 0){
             nEntriesAnalysed += 500;
             Printf("%i entries analysed.", nEntriesAnalysed);
         }
     }
 
-    // Calculate percentages
+    // Calculate percentages (all events)
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        PercFiredBoth_val[iBin] = nEvFired_both[iBin] / nEvTotal[iBin] * 100;
-        PercFiredBoth_err[iBin] = CalculateErrorBayes(nEvFired_both[iBin], nEvTotal[iBin]) * 100;
-        PercFiredNone_val[iBin] = nEvFired_none[iBin] / nEvTotal[iBin] * 100;
-        PercFiredNone_err[iBin] = CalculateErrorBayes(nEvFired_none[iBin], nEvTotal[iBin]) * 100;
-        PercFiredZNAOnly_val[iBin] = nEvFired_OnlyZNA[iBin] / nEvTotal[iBin] * 100;
-        PercFiredZNAOnly_err[iBin] = CalculateErrorBayes(nEvFired_OnlyZNA[iBin], nEvTotal[iBin]) * 100;
-        PercFiredZNCOnly_val[iBin] = nEvFired_OnlyZNC[iBin] / nEvTotal[iBin] * 100;
-        PercFiredZNCOnly_err[iBin] = CalculateErrorBayes(nEvFired_OnlyZNC[iBin], nEvTotal[iBin]) * 100;
+        Perc_all_0n0n_val[iBin] = nEv_all_0n0n[iBin] / nEv_all_total[iBin] * 100;
+        Perc_all_0n0n_err[iBin] = CalculateErrorBayes(nEv_all_0n0n[iBin], nEv_all_total[iBin]) * 100;
+        Perc_all_Xn0n_val[iBin] = nEv_all_Xn0n[iBin] / nEv_all_total[iBin] * 100;
+        Perc_all_Xn0n_err[iBin] = CalculateErrorBayes(nEv_all_Xn0n[iBin], nEv_all_total[iBin]) * 100;
+        Perc_all_0nXn_val[iBin] = nEv_all_0nXn[iBin] / nEv_all_total[iBin] * 100;
+        Perc_all_0nXn_err[iBin] = CalculateErrorBayes(nEv_all_0nXn[iBin], nEv_all_total[iBin]) * 100;
+        Perc_all_XnXn_val[iBin] = nEv_all_XnXn[iBin] / nEv_all_total[iBin] * 100;
+        Perc_all_XnXn_err[iBin] = CalculateErrorBayes(nEv_all_XnXn[iBin], nEv_all_total[iBin]) * 100;
     }
 
-    // Print the results to console
-    // Numbers
-    Printf("Numbers of events:");
-    Printf("Bin \tTotal \tFired \tZNA \tZNC \tOnlyZNA\tOnlyZNC\tBoth \tNone");
+    // Load the values from the invariant mass fits
+    TString str_in_J = Form("Results/ZNClasses/%ibins_J.txt", nPtBins);
+    TString str_in_bkg = Form("Results/ZNClasses/%ibins_bkg.txt", nPtBins);
+    ifstream ifs;
+    ifs.open(str_in_J.Data());
+    for(Int_t i = 0; i < nPtBins; i++){
+        Int_t iBin;
+        ifs >> iBin 
+            >> nEv_J_total_val[i]
+            >> nEv_J_total_err[i]
+            >> nEv_J_0n0n_val[i]
+            >> nEv_J_0n0n_err[i]
+            >> nEv_J_Xn0n_val[i]
+            >> nEv_J_Xn0n_err[i]
+            >> nEv_J_0nXn_val[i]
+            >> nEv_J_0nXn_err[i] 
+            >> nEv_J_XnXn_val[i]
+            >> nEv_J_XnXn_err[i];
+    }
+    ifs.close();
+    Printf("Values from %s loaded.", str_in_J.Data());
+    ifs.open(str_in_bkg.Data());
+    for(Int_t i = 0; i < nPtBins; i++){
+        Int_t iBin;
+        ifs >> iBin 
+            >> nEv_bkg_total_val[i]
+            >> nEv_bkg_total_err[i]
+            >> nEv_bkg_0n0n_val[i]
+            >> nEv_bkg_0n0n_err[i]
+            >> nEv_bkg_Xn0n_val[i]
+            >> nEv_bkg_Xn0n_err[i]
+            >> nEv_bkg_0nXn_val[i]
+            >> nEv_bkg_0nXn_err[i] 
+            >> nEv_bkg_XnXn_val[i]
+            >> nEv_bkg_XnXn_err[i];
+    }
+    ifs.close();
+    Printf("Values from %s loaded.", str_in_bkg.Data());
+
+    // Calculate percentages (J/psi and background)
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        nSums[0] += nEvTotal[iBin];
-        nSums[1] += nEvFired[iBin];
-        nSums[2] += nEvFired_ZNA[iBin];
-        nSums[3] += nEvFired_ZNC[iBin];
-        nSums[4] += nEvFired_OnlyZNA[iBin];
-        nSums[5] += nEvFired_OnlyZNC[iBin];
-        nSums[6] += nEvFired_both[iBin];
-        nSums[7] += nEvFired_none[iBin];
+        Perc_J_0n0n_val[iBin] = nEv_J_0n0n_val[iBin] / nEv_J_total_val[iBin] * 100;
+        Perc_J_0n0n_err[iBin] = Perc_J_0n0n_val[iBin] * TMath::Sqrt(TMath::Power(nEv_J_0n0n_err[iBin]/nEv_J_0n0n_val[iBin], 2) + TMath::Power(nEv_J_total_err[iBin]/nEv_J_total_val[iBin], 2));
+        Perc_J_Xn0n_val[iBin] = nEv_J_Xn0n_val[iBin] / nEv_J_total_val[iBin] * 100;
+        Perc_J_Xn0n_err[iBin] = Perc_J_Xn0n_val[iBin] * TMath::Sqrt(TMath::Power(nEv_J_Xn0n_err[iBin]/nEv_J_Xn0n_val[iBin], 2) + TMath::Power(nEv_J_total_err[iBin]/nEv_J_total_val[iBin], 2));
+        Perc_J_0nXn_val[iBin] = nEv_J_0nXn_val[iBin] / nEv_J_total_val[iBin] * 100;
+        Perc_J_0nXn_err[iBin] = Perc_J_0nXn_val[iBin] * TMath::Sqrt(TMath::Power(nEv_J_0nXn_err[iBin]/nEv_J_0nXn_val[iBin], 2) + TMath::Power(nEv_J_total_err[iBin]/nEv_J_total_val[iBin], 2));
+        Perc_J_XnXn_val[iBin] = nEv_J_XnXn_val[iBin] / nEv_J_total_val[iBin] * 100;
+        Perc_J_XnXn_err[iBin] = Perc_J_XnXn_val[iBin] * TMath::Sqrt(TMath::Power(nEv_J_XnXn_err[iBin]/nEv_J_XnXn_val[iBin], 2) + TMath::Power(nEv_J_total_err[iBin]/nEv_J_total_val[iBin], 2));
+    }    
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        Perc_bkg_0n0n_val[iBin] = nEv_bkg_0n0n_val[iBin] / nEv_bkg_total_val[iBin] * 100;
+        Perc_bkg_0n0n_err[iBin] = Perc_bkg_0n0n_val[iBin] * TMath::Sqrt(TMath::Power(nEv_bkg_0n0n_err[iBin]/nEv_bkg_0n0n_val[iBin], 2) + TMath::Power(nEv_bkg_total_err[iBin]/nEv_bkg_total_val[iBin], 2));
+        Perc_bkg_Xn0n_val[iBin] = nEv_bkg_Xn0n_val[iBin] / nEv_bkg_total_val[iBin] * 100;
+        Perc_bkg_Xn0n_err[iBin] = Perc_bkg_Xn0n_val[iBin] * TMath::Sqrt(TMath::Power(nEv_bkg_Xn0n_err[iBin]/nEv_bkg_Xn0n_val[iBin], 2) + TMath::Power(nEv_bkg_total_err[iBin]/nEv_bkg_total_val[iBin], 2));
+        Perc_bkg_0nXn_val[iBin] = nEv_bkg_0nXn_val[iBin] / nEv_bkg_total_val[iBin] * 100;
+        Perc_bkg_0nXn_err[iBin] = Perc_bkg_0nXn_val[iBin] * TMath::Sqrt(TMath::Power(nEv_bkg_0nXn_err[iBin]/nEv_bkg_0nXn_val[iBin], 2) + TMath::Power(nEv_bkg_total_err[iBin]/nEv_bkg_total_val[iBin], 2));
+        Perc_bkg_XnXn_val[iBin] = nEv_bkg_XnXn_val[iBin] / nEv_bkg_total_val[iBin] * 100;
+        Perc_bkg_XnXn_err[iBin] = Perc_bkg_XnXn_val[iBin] * TMath::Sqrt(TMath::Power(nEv_bkg_XnXn_err[iBin]/nEv_bkg_XnXn_val[iBin], 2) + TMath::Power(nEv_bkg_total_err[iBin]/nEv_bkg_total_val[iBin], 2));
+    } 
+
+    // Print the results to the console
+    // Numbers
+    Printf("*******************************************************************");
+    Printf("Numbers of events:");
+    Printf("Bin \tTotal \tFired \tZNA \tZNC \tOnlyZNA\tOnlyZNC\tBoth \tNone\n");
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        nEv_all_sums[0] += nEv_all_total[iBin];
+        nEv_all_sums[1] += nEv_all_fired[iBin];
+        nEv_all_sums[2] += nEv_all_ZNA[iBin];
+        nEv_all_sums[3] += nEv_all_ZNC[iBin];
+        nEv_all_sums[4] += nEv_all_Xn0n[iBin];
+        nEv_all_sums[5] += nEv_all_0nXn[iBin];
+        nEv_all_sums[6] += nEv_all_XnXn[iBin];
+        nEv_all_sums[7] += nEv_all_0n0n[iBin];
         Printf("%i \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f", 
             iBin+1, 
-            nEvTotal[iBin], 
-            nEvFired[iBin], 
-            nEvFired_ZNA[iBin], 
-            nEvFired_ZNC[iBin], 
-            nEvFired_OnlyZNA[iBin], 
-            nEvFired_OnlyZNC[iBin], 
-            nEvFired_both[iBin],
-            nEvFired_none[iBin]);
+            nEv_all_total[iBin], 
+            nEv_all_fired[iBin], 
+            nEv_all_ZNA[iBin], 
+            nEv_all_ZNC[iBin], 
+            nEv_all_Xn0n[iBin], 
+            nEv_all_0nXn[iBin], 
+            nEv_all_XnXn[iBin],
+            nEv_all_0n0n[iBin]);
     }
-    Printf("sum \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f", nSums[0], nSums[1], nSums[2], nSums[3], nSums[4], nSums[5], nSums[6], nSums[7]);
+    Printf("sum \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f", nEv_all_sums[0], nEv_all_sums[1], nEv_all_sums[2], nEv_all_sums[3], nEv_all_sums[4], nEv_all_sums[5], nEv_all_sums[6], nEv_all_sums[7]);
     // Percentages
+    Printf("*******************************************************************");
     Printf("Percentages:");
-    Printf("Bin \tBoth[%%]\terr \tZNA[%%]\terr \tZNC[%%]\terr \tNone[%%]\terr");
+    Printf("Bin \t0n0n[%%]\terr \tXn0n[%%]\terr \t0nXn[%%]\terr \t0n0n[%%]\terr");
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
         Printf("%i \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f", 
             iBin+1,
-            PercFiredBoth_val[iBin],
-            PercFiredBoth_err[iBin],
-            PercFiredZNAOnly_val[iBin],
-            PercFiredZNAOnly_err[iBin],
-            PercFiredZNCOnly_val[iBin],
-            PercFiredZNCOnly_err[iBin],
-            PercFiredNone_val[iBin],
-            PercFiredNone_err[iBin]);
+            Perc_all_0n0n_val[iBin],
+            Perc_all_0n0n_err[iBin],
+            Perc_all_Xn0n_val[iBin],
+            Perc_all_Xn0n_err[iBin],
+            Perc_all_0nXn_val[iBin],
+            Perc_all_0nXn_err[iBin],
+            Perc_all_XnXn_val[iBin],
+            Perc_all_XnXn_err[iBin]);
     }
+    Printf("*******************************************************************");
 
     // Print numbers to txt files
-    TString FilePath = Form("Results/ZNClasses/%ibins_MassInterval%i_output.txt", nPtBins, iMassCut);
-    ofstream outfile(FilePath.Data());
-    outfile << Form("Numbers of events:\n");
-    outfile << Form("Bin \tTotal \tFired \tZNA \tZNC \tOnlyZNA\tOnlyZNC\tBoth \tNone\n");
+    TString str_out_mass = Form("Results/ZNClasses/%ibins_mass%i.txt", nPtBins, iMassCut);
+    ofstream fout_mass(str_out_mass.Data());
+    fout_mass << Form("No. of events:\n");
+    fout_mass << Form("Bin \ttotal \tfired \tfZNA \tfZNC \t0n0n\tXn0n\t0nXn\tXnXn\n");
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        outfile << Form("%i \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \n", 
+        fout_mass << Form("%i \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \n", 
             iBin+1,
-            nEvTotal[iBin], 
-            nEvFired[iBin], 
-            nEvFired_ZNA[iBin], 
-            nEvFired_ZNC[iBin], 
-            nEvFired_OnlyZNA[iBin], 
-            nEvFired_OnlyZNC[iBin], 
-            nEvFired_both[iBin],
-            nEvFired_none[iBin]);
+            nEv_all_total[iBin], 
+            nEv_all_fired[iBin], 
+            nEv_all_ZNA[iBin], 
+            nEv_all_ZNC[iBin],
+            nEv_all_0n0n[iBin],
+            nEv_all_Xn0n[iBin], 
+            nEv_all_0nXn[iBin], 
+            nEv_all_XnXn[iBin]);
     }
-    outfile << Form("sum \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \n", nSums[0], nSums[1], nSums[2], nSums[3], nSums[4], nSums[5], nSums[6], nSums[7]);
-    outfile << Form("\n\n");
-    outfile << Form("Percentages:\n");
-    outfile << Form("Bin \tBoth[%%]\terr \tZNA[%%]\terr \tZNC[%%]\terr \tNone[%%]\terr \n");
+    fout_mass << Form("sum \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \t%.0f \n", nEv_all_sums[0], nEv_all_sums[1], nEv_all_sums[2], nEv_all_sums[3], nEv_all_sums[4], nEv_all_sums[5], nEv_all_sums[6], nEv_all_sums[7]);
+    fout_mass << Form("\n\n");
+    fout_mass << Form("Percentages (all events):\n");
+    fout_mass << Form("Bin \t0n0n[%%]\terr \tXn0n[%%]\terr \t0nXn[%%]\terr \tXnXn[%%]\terr \n");
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        outfile << Form("%i \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \n", 
+        fout_mass << Form("%i \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \n", 
             iBin+1,
-            PercFiredBoth_val[iBin],
-            PercFiredBoth_err[iBin],
-            PercFiredZNAOnly_val[iBin],
-            PercFiredZNAOnly_err[iBin],
-            PercFiredZNCOnly_val[iBin],
-            PercFiredZNCOnly_err[iBin],
-            PercFiredNone_val[iBin],
-            PercFiredNone_err[iBin]);
+            Perc_all_0n0n_val[iBin],
+            Perc_all_0n0n_err[iBin],
+            Perc_all_Xn0n_val[iBin],
+            Perc_all_Xn0n_err[iBin],
+            Perc_all_0nXn_val[iBin],
+            Perc_all_0nXn_err[iBin],
+            Perc_all_XnXn_val[iBin],
+            Perc_all_XnXn_err[iBin]);
     }
-    outfile.close();
-    Printf("Results printed to %s.", FilePath.Data()); 
+    fout_mass.close();
+    Printf("Results printed to %s.", str_out_mass.Data()); 
 
-    // Print to TeX table
-    TString FilePath_TeX = Form("Results/ZNClasses/%ibins_MassInterval%i_TeX.txt", nPtBins, iMassCut);
-    ofstream outfile_TeX(FilePath_TeX.Data());
-    outfile_TeX << Form("Bin \tTotal \t0n0n[-]\tXn0n[-]\t0nXn[-]\tXnXn[-]\t0n0n[%%]\tXn0n[%%]\t0nXn[%%]\tXnXn[%%]\n");    
+    TString str_out_J_bkg = Form("Results/ZNClasses/%ibins_perc_J_bkg.txt", nPtBins);
+    ofstream fout_J_bkg(str_out_J_bkg.Data());
+    fout_J_bkg << Form("Percentages (J/psi events):\n");
+    fout_J_bkg << Form("Bin \t0n0n[%%]\terr \tXn0n[%%]\terr \t0nXn[%%]\terr \tXnXn[%%]\terr \n");
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        outfile_TeX << std::fixed << std::setprecision(3)
-                    << "$(" << ptBoundaries[iBin-1] << "," << ptBoundaries[iBin] << ")$ &\t"
-                    << std::fixed << std::setprecision(0)
-                    << nEvTotal[iBin] << " &\t"
-                    << nEvFired_none[iBin] << " &\t"
-                    << nEvFired_OnlyZNA[iBin] << " &\t"
-                    << nEvFired_OnlyZNC[iBin] << " &\t"
-                    << nEvFired_both[iBin] << " &\t$"
-                    << std::fixed << std::setprecision(1)
-                    << PercFiredNone_val[iBin] << R"( \pm )" << PercFiredNone_err[iBin] << "$ &\t$"
-                    << PercFiredZNAOnly_val[iBin] << R"( \pm )" << PercFiredZNAOnly_err[iBin] << "$ &\t$"
-                    << PercFiredZNCOnly_val[iBin] << R"( \pm )" << PercFiredZNCOnly_err[iBin] << "$ &\t$"
-                    << PercFiredBoth_val[iBin] << R"( \pm )" << PercFiredBoth_err[iBin] << R"($ \\)" << "\n";
+        fout_J_bkg << Form("%i \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \n", 
+            iBin+1,
+            Perc_J_0n0n_val[iBin],
+            Perc_J_0n0n_err[iBin],
+            Perc_J_Xn0n_val[iBin],
+            Perc_J_Xn0n_err[iBin],
+            Perc_J_0nXn_val[iBin],
+            Perc_J_0nXn_err[iBin],
+            Perc_J_XnXn_val[iBin],
+            Perc_J_XnXn_err[iBin]);
     }
-    outfile_TeX.close();
-    Printf("Results printed to %s.", FilePath_TeX.Data()); 
+    fout_J_bkg << Form("\n\n");
+    fout_J_bkg << Form("Percentages (bkgr events):\n");
+    fout_J_bkg << Form("Bin \t0n0n[%%]\terr \tXn0n[%%]\terr \t0nXn[%%]\terr \tXnXn[%%]\terr \n");
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        fout_J_bkg << Form("%i \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \n", 
+            iBin+1,
+            Perc_bkg_0n0n_val[iBin],
+            Perc_bkg_0n0n_err[iBin],
+            Perc_bkg_Xn0n_val[iBin],
+            Perc_bkg_Xn0n_err[iBin],
+            Perc_bkg_0nXn_val[iBin],
+            Perc_bkg_0nXn_err[iBin],
+            Perc_bkg_XnXn_val[iBin],
+            Perc_bkg_XnXn_err[iBin]);
+    }
+    fout_J_bkg.close();
+    Printf("Results printed to %s.", str_out_J_bkg.Data()); 
+
+    // Print to TeX table (all events)
+    TString str_out_mass_TeX = Form("Results/ZNClasses/%ibins_TeX_mass%i.txt", nPtBins, iMassCut);
+    ofstream fout_mass_TeX(str_out_mass_TeX.Data());
+    fout_mass_TeX << Form("Bin \tTotal \t0n0n[-]\tXn0n[-]\t0nXn[-]\tXnXn[-]\t0n0n[%%]\tXn0n[%%]\t0nXn[%%]\tXnXn[%%]\n");    
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        fout_mass_TeX << std::fixed << std::setprecision(3)
+                    << "$(" << ptBoundaries[iBin] << "," << ptBoundaries[iBin+1] << ")$ &\t"
+                    << std::fixed << std::setprecision(0)
+                    << nEv_all_total[iBin] << " &\t"
+                    << nEv_all_0n0n[iBin] << " &\t"
+                    << nEv_all_Xn0n[iBin] << " &\t"
+                    << nEv_all_0nXn[iBin] << " &\t"
+                    << nEv_all_XnXn[iBin] << " &\t$"
+                    << std::fixed << std::setprecision(1)
+                    << Perc_all_0n0n_val[iBin] << R"( \pm )" << Perc_all_0n0n_err[iBin] << "$ &\t$"
+                    << Perc_all_Xn0n_val[iBin] << R"( \pm )" << Perc_all_Xn0n_err[iBin] << "$ &\t$"
+                    << Perc_all_0nXn_val[iBin] << R"( \pm )" << Perc_all_0nXn_err[iBin] << "$ &\t$"
+                    << Perc_all_XnXn_val[iBin] << R"( \pm )" << Perc_all_XnXn_err[iBin] << R"($ \\)" << "\n";
+    }
+    fout_mass_TeX.close();
+    Printf("Results printed to %s.", str_out_mass_TeX.Data()); 
+
+    // Print to TeX table (J/psi)
+    TString str_out_J_TeX = Form("Results/ZNClasses/%ibins_TeX_J.txt", nPtBins);
+    ofstream fout_J_TeX(str_out_J_TeX.Data()); 
+    fout_J_TeX << Form("Bin\tTotal\t0n0n[-]\tXn0n[-]\t0nXn[-]\tXnXn[-]\n");    
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        fout_J_TeX << std::fixed << std::setprecision(3)
+                    << "$(" << ptBoundaries[iBin] << "," << ptBoundaries[iBin+1] << ")$ &\t$"
+                    << std::fixed << std::setprecision(1)
+                    << nEv_J_total_val[iBin] << R"( \pm )" << nEv_J_total_err[iBin] << "$ &\t$"
+                    << nEv_J_0n0n_val[iBin] << R"( \pm )" << nEv_J_0n0n_err[iBin] << "$ &\t$"
+                    << nEv_J_Xn0n_val[iBin] << R"( \pm )" << nEv_J_Xn0n_err[iBin] << "$ &\t$"
+                    << nEv_J_0nXn_val[iBin] << R"( \pm )" << nEv_J_0nXn_err[iBin] << "$ &\t$"
+                    << nEv_J_XnXn_val[iBin] << R"( \pm )" << nEv_J_XnXn_err[iBin] << R"($ \\)" << "\n";
+    } 
+    fout_J_TeX << Form("\n\nBin\t0n0n[%%]\tXn0n[%%]\t0nXn[%%]\tXnXn[%%]\n");
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        fout_J_TeX << std::fixed << std::setprecision(3)
+                    << "$(" << ptBoundaries[iBin] << "," << ptBoundaries[iBin+1] << ")$ &\t$"
+                    << std::fixed << std::setprecision(1)
+                    << Perc_J_0n0n_val[iBin] << R"( \pm )" << Perc_J_0n0n_err[iBin] << "$ &\t$"
+                    << Perc_J_Xn0n_val[iBin] << R"( \pm )" << Perc_J_Xn0n_err[iBin] << "$ &\t$"
+                    << Perc_J_0nXn_val[iBin] << R"( \pm )" << Perc_J_0nXn_err[iBin] << "$ &\t$"
+                    << Perc_J_XnXn_val[iBin] << R"( \pm )" << Perc_J_XnXn_err[iBin] << R"($ \\)" << "\n";
+    }
+    fout_J_TeX.close();
+    Printf("Results printed to %s.", str_out_J_TeX.Data()); 
+
+    // Print to TeX table (background)
+    TString str_out_bkg_TeX = Form("Results/ZNClasses/%ibins_TeX_bkg.txt", nPtBins);
+    ofstream fout_bkg_TeX(str_out_bkg_TeX.Data()); 
+    fout_bkg_TeX << Form("Bin\tTotal\t0n0n[-]\tXn0n[-]\t0nXn[-]\tXnXn[-]\n");    
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        fout_bkg_TeX << std::fixed << std::setprecision(3)
+                    << "$(" << ptBoundaries[iBin] << "," << ptBoundaries[iBin+1] << ")$ &\t$"
+                    << std::fixed << std::setprecision(1)
+                    << nEv_bkg_total_val[iBin] << R"( \pm )" << nEv_bkg_total_err[iBin] << "$ &\t$"
+                    << nEv_bkg_0n0n_val[iBin] << R"( \pm )" << nEv_bkg_0n0n_err[iBin] << "$ &\t$"
+                    << nEv_bkg_Xn0n_val[iBin] << R"( \pm )" << nEv_bkg_Xn0n_err[iBin] << "$ &\t$"
+                    << nEv_bkg_0nXn_val[iBin] << R"( \pm )" << nEv_bkg_0nXn_err[iBin] << "$ &\t$"
+                    << nEv_bkg_XnXn_val[iBin] << R"( \pm )" << nEv_bkg_XnXn_err[iBin] << R"($ \\)" << "\n";
+    } 
+    fout_bkg_TeX << Form("\n\nBin\t0n0n[%%]\tXn0n[%%]\t0nXn[%%]\tXnXn[%%]\n");
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        fout_bkg_TeX << std::fixed << std::setprecision(3)
+                    << "$(" << ptBoundaries[iBin] << "," << ptBoundaries[iBin+1] << ")$ &\t$"
+                    << std::fixed << std::setprecision(1)
+                    << Perc_bkg_0n0n_val[iBin] << R"( \pm )" << Perc_bkg_0n0n_err[iBin] << "$ &\t$"
+                    << Perc_bkg_Xn0n_val[iBin] << R"( \pm )" << Perc_bkg_Xn0n_err[iBin] << "$ &\t$"
+                    << Perc_bkg_0nXn_val[iBin] << R"( \pm )" << Perc_bkg_0nXn_err[iBin] << "$ &\t$"
+                    << Perc_bkg_XnXn_val[iBin] << R"( \pm )" << Perc_bkg_XnXn_err[iBin] << R"($ \\)" << "\n";
+    }
+    fout_bkg_TeX.close();
+    Printf("Results printed to %s.", str_out_bkg_TeX.Data()); 
 
     return;
 }
@@ -249,23 +448,87 @@ void InvMassFitsInClasses(){
 
     SetPtBinning();
 
-    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        for(Int_t iZNClass = 0; iZNClass < 4; iZNClass++){
+    for(Int_t iBin = 0; iBin < UpToBin; iBin++){
+        for(Int_t iZNClass = 0; iZNClass < UpToClass; iZNClass++){
             DoInvMassFitMain(iZNClass, ptBoundaries[iBin], ptBoundaries[iBin+1], iBin+1);
+            if(iZNClass == 0){
+                nEv_J_0n0n_val[iBin] = N_Jpsi_out[0];
+                nEv_J_0n0n_err[iBin] = N_Jpsi_out[1];
+                nEv_bkg_0n0n_val[iBin] = N_bkgr_out[0];
+                nEv_bkg_0n0n_err[iBin] = N_bkgr_out[1];
+            } else if(iZNClass == 1){
+                nEv_J_Xn0n_val[iBin] = N_Jpsi_out[0];
+                nEv_J_Xn0n_err[iBin] = N_Jpsi_out[1];
+                nEv_bkg_Xn0n_val[iBin] = N_bkgr_out[0];
+                nEv_bkg_Xn0n_err[iBin] = N_bkgr_out[1];
+            } else if(iZNClass == 2){
+                nEv_J_0nXn_val[iBin] = N_Jpsi_out[0];
+                nEv_J_0nXn_err[iBin] = N_Jpsi_out[1];
+                nEv_bkg_0nXn_val[iBin] = N_bkgr_out[0];
+                nEv_bkg_0nXn_err[iBin] = N_bkgr_out[1];
+            } else if(iZNClass == 3){
+                nEv_J_XnXn_val[iBin] = N_Jpsi_out[0];
+                nEv_J_XnXn_err[iBin] = N_Jpsi_out[1];
+                nEv_bkg_XnXn_val[iBin] = N_bkgr_out[0];
+                nEv_bkg_XnXn_err[iBin] = N_bkgr_out[1];
+            } 
         }
+        nEv_J_total_val[iBin] = nEv_J_0n0n_val[iBin] + nEv_J_Xn0n_val[iBin] + nEv_J_0nXn_val[iBin] + nEv_J_XnXn_val[iBin];
+        nEv_J_total_err[iBin] = TMath::Sqrt(TMath::Power(nEv_J_0n0n_err[iBin],2) 
+                                            + TMath::Power(nEv_J_Xn0n_err[iBin],2)
+                                            + TMath::Power(nEv_J_0nXn_err[iBin],2)
+                                            + TMath::Power(nEv_J_XnXn_err[iBin],2));
+        nEv_bkg_total_val[iBin] = nEv_bkg_0n0n_val[iBin] + nEv_bkg_Xn0n_val[iBin] + nEv_bkg_0nXn_val[iBin] + nEv_bkg_XnXn_val[iBin];
+        nEv_bkg_total_err[iBin] = TMath::Sqrt(TMath::Power(nEv_bkg_0n0n_err[iBin],2) 
+                                            + TMath::Power(nEv_bkg_Xn0n_err[iBin],2)
+                                            + TMath::Power(nEv_bkg_0nXn_err[iBin],2)
+                                            + TMath::Power(nEv_bkg_XnXn_err[iBin],2));
     }
+
+    // Print the results to text file
+    // J/psi
+    TString str_out_J = Form("Results/ZNClasses/%ibins_J.txt", nPtBins);
+    ofstream f_out_J(str_out_J.Data());
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        f_out_J << Form("%i \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \n", 
+            iBin+1,
+            nEv_J_total_val[iBin], 
+            nEv_J_total_err[iBin],
+            nEv_J_0n0n_val[iBin],
+            nEv_J_0n0n_err[iBin],
+            nEv_J_Xn0n_val[iBin], 
+            nEv_J_Xn0n_err[iBin],
+            nEv_J_0nXn_val[iBin],
+            nEv_J_0nXn_err[iBin], 
+            nEv_J_XnXn_val[iBin],
+            nEv_J_XnXn_err[iBin]);
+    }
+    f_out_J.close();
+    Printf("Results printed to %s.", str_out_J.Data()); 
+    // background
+    TString str_out_bkg = Form("Results/ZNClasses/%ibins_bkg.txt", nPtBins);
+    ofstream f_out_bkg(str_out_bkg.Data());
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        f_out_bkg << Form("%i \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \n", 
+            iBin+1,
+            nEv_bkg_total_val[iBin], 
+            nEv_bkg_total_err[iBin],
+            nEv_bkg_0n0n_val[iBin],
+            nEv_bkg_0n0n_err[iBin],
+            nEv_bkg_Xn0n_val[iBin], 
+            nEv_bkg_Xn0n_err[iBin],
+            nEv_bkg_0nXn_val[iBin],
+            nEv_bkg_0nXn_err[iBin], 
+            nEv_bkg_XnXn_val[iBin],
+            nEv_bkg_XnXn_err[iBin]);
+    }
+    f_out_bkg.close();
+    Printf("Results printed to %s.", str_out_bkg.Data()); 
 
     return;
 }
 
-void PlotEnergyDistribution(Int_t iMassCut){
-
-    // Histograms
-    Int_t nBins = 60;
-    Int_t nBins2 = 80;
-    Double_t EnLow = -4;
-    Double_t EnUpp = 8;
-    Double_t EnUpp2 = 12;
+void PlotEnergyDistribution(){
 
     TFile *fFileIn = TFile::Open("Trees/ZNClasses/ZNClasses.root", "read");
     if(fFileIn) Printf("Input data loaded.");
@@ -290,27 +553,39 @@ void PlotEnergyDistribution(Int_t iMassCut){
     gStyle->SetPalette(kBird); // https://root.cern/doc/master/classTColor.html#C05
     gStyle->SetPaintTextFormat("4.2f");
 
+    // Variables for histograms
+    Int_t nBins1D = 64;
+    Int_t nBins2D = 48;
+    Double_t EnLow = -4;
+    Double_t EnUpp2D = 8;
+    Double_t EnUpp1D = 12;
+
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
 
-        TH2D *hZN_energies = new TH2D("hZN_energies", "correlation between ZNA and ZNC energies", nBins, EnLow, EnUpp, nBins, EnLow, EnUpp);
-        TH1D *hZNA_energy = new TH1D("hZNA_energy", "hist of ZNA energies", nBins, EnLow, EnUpp2);
-        TH1D *hZNC_energy = new TH1D("hZNC_energy", "hist of ZNC energies", nBins, EnLow, EnUpp2);    
+        TH2D *hZN_energies = new TH2D("hZN_energies", "correlation between ZNA and ZNC energies", nBins2D, EnLow, EnUpp2D, nBins2D, EnLow, EnUpp2D);
+        TH1D *hZNA_energy = new TH1D("hZNA_energy", "hist of ZNA energies", nBins1D, EnLow, EnUpp1D);
+        TH1D *hZNC_energy = new TH1D("hZNC_energy", "hist of ZNC energies", nBins1D, EnLow, EnUpp1D);    
 
         for(Int_t iEntry = 0; iEntry < fTreeIn->GetEntries(); iEntry++){
             fTreeIn->GetEntry(iEntry);
 
-            if(EventPassedZN(iMassCut,1,iBin+1)){
+            Bool_t SignalZN = kFALSE;
+            for(Int_t i = 0; i < 4; i++){
+                if(TMath::Abs(fZNA_time[i]) < 2 || TMath::Abs(fZNC_time[i]) < 2) SignalZN = kTRUE;
+            }
+            
+            if(EventPassedZN(0,1,iBin+1) && SignalZN){
                 hZN_energies->Fill(fZNA_energy/1000, fZNC_energy/1000);
                 hZNA_energy->Fill(fZNA_energy/1000);
                 hZNC_energy->Fill(fZNC_energy/1000);
             }
         }   
         // Print 2D histogram
-        TCanvas *c1 = new TCanvas("c1","c1",700,600);
+        TCanvas *c1 = new TCanvas("c1","c1",700,700);
         c1->SetTopMargin(0.08);
         c1->SetBottomMargin(0.11);
         c1->SetLeftMargin(0.09);
-        //c1->SetRightMargin(0.04);
+        c1->SetRightMargin(0.11);
         c1->SetTitle("ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV"); 
         // X-axis
         hZN_energies->GetXaxis()->SetTitle("ZNA energy (TeV)");
@@ -323,18 +598,26 @@ void PlotEnergyDistribution(Int_t iMassCut){
         hZN_energies->GetYaxis()->SetTitleOffset(0.7);
         // Z-axis
         hZN_energies->GetZaxis()->SetLabelSize(0.042);
+        hZN_energies->GetZaxis()->SetDecimals(1);
         // Draw    
         hZN_energies->Draw("COLZ");
-        // Legend
+        // Legend 1
         TLegend *l1 = new TLegend(0.12,0.93,0.6,1.0);
         l1->AddEntry((TObject*)0,"ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","");
         l1->SetTextSize(0.05);
         l1->SetBorderSize(0);
         l1->SetFillStyle(0);
         l1->Draw();
+        // Legend 2
+        TLegend *l2 = new TLegend(0.10,0.12,0.22,0.22);
+        l2->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.2f,%.2f) GeV/#it{c}", ptBoundaries[iBin],ptBoundaries[iBin+1]),"");
+        l2->SetTextSize(0.048);
+        l2->SetBorderSize(0);
+        l2->SetFillStyle(0);
+        l2->Draw();
         // Save canvas
-        c1->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/MassInterval%i/bin%i_h2D.pdf", nPtBins, iMassCut, iBin+1));
-        c1->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/MassInterval%i/bin%i_h2D.png", nPtBins, iMassCut, iBin+1));
+        c1->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_EnergyZN_2D.pdf", nPtBins, iBin+1));
+        c1->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_EnergyZN_2D.png", nPtBins, iBin+1));
 
         // Print 1D histograms
         TCanvas *c2 = new TCanvas("c2","c2",700,600);
@@ -348,7 +631,7 @@ void PlotEnergyDistribution(Int_t iMassCut){
         hZNA_energy->GetXaxis()->SetTitleSize(0.05);
         hZNA_energy->GetXaxis()->SetLabelSize(0.05);
         // Y-axis
-        hZNA_energy->GetYaxis()->SetTitle("Counts per 200 GeV");
+        hZNA_energy->GetYaxis()->SetTitle("Counts per 250 GeV");
         hZNA_energy->GetYaxis()->SetTitleSize(0.05);
         hZNA_energy->GetYaxis()->SetLabelSize(0.05);
         hZNA_energy->GetYaxis()->SetTitleOffset(1.2);
@@ -367,23 +650,31 @@ void PlotEnergyDistribution(Int_t iMassCut){
         // Draw
         hZNA_energy->Draw("E0");
         hZNC_energy->Draw("SAME E0");
-        // Legend
-        TLegend *l2 = new TLegend(0.215,0.91,0.99,0.96);
-        l2->AddEntry((TObject*)0,"ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","");
-        l2->SetTextSize(0.05);
-        l2->SetBorderSize(0);
-        l2->SetFillStyle(0);
-        l2->Draw();
-        TLegend *l3 = new TLegend(0.65,0.78,0.99,0.9);
-        l3->AddEntry(hZNA_energy,"ZNA energy","PL");
-        l3->AddEntry(hZNC_energy,"ZNC energy","PL");
+        // Legend 3
+        TLegend *l3 = new TLegend(0.215,0.91,0.99,0.96);
+        l3->AddEntry((TObject*)0,"ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","");
         l3->SetTextSize(0.05);
         l3->SetBorderSize(0);
         l3->SetFillStyle(0);
         l3->Draw();
+        // Legend 4
+        TLegend *l4 = new TLegend(0.78,0.71,1.08,0.83);
+        l4->AddEntry(hZNA_energy,"ZNA","PL");
+        l4->AddEntry(hZNC_energy,"ZNC","PL");
+        l4->SetTextSize(0.05);
+        l4->SetBorderSize(0);
+        l4->SetFillStyle(0);
+        l4->Draw();
+        // Legend 5
+        TLegend *l5 = new TLegend(0.41,0.84,0.99,0.90);
+        l5->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.2f,%.2f) GeV/#it{c}", ptBoundaries[iBin],ptBoundaries[iBin+1]),"");
+        l5->SetTextSize(0.05);
+        l5->SetBorderSize(0);
+        l5->SetFillStyle(0);
+        l5->Draw();
         // Save canvas
-        c2->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/MassInterval%i/bin%i_h1D.pdf", nPtBins, iMassCut, iBin+1));
-        c2->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/MassInterval%i/bin%i_h1D.png", nPtBins, iMassCut, iBin+1));
+        c2->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_EnergyZN_1D.pdf", nPtBins, iBin+1));
+        c2->Print(Form("Results/ZNClasses/EnergyDistribution/%ibins/bin%i_EnergyZN_1D.png", nPtBins, iBin+1));
     }
 
     return;
@@ -589,7 +880,8 @@ void DoInvMassFitMain(Int_t ZNClass, Double_t fPtCutLow, Double_t fPtCutUpp, Int
     // Crystal Ball for J/Psi
     RooRealVar mass_Jpsi("mass_Jpsi","J/psi mass",3.097,3.00,3.20); 
     //mass_Jpsi.setConstant(kTRUE);
-    RooRealVar sigma_Jpsi("sigma_Jpsi","J/psi resolution",0.08,0.01,0.1);
+    RooRealVar sigma_Jpsi("sigma_Jpsi","J/psi resolution",0.021,0.01,0.1);
+    if(SigmaFixed) sigma_Jpsi.setConstant(kTRUE);
     RooGenericPdf mean_R("mean_R","J/psi mass","mass_Jpsi",RooArgSet(mass_Jpsi));
     RooGenericPdf sigma_R("sigma_R","J/psi resolution","sigma_Jpsi",RooArgSet(sigma_Jpsi));
     RooRealVar N_Jpsi("N_Jpsi","number of J/psi events",0.4*nEvents,0,nEvents);
@@ -613,13 +905,16 @@ void DoInvMassFitMain(Int_t ZNClass, Double_t fPtCutLow, Double_t fPtCutUpp, Int
     RooFitResult* fResFit = DSCBAndBkgPdf.fitTo(*fDataSet,Extended(kTRUE),Range(fMCutLow,fMCutUpp),Save());
 
     // Calculate the number of J/psi events
-    Double_t N_Jpsi_out[2];
     fM.setRange("WholeMassRange",fMCutLow,fMCutUpp);
+    fM.setRange("JpsiMassRange",3.0,3.2);
     RooAbsReal *iDSCB = DoubleSidedCB.createIntegral(fM,NormSet(fM),Range("WholeMassRange"));
+    RooAbsReal *iBkgr = BkgPdf.createIntegral(fM,NormSet(fM),Range("JpsiMassRange"));
     // Integral of the normalized PDF, DSCB => will range from 0 to 1
 
     N_Jpsi_out[0] = iDSCB->getVal()*N_Jpsi.getVal();
     N_Jpsi_out[1] = iDSCB->getVal()*N_Jpsi.getError();
+    N_bkgr_out[0] = iBkgr->getVal()*N_bkg.getVal();
+    N_bkgr_out[1] = iBkgr->getVal()*N_bkg.getError();
 
     // ##########################################################
     // Plot the results
@@ -655,12 +950,13 @@ void DoInvMassFitMain(Int_t ZNClass, Double_t fPtCutLow, Double_t fPtCutUpp, Int
 
     // -------------------------------------------------------------------------------- 
     // Legend1
-    TLegend *l1 = new TLegend(0.09,0.76,0.3,0.935);
+    TLegend *l1 = new TLegend(0.09,0.70,0.3,0.935);
     //l1->SetHeader("ALICE, PbPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
     l1->AddEntry((TObject*)0,Form("J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
     l1->AddEntry((TObject*)0,Form("|#it{y}| < %.1f", fYCut),"");
     // Print the pt cut
     l1->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.2f,%.2f) GeV/#it{c}", fPtCutLow,fPtCutUpp),"");
+    l1->AddEntry((TObject*)0,Form("ZN class: %s", classes[ZNClass].Data()),"");
     l1->SetTextSize(0.042);
     l1->SetBorderSize(0); // no border
     l1->SetFillStyle(0);  // legend is transparent
@@ -674,19 +970,19 @@ void DoInvMassFitMain(Int_t ZNClass, Double_t fPtCutLow, Double_t fPtCutUpp, Int
     lTitle->Draw();
 
     // Legend2
-    TLegend *l2 = new TLegend(0.465,0.29,0.95,0.87);
+    TLegend *l2 = new TLegend(0.50,0.42,0.95,0.87);
     //l2->SetHeader("ALICE, PbPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
     l2->AddEntry("DSCBAndBkgPdf","sum","L");
     //l2->AddEntry((TObject*)0,Form("#chi^{2}/NDF = %.3f",chi2),"");
     l2->AddEntry("DoubleSidedCB","J/#psi signal","L");
-    l2->AddEntry((TObject*)0,Form("#it{N}_{J/#psi} = %.0f #pm %.0f",N_Jpsi_out[0],N_Jpsi_out[1]),"");
+    l2->AddEntry((TObject*)0,Form("#it{N}_{J/#psi} = %.1f #pm %.1f",N_Jpsi_out[0],N_Jpsi_out[1]),"");
     l2->AddEntry((TObject*)0,Form("#it{M}_{J/#psi} = %.3f #pm %.3f GeV/#it{c}^{2}", mass_Jpsi.getVal(), mass_Jpsi.getError()),"");
-    l2->AddEntry((TObject*)0,Form("#sigma = %.3f #pm %.3f GeV/#it{c}^{2}", sigma_Jpsi.getVal(), sigma_Jpsi.getError()),"");
-    l2->AddEntry((TObject*)0,Form("#alpha_{L} = %.3f", alpha_L.getVal()),"");
-    l2->AddEntry((TObject*)0,Form("#alpha_{R} = %.3f", (-1)*(alpha_R.getVal())),"");
-    l2->AddEntry((TObject*)0,Form("#it{n}_{L} = %.2f", n_L.getVal()),"");
-    l2->AddEntry((TObject*)0,Form("#it{n}_{R} = %.2f", n_R.getVal()),"");
+    if(SigmaFixed) l2->AddEntry((TObject*)0,Form("#sigma = %.3f GeV/#it{c}^{2}", sigma_Jpsi.getVal()),"");
+    else l2->AddEntry((TObject*)0,Form("#sigma = %.3f #pm %.3f GeV/#it{c}^{2}", sigma_Jpsi.getVal(), sigma_Jpsi.getError()),"");
+    //l2->AddEntry((TObject*)0,Form("#alpha_{L} = %.3f, #alpha_{R} = %.3f", alpha_L.getVal(), (-1)*(alpha_R.getVal())),"");
+    //l2->AddEntry((TObject*)0,Form("#it{n}_{L} = %.2f, #it{n}_{R} = %.2f", n_L.getVal(), n_R.getVal()),"");
     l2->AddEntry("BkgPdf","background","L");
+    l2->AddEntry((TObject*)0,Form("#it{N}_{bkg} = %.1f #pm %.1f",N_bkgr_out[0],N_bkgr_out[1]),"");
     l2->AddEntry((TObject*)0,Form("#lambda = %.3f #pm %.3f GeV^{-1}#it{c}^{2}",lambda.getVal(), lambda.getError()),"");
     l2->SetTextSize(0.042);
     l2->SetBorderSize(0);
@@ -694,13 +990,13 @@ void DoInvMassFitMain(Int_t ZNClass, Double_t fPtCutLow, Double_t fPtCutUpp, Int
     l2->Draw();
 
     // Prepare path
-    TString pathOut = Form("Results/ZNClasses/InvMassFits/%ibins/%s/bin%i", nPtBins, classes[ZNClass].Data(), iPtBin);
+    TString pathOut = Form("Results/ZNClasses/InvMassFits/%ibins/", nPtBins);
 
     // Print the plots
-    cHist->Print((pathOut + ".pdf").Data());
-    cHist->Print((pathOut + ".png").Data());
-    //cCorrMat->Print((pathOut + "_cm.pdf").Data());
-    //cCorrMat->Print((pathOut + "_cm.png").Data());    
+    cHist->Print((pathOut + Form("bin%i_%s.pdf", iPtBin, classes[ZNClass].Data())).Data());
+    cHist->Print((pathOut + Form("bin%i_%s.png", iPtBin, classes[ZNClass].Data())).Data());
+    cCorrMat->Print((pathOut + Form("CorrM/bin%i_%s_cm.pdf", iPtBin, classes[ZNClass].Data())).Data());
+    cCorrMat->Print((pathOut + Form("CorrM/bin%i_%s_cm.png", iPtBin, classes[ZNClass].Data())).Data());
 
     return;
 }
