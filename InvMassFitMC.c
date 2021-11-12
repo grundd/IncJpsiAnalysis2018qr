@@ -38,6 +38,8 @@ void InvMassFitMC(){
 
     //PrepareMCTree();
 
+    DoInvMassFitMainMC(1);
+
     Bool_t main_fits = kFALSE;
     if(main_fits){
         DoInvMassFitMainMC(0);
@@ -46,7 +48,7 @@ void InvMassFitMC(){
         DoInvMassFitMainMC(3);
     }
     // bins:
-    Bool_t bins = kTRUE;
+    Bool_t bins = kFALSE;
     if(bins){
         SetPtBinning(); // PtBinning method must be chosen in PtBinsManager.h
         DoInvMassFitMainMC(4);
@@ -88,7 +90,7 @@ void DoInvMassFitMainMC(Int_t opt = 0){
             sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fM>%f && fM<%f",fYCut,fPtCut,fMCutLow,fMCutUpp);
             break;
         case 1: // Coherent-enriched sample
-            fPtCut = 0.11;
+            fPtCut = 0.20;
             sprintf(fStrReduce,"abs(fY)<%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCut,fMCutLow,fMCutUpp);
             break;
         case 2: // Total sample (pt < 2.0 GeV/c)
@@ -391,8 +393,10 @@ void PrepareMCTree(){
 
     for(Int_t iEntry = 0; iEntry < fTreeInCoh->GetEntries(); iEntry++){
         fTreeInCoh->GetEntry(iEntry);
-        if(EventPassedMCRec(0,1)) tCohEnrSample->Fill();
-        if(EventPassedMCRec(0,2)) tMixedSample->Fill();
+        if(EventPassedMCRec(0,2)){
+            tCohEnrSample->Fill();
+            tMixedSample->Fill();
+        } 
 
         if((iEntry+1) % 100000 == 0){
             nEntriesAnalysed += 100000;
@@ -407,8 +411,10 @@ void PrepareMCTree(){
 
     for(Int_t iEntry = 0; iEntry < fTreeInInc->GetEntries(); iEntry++){
         fTreeInInc->GetEntry(iEntry);
-        if(EventPassedMCRec(0,0)) tIncEnrSample->Fill();
-        if(EventPassedMCRec(0,2)) tMixedSample->Fill();
+        if(EventPassedMCRec(0,2)){
+            tIncEnrSample->Fill();
+            tMixedSample->Fill();
+        } 
 
         if((iEntry+1) % 100000 == 0){
             nEntriesAnalysed += 100000;

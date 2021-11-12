@@ -10,11 +10,11 @@
 using namespace RooFit;
 
 // Main function
+void PrepareDataTree();
 void SubtractBackground();
 void DoPtFitNoBkg();
 void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFALSE, Int_t bin = -1);
 //void DoInvMassFitMainMC(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFALSE, Int_t bin = -1);
-void PrepareDataTree();
 
 TString OutputPtFitWithoutBkg = "Results/PtFitWithoutBkg/";
 TString OutputTrees = "Trees/PtFit/";
@@ -277,14 +277,16 @@ void DoPtFitNoBkg(){
         Double_t N_CohP_to1_err = fN_CohP_to1->getVal()*fDCoh*NCohJ.getError();
         Double_t N_IncP_to1_err = fN_IncP_to1->getVal()*fDInc*NIncJ.getError();
     // Total fC correction (for the whole IES, with 0.2 < pt < 2.0 GeV/c)
-    Double_t fC = N_CohJ_ies_val / (N_IncJ_ies_val + N_Diss_ies_val);
+    Double_t fC = N_CohJ_ies_val / (N_IncJ_ies_val + N_Diss_ies_val) * 100;
     Double_t denominator_err = TMath::Sqrt(TMath::Power(N_IncJ_ies_err,2) + TMath::Power(N_Diss_ies_err,2));
     Double_t fC_err = fC * TMath::Sqrt(TMath::Power((N_CohJ_ies_err/N_CohJ_ies_val),2) + TMath::Power((denominator_err/(N_IncJ_ies_val + N_Diss_ies_val)),2));
     // Total fD correction (for the whole IES, with 0.2 < pt < 2.0 GeV/c)
-    Double_t fDCoh_val = N_CohP_ies_val / (N_IncJ_ies_val + N_Diss_ies_val);
-    Double_t fDInc_val = N_IncP_ies_val / (N_IncJ_ies_val + N_Diss_ies_val);
+    Double_t fDCoh_val = N_CohP_ies_val / (N_IncJ_ies_val + N_Diss_ies_val) * 100;
+    Double_t fDInc_val = N_IncP_ies_val / (N_IncJ_ies_val + N_Diss_ies_val) * 100;
     Double_t fDCoh_err = fDCoh_val * TMath::Sqrt(TMath::Power((N_CohP_ies_err/N_CohP_ies_val),2) + TMath::Power((denominator_err/(N_IncJ_ies_val + N_Diss_ies_val)),2));
     Double_t fDInc_err = fDInc_val * TMath::Sqrt(TMath::Power((N_IncP_ies_err/N_IncP_ies_val),2) + TMath::Power((denominator_err/(N_IncJ_ies_val + N_Diss_ies_val)),2));
+    Double_t fD_val = fDCoh_val + fDInc_val;
+    Double_t fD_err = TMath::Sqrt(TMath::Power(fDCoh_err, 2) + TMath::Power(fDInc_err, 2));
     // Integrals of the PDFs in the pt bins
     RooAbsReal *fN_CohJ_bins[nPtBins] = { NULL };
     RooAbsReal *fN_IncJ_bins[nPtBins] = { NULL };
@@ -310,6 +312,8 @@ void DoPtFitNoBkg(){
     Double_t fDCoh_bins_err[nPtBins] = { 0 };
     Double_t fDInc_bins_val[nPtBins] = { 0 };
     Double_t fDInc_bins_err[nPtBins] = { 0 };
+    Double_t fD_bins_val[nPtBins] = { 0 };
+    Double_t fD_bins_err[nPtBins] = { 0 };
     for(Int_t i = 0; i < nPtBins; i++){
         fPt.setRange(Form("fPtBin%i",i+1), ptBoundaries[i], ptBoundaries[i+1]);
         Printf("Now calculating for bin %i, (%.3f, %.3f) GeV", i+1, ptBoundaries[i], ptBoundaries[i+1]);
@@ -331,61 +335,62 @@ void DoPtFitNoBkg(){
         N_CohP_bins_err[i] = fN_CohP_bins[i]->getVal()*fDCoh*NCohJ.getError();
         N_IncP_bins_err[i] = fN_IncP_bins[i]->getVal()*fDInc*NIncJ.getError();
         // fC correction        
-        fC_bins_val[i] = N_CohJ_bins_val[i] / (N_IncJ_bins_val[i] + N_Diss_bins_val[i]);
+        fC_bins_val[i] = N_CohJ_bins_val[i] / (N_IncJ_bins_val[i] + N_Diss_bins_val[i]) * 100;
         Double_t denominator_err = TMath::Sqrt(TMath::Power(N_IncJ_bins_err[i],2) + TMath::Power(N_Diss_bins_err[i],2));
         if(N_CohJ_bins_val[i] != 0) fC_bins_err[i] = fC_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohJ_bins_err[i]/N_CohJ_bins_val[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins_val[i] + N_Diss_bins_val[i])),2));    
         else fC_bins_err[i] = 0.;
-        fDCoh_bins_val[i] = N_CohP_bins_val[i] / (N_IncJ_bins_val[i] + N_Diss_bins_val[i]);
-        fDInc_bins_val[i] = N_IncP_bins_val[i] / (N_IncJ_bins_val[i] + N_Diss_bins_val[i]);
-        fDCoh_bins_err[i] = fDCoh_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohP_bins_err[i]/N_CohP_bins_val[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins_val[i] + N_Diss_bins_val[i])),2));
-        fDInc_bins_err[i] = fDInc_bins_val[i] * TMath::Sqrt(TMath::Power((N_IncP_bins_err[i]/N_IncP_bins_val[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins_val[i] + N_Diss_bins_val[i])),2));
+        fDCoh_bins_val[i] = N_CohP_bins_val[i] / (N_IncJ_bins_val[i] + N_Diss_bins_val[i]) * 100;
+        fDInc_bins_val[i] = N_IncP_bins_val[i] / (N_IncJ_bins_val[i] + N_Diss_bins_val[i]) * 100;
+        if(N_CohP_bins_val[i] != 0) fDCoh_bins_err[i] = fDCoh_bins_val[i] * TMath::Sqrt(TMath::Power((N_CohP_bins_err[i]/N_CohP_bins_val[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins_val[i] + N_Diss_bins_val[i])),2));
+        else fDCoh_bins_err[i] = 0.;
+        if(N_IncP_bins_val[i] != 0) fDInc_bins_err[i] = fDInc_bins_val[i] * TMath::Sqrt(TMath::Power((N_IncP_bins_err[i]/N_IncP_bins_val[i]),2) + TMath::Power((denominator_err/(N_IncJ_bins_val[i] + N_Diss_bins_val[i])),2));
+        else fDInc_bins_val[i] = 0.;
+        fD_bins_val[i] = fDCoh_bins_val[i] + fDInc_bins_val[i];
+        fD_bins_err[i] = TMath::Sqrt(TMath::Power(fDCoh_bins_err[i], 2) + TMath::Power(fDInc_bins_err[i], 2));
     }
+    Double_t sum_all = N_CohJ_all_val + N_IncJ_all_val + N_CohP_all_val + N_IncP_all_val + N_Diss_all_val;
+    Double_t sum_ies = N_CohJ_ies_val + N_IncJ_ies_val + N_CohP_ies_val + N_IncP_ies_val + N_Diss_ies_val;
+    Double_t sum_to1 = N_CohJ_to1_val + N_IncJ_to1_val + N_CohP_to1_val + N_IncP_to1_val + N_Diss_to1_val;
     // Print to text file
     ofstream outfile((*str + ".txt").Data());
     outfile << std::fixed << std::setprecision(2);
     outfile << Form("Dataset contains %.0f events.\n***\n", N_all);
-    outfile << "In 0.0 < pt 2.0 GeV/c:\n";
-    Double_t sum_all = N_CohJ_all_val + N_IncJ_all_val + N_CohP_all_val + N_IncP_all_val + N_Diss_all_val;
-    outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tSum\n";
-    outfile << N_CohJ_all_val << "\t" 
-            << N_IncJ_all_val << "\t" 
-            << N_CohP_all_val << "\t" 
-            << N_IncP_all_val << "\t" 
-            << N_Diss_all_val << "\t" 
-            << sum_all << "\n***\n";
-    outfile << "In 0.2 < pt 2.0 GeV/c:\n";
-    Double_t sum_ies = N_CohJ_ies_val + N_IncJ_ies_val + N_CohP_ies_val + N_IncP_ies_val + N_Diss_ies_val;
-    outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tSum \tfC \tfC_err \tfDCoh \tfDC_err\tfDInc \tfDI_err\n";
-    outfile << N_CohJ_ies_val << "\t" 
-            << N_IncJ_ies_val << "\t" 
-            << N_CohP_ies_val << "\t" 
-            << N_IncP_ies_val << "\t" 
-            << N_Diss_ies_val << "\t" 
-            << sum_ies << "\t";
-    outfile << std::fixed << std::setprecision(4);
-    outfile << fC << "\t" << fC_err << "\t" << fDCoh_val << "\t" << fDCoh_err << "\t" << fDInc_val << "\t" << fDInc_err << "\n***\n";
-    outfile << "In 0.2 < pt 1.0 GeV/c:\n";
-    Double_t sum_to1 = N_CohJ_to1_val + N_IncJ_to1_val + N_CohP_to1_val + N_IncP_to1_val + N_Diss_to1_val;
-    outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tSum \n";
-    outfile << std::fixed << std::setprecision(2);
-    outfile << N_CohJ_to1_val << "\t" 
-            << N_IncJ_to1_val << "\t" 
-            << N_CohP_to1_val << "\t" 
-            << N_IncP_to1_val << "\t" 
-            << N_Diss_to1_val << "\t" 
-            << sum_to1 << "\n***\n";
+    outfile << "pT range\t\tNCohJ \terr \tNIncJ \terr \tNDiss \terr \tNCohP \terr \tNIncP \terr \tfC \terr \tfD coh\terr \tfD inc\terr \tfD \terr\n";
+    outfile << "(0.000, 2.000) GeV/c\t"
+            << N_CohJ_all_val << "\t" << N_CohJ_all_err << "\t" 
+            << N_IncJ_all_val << "\t" << N_IncJ_all_err << "\t" 
+            << N_Diss_all_val << "\t" << N_Diss_all_err << "\t" 
+            << N_CohP_all_val << "\t" << N_CohP_all_err << "\t" 
+            << N_IncP_all_val << "\t" << N_IncP_all_err << "\n";
+    outfile << "(0.200, 2.000) GeV/c\t"
+            << N_CohJ_ies_val << "\t" << N_CohJ_ies_err << "\t" 
+            << N_IncJ_ies_val << "\t" << N_IncJ_ies_err << "\t" 
+            << N_Diss_ies_val << "\t" << N_Diss_ies_err << "\t" 
+            << N_CohP_ies_val << "\t" << N_CohP_ies_err << "\t" 
+            << N_IncP_ies_val << "\t" << N_IncP_ies_err << "\t"
+            << fC << "\t" << fC_err << "\t" 
+            << fDCoh_val << "\t" << fDCoh_err << "\t" 
+            << fDInc_val << "\t" << fDInc_err << "\t"
+            << fD_val << "\t" << fD_err << "\n";
+    outfile << "(0.200, 1.000) GeV/c\t"
+            << N_CohJ_to1_val << "\t" << N_CohJ_to1_err << "\t" 
+            << N_IncJ_to1_val << "\t" << N_IncJ_to1_err << "\t" 
+            << N_Diss_to1_val << "\t" << N_Diss_to1_err << "\t"  
+            << N_CohP_to1_val << "\t" << N_CohP_to1_err << "\t" 
+            << N_IncP_to1_val << "\t" << N_IncP_to1_err << "\n";
     for(Int_t i = 0; i < nPtBins; i++){
-        outfile << Form("In bin %i, (%.3f, %.3f) GeV/c:\n", i+1, ptBoundaries[i], ptBoundaries[i+1]);
-        outfile << std::fixed << std::setprecision(2);
-        outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss \tfC \tfC_err \tfDCoh \tfDC_err\tfDInc \tfDI_err\n";
-        outfile << N_CohJ_bins_val[i] << "\t" << N_IncJ_bins_val[i] << "\t" 
-                << N_CohP_bins_val[i] << "\t" << N_IncP_bins_val[i] << "\t" 
-                << N_Diss_bins_val[i] << "\t";
-        outfile << std::fixed << std::setprecision(4);
-        outfile << fC_bins_val[i] << "\t" << fC_bins_err[i] << "\t"
+        outfile << Form("(%.3f, %.3f) GeV/c\t", ptBoundaries[i], ptBoundaries[i+1])
+                << N_CohJ_bins_val[i] << "\t" << N_CohJ_bins_err[i] << "\t"
+                << N_IncJ_bins_val[i] << "\t" << N_IncJ_bins_err[i] << "\t"
+                << N_Diss_bins_val[i] << "\t" << N_Diss_bins_err[i] << "\t"
+                << N_CohP_bins_val[i] << "\t" << N_CohP_bins_err[i] << "\t" 
+                << N_IncP_bins_val[i] << "\t" << N_IncP_bins_err[i] << "\t"
+                << fC_bins_val[i] << "\t" << fC_bins_err[i] << "\t"
                 << fDCoh_bins_val[i] << "\t" << fDCoh_bins_err[i] << "\t"
-                << fDInc_bins_val[i] << "\t" << fDInc_bins_err[i] << "\n***\n";
+                << fDInc_bins_val[i] << "\t" << fDInc_bins_err[i] << "\t"
+                << fD_bins_val[i] << "\t" << fD_bins_err[i] << "\n";
     }
+    /*
     outfile << "Sum over bins:\n";
     outfile << "NCohJ \tNIncJ \tNCohP \tNIncP \tNDiss\n";
     outfile << std::fixed << std::setprecision(2);
@@ -401,6 +406,7 @@ void DoPtFitNoBkg(){
         outfile << sum_bins[i] << "\t";
     }
     outfile << sum_bins[4] << "\n***\n";
+    */
     outfile.close();
     Printf("*** Results printed to %s. ***", (*str + ".txt").Data());
 
@@ -456,12 +462,12 @@ void DoPtFitNoBkg(){
 
     RooPlot* PtFrame = fPt.frame(Title("Pt fit"));
     DHisData.plotOn(PtFrame,Name("DSetData"),MarkerStyle(20), MarkerSize(1.),Binning(fPtBins));
-    Mod.plotOn(PtFrame,Name("Mod"),                           LineColor(215),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
     Mod.plotOn(PtFrame,Name("hPDFCohJ"),Components(hPDFCohJ), LineColor(222),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
     Mod.plotOn(PtFrame,Name("hPDFIncJ"),Components(hPDFIncJ), LineColor(kRed),  LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
     Mod.plotOn(PtFrame,Name("hPDFCohP"),Components(hPDFCohP), LineColor(222),   LineStyle(7),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
     Mod.plotOn(PtFrame,Name("hPDFIncP"),Components(hPDFIncP), LineColor(kRed),  LineStyle(7),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
     Mod.plotOn(PtFrame,Name("hPDFDiss"),Components(hPDFDiss), LineColor(15),    LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrame,Name("Mod"),                           LineColor(215),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
 
     PtFrame->SetAxisRange(0,2,"X");
     // Set X axis
@@ -622,8 +628,7 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     n_R.setConstant(kTRUE);
 
     // Crystal Ball for J/Psi
-    RooRealVar mass_Jpsi("mass_Jpsi","J/psi mass",3.097,3.00,3.20); 
-    //mass_Jpsi.setConstant(kTRUE);
+    RooRealVar mass_Jpsi("mass_Jpsi","J/psi mass",3.097,3.00,3.20);
     RooRealVar sigma_Jpsi("sigma_Jpsi","J/psi resolution",0.08,0.01,0.1);
     RooGenericPdf mean_R("mean_R","J/psi mass","mass_Jpsi",RooArgSet(mass_Jpsi));
     RooGenericPdf sigma_R("sigma_R","J/psi resolution","sigma_Jpsi",RooArgSet(sigma_Jpsi));
@@ -747,16 +752,51 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     return;
 }
 
+void PrepareDataTree(){
+
+    TFile *fFileIn = TFile::Open("Trees/AnalysisData/AnalysisResultsLHC18qrMerged.root", "read");
+    if(fFileIn) Printf("Input data loaded.");
+
+    TTree *fTreeIn = dynamic_cast<TTree*> (fFileIn->Get("AnalysisOutput/fTreeJPsi"));
+    if(fTreeIn) Printf("Input tree loaded.");
+
+    ConnectTreeVariables(fTreeIn);
+
+    // Create new data tree with applied cuts
+    TFile fFileOut("Trees/PtFit/PtFitWithoutBkgTree.root","RECREATE");
+
+    TTree *Tree = new TTree("Tree", "Tree");
+    Tree->Branch("fPt", &fPt, "fPt/D");
+    Tree->Branch("fM", &fM, "fM/D");
+    Tree->Branch("fY", &fY, "fY/D");
+
+    Printf("%lli entries found in the tree.", fTreeIn->GetEntries());
+    Int_t nEntriesAnalysed = 0;
+
+    for(Int_t iEntry = 0; iEntry < fTreeIn->GetEntries(); iEntry++){
+        fTreeIn->GetEntry(iEntry);
+        if(EventPassed(0,2)) Tree->Fill();
+
+        if((iEntry+1) % 100000 == 0){
+            nEntriesAnalysed += 100000;
+            Printf("%i entries analysed.", nEntriesAnalysed);
+        }
+    }
+
+    fFileOut.Write("",TObject::kWriteDelete);
+
+    return;
+}
+
 /*
 void DoInvMassFitMainMC(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t bin){
     // Fit the invariant mass distribution using Double-sided CB function
-    // Peak corresponding to psi(2s) excluded
 
     // Cuts:
     char fStrReduce[120];
     Double_t fYCut      = 0.80;
-    Double_t fMCutLow   = 2.95;
-    Double_t fMCutUpp   = 3.25;
+    Double_t fMCutLow   = 2.90;
+    Double_t fMCutUpp   = 3.30;
 
     sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
 
@@ -894,39 +934,3 @@ void DoInvMassFitMainMC(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int
     return;
 }
 */
-
-void PrepareDataTree(){
-
-    TFile *fFileIn = TFile::Open("Trees/AnalysisData/AnalysisResultsLHC18qrMerged.root", "read");
-    if(fFileIn) Printf("Input data loaded.");
-
-    TTree *fTreeIn = dynamic_cast<TTree*> (fFileIn->Get("AnalysisOutput/fTreeJPsi"));
-    if(fTreeIn) Printf("Input tree loaded.");
-
-    ConnectTreeVariables(fTreeIn);
-
-    // Create new data tree with applied cuts
-    TFile fFileOut("Trees/PtFit/PtFitWithoutBkgTree.root","RECREATE");
-
-    TTree *Tree = new TTree("Tree", "Tree");
-    Tree->Branch("fPt", &fPt, "fPt/D");
-    Tree->Branch("fM", &fM, "fM/D");
-    Tree->Branch("fY", &fY, "fY/D");
-
-    Printf("%lli entries found in the tree.", fTreeIn->GetEntries());
-    Int_t nEntriesAnalysed = 0;
-
-    for(Int_t iEntry = 0; iEntry < fTreeIn->GetEntries(); iEntry++){
-        fTreeIn->GetEntry(iEntry);
-        if(EventPassed(0,2)) Tree->Fill();
-
-        if((iEntry+1) % 100000 == 0){
-            nEntriesAnalysed += 100000;
-            Printf("%i entries analysed.", nEntriesAnalysed);
-        }
-    }
-
-    fFileOut.Write("",TObject::kWriteDelete);
-
-    return;
-}
