@@ -20,32 +20,31 @@
 // my headers
 #include "AnalysisManager.h"
 
+Int_t iFeedDown = 1;
+// 0 = feed-down from PtFitWithoutBkg.c
+// 1 = feed-down from FeedDown.c (FeedDown_debug.c)
+Bool_t plot1 = kTRUE;
+Bool_t plot2 = kTRUE;
+Bool_t plot3 = kFALSE;
 // 1 = HS model
 // 2 = Guzey's model
 // 3 = Heikki's model
 
-Bool_t plot1 = kTRUE;
-Bool_t plot2 = kTRUE;
-Bool_t plot3 = kFALSE;
-
-Double_t PhotonFlux = 84.9;
 // To read the values from the files:
-Double_t sig_val[nPtBins] = { 0 };
-Double_t sig_err_stat[nPtBins] = { 0 };
-Double_t *sig_err_syst = NULL;
+Double_t Sigma_val[nPtBins] = { 0 };
+Double_t Sigma_err_stat[nPtBins] = { 0 };
+Double_t Sigma_err_syst[nPtBins] = { 0 };
 Double_t t_avg_val[nPtBins] = { 0 };
 Double_t t_boundaries[nPtBins+1] = { 0 };
 
-Double_t syst_uncr_4bins[4] = {6.2, 6.0, 6.3, 6.0};
-Double_t syst_uncr_5bins[5] = {6.5, 6.3, 6.4, 6.0, 6.1};
-
 // For TGraphAsymmErrors:
-Double_t sig_value[nPtBins] = { 0 };
-Double_t sig_errLo[nPtBins] = { 0 };
-Double_t sig_errUp[nPtBins] = { 0 };
+Double_t Sigma_err_stat_upp[nPtBins] = { 0 };
+Double_t Sigma_err_stat_low[nPtBins] = { 0 };
+Double_t Sigma_err_syst_upp[nPtBins] = { 0 };
+Double_t Sigma_err_syst_low[nPtBins] = { 0 };
 Double_t t_value[nPtBins] = { 0 };
-Double_t t_errLo[nPtBins] = { 0 };
-Double_t t_errUp[nPtBins] = { 0 };
+Double_t t_err_low[nPtBins] = { 0 };
+Double_t t_err_upp[nPtBins] = { 0 };
 
 // HS predictions
 // reserve space for data to be read
@@ -91,23 +90,35 @@ void PhenoPredictions()
 
     ReadInputHeikki();
 
-    // Connect the systematic uncertainties
-    if(nPtBins == 4) sig_err_syst = &syst_uncr_4bins[0];
-    if(nPtBins == 5) sig_err_syst = &syst_uncr_5bins[0];
-
-    // Scale the measured results with photon flux and fill the histogram
+    // Fill the histogram
     for(Int_t i = 0; i < nPtBins; i++){
-        sig_value[i] = sig_val[i] / 2. / PhotonFlux;
-        sig_errLo[i] = TMath::Sqrt(TMath::Power(sig_err_stat[i] / 2. / PhotonFlux, 2) + TMath::Power(sig_err_syst[i] / 100. * sig_value[i], 2));
-        sig_errUp[i] = TMath::Sqrt(TMath::Power(sig_err_stat[i] / 2. / PhotonFlux, 2) + TMath::Power(sig_err_syst[i] / 100. * sig_value[i], 2));
-        Printf("Cross section in bin %i: %.5f pm %.5f.", i+1, sig_value[i], sig_errLo[i]);
+        // from microbarns to milibarns
+        Sigma_val[i] = Sigma_val[i] / 1000.;
+        Sigma_err_stat[i] = Sigma_err_stat[i] / 1000.;
+        Sigma_err_syst[i] = Sigma_err_syst[i] / 1000.;
+        Sigma_err_stat_low[i] = Sigma_err_stat[i];
+        Sigma_err_stat_upp[i] = Sigma_err_stat[i];
+        Sigma_err_syst_low[i] = Sigma_err_syst[i];
+        Sigma_err_syst_upp[i] = Sigma_err_syst[i];
+        Printf("Cross section in bin %i: %.5f pm %.5f(stat.) pm %.5f(syst.).", i+1, Sigma_val[i], Sigma_err_stat_low[i], Sigma_err_syst_low[i]);
         t_value[i] = t_avg_val[i];
-        t_errLo[i] = t_avg_val[i] - t_boundaries[i];
-        t_errUp[i] = t_boundaries[i+1] - t_avg_val[i];
+        t_err_low[i] = t_avg_val[i] - t_boundaries[i];
+        t_err_upp[i] = t_boundaries[i+1] - t_avg_val[i];
     }
-    TGraphAsymmErrors *grData = new TGraphAsymmErrors(nPtBins,t_value,sig_value,t_errLo,t_errUp,sig_errLo,sig_errUp);
-    grData->SetMarkerStyle(21);
-    grData->SetMarkerColor(kBlack);
+    TGraphAsymmErrors *grData_stat = new TGraphAsymmErrors(nPtBins,t_value,Sigma_val,t_err_low,t_err_upp,Sigma_err_stat_low,Sigma_err_stat_upp);
+    TGraphAsymmErrors *grData_syst = new TGraphAsymmErrors(nPtBins,t_value,Sigma_val,t_err_low,t_err_upp,Sigma_err_syst_low,Sigma_err_syst_upp);
+    // with stat errors
+    grData_stat->SetLineStyle(1);
+    grData_stat->SetLineColor(kBlack);
+    grData_stat->SetLineWidth(1);
+    grData_stat->SetMarkerSize(1);
+    grData_stat->SetMarkerStyle(8);
+    grData_stat->SetMarkerColor(kBlack);
+    // with syst errors 
+    grData_syst->SetFillColor(17);
+    grData_syst->SetMarkerSize(0);
+    grData_syst->SetMarkerStyle(1);
+    grData_syst->SetMarkerColor(kBlack);
 
     // Define graphs for incoherent predictions of HS model
     // Without subnucleonic degrees of freedom:
@@ -190,6 +201,7 @@ void PhenoPredictions()
     // Draw
     // https://root.cern.ch/doc/master/classTGraphPainter.html
     gr2_area->Draw("AF");
+    grData_syst->Draw("P2 SAME");
     if(plot2){
         gr2_min->Draw("L SAME");
         gr2_max->Draw("L SAME");
@@ -202,10 +214,10 @@ void PhenoPredictions()
         gr3_fluct->Draw("L SAME");
         gr3_noflu->Draw("L SAME");
     }
-    grData->Draw("P SAME");
+    grData_stat->Draw("P SAME");
     // Legend
     TLegend *l = new TLegend(0.15,0.18,0.5,0.42);
-    l->AddEntry(grData,"ALICE measurement","P");
+    l->AddEntry(grData_stat,"ALICE measurement","EP");
     if(plot1){
         l->AddEntry(gr1_inc_hs,"GG-hs, incoherent","L");
         l->AddEntry(gr1_inc_n,"GG-n, incoherent","L");
@@ -218,13 +230,13 @@ void PhenoPredictions()
     l->SetFillStyle(0);  // legend is transparent
     l->Draw();
 
-    //grData->Print();
+    //gr1_inc_hs->Print();
     //gr2_area->Print();
     //gr3_fluct->Print();
-    grData->Print();
+    //grData_stat->Print();
 
-    c->Print(Form("PhenoPredictions/fig/ComparisonWithPheno_%ibins.pdf", nPtBins));
-    c->Print(Form("PhenoPredictions/fig/ComparisonWithPheno_%ibins.png", nPtBins));
+    c->Print(Form("PhenoPredictions/fig/Plot_FeedDown%i_%ibins.pdf", iFeedDown, nPtBins));
+    c->Print(Form("PhenoPredictions/fig/Plot_FeedDown%i_%ibins.png", iFeedDown, nPtBins));
 
     return;
 }
@@ -234,8 +246,8 @@ void ReadInputMeasurement()
     // read the input file for measured cross section
     ifstream ifs;
     t_boundaries[0] = 0.04;
-    TString sPath = Form("Results/CrossSection/%ibins_values_plot.txt", nPtBins);
-    ifs.open(sPath.Data());
+    TString str = Form("Results/CrossSection/%ibins_FeedDown%i_photo.txt", nPtBins, iFeedDown);
+    ifs.open(str.Data());
     if(!(ifs.fail())){
         Int_t i = 0;
         std::string str;
@@ -245,15 +257,15 @@ void ReadInputMeasurement()
             // skip first line
             Int_t bin;
             Double_t tLow;
-            if(i > 0) istr >> bin >> tLow >> t_boundaries[i] >> sig_val[i-1] >> sig_err_stat[i-1];
+            if(i > 0) istr >> bin >> tLow >> t_boundaries[i] >> Sigma_val[i-1] >> Sigma_err_stat[i-1] >> Sigma_err_syst[i-1];
             i++;   
         }
         ifs.close();
     }
-    Printf("Values of cross section loaded.");
+    Printf("Values of the photonuclear cross section loaded.");
 
-    sPath = Form("DependenceOnT/output_%ibins.txt", nPtBins);
-    ifs.open(sPath.Data()); 
+    str = Form("DependenceOnT/output_%ibins.txt", nPtBins);
+    ifs.open(str.Data()); 
     if(!(ifs.fail())){
         Int_t i = 0;
         std::string str;
@@ -266,7 +278,7 @@ void ReadInputMeasurement()
         }
         ifs.close();
     }  
-    Printf("Values of avg |t| per bin loaded.");
+    Printf("Values of an avg |t| value per bin loaded.");
 
     return;
 }

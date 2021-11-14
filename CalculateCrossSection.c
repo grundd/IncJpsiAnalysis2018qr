@@ -435,7 +435,7 @@ void CalculateCrossSectionBins(Int_t iFeedDown){
     }
 
     // Print results to the text file
-    // 1) Print UPC cross section 
+    // 1) Print the UPC cross section 
     TString str_out1 = Form("Results/CrossSection/%ibins_FeedDown%i.txt", nPtBins, iFeedDown);
     ofstream fout_sigmaUPC(str_out1.Data());
     fout_sigmaUPC << Form("Lumi\terr\tRapW\tBR\terr\te_veto\terr\te_EMD\terr\tflux\terr\n")
@@ -466,7 +466,7 @@ void CalculateCrossSectionBins(Int_t iFeedDown){
     fout_sigmaUPC.close();
     Printf("Results printed to %s.", str_out1.Data()); 
 
-    // 2) Print systematic uncertainties
+    // 2) Print the systematic uncertainties
     TString str_out2 = Form("Results/CrossSection/%ibins_FeedDown%i_systematics.txt", nPtBins, iFeedDown);
     ofstream fout_systErr(str_out2.Data());
     fout_systErr << "All in percent\n";
@@ -490,7 +490,8 @@ void CalculateCrossSectionBins(Int_t iFeedDown){
     fout_sigmaPhoto << std::fixed << std::setprecision(4);
     fout_sigmaPhoto << "Bin \tt_low \tt_upp \tsig \terr_sta\terr_syst\n";
     for(Int_t i = 0; i < nPtBins; i++){
-        fout_sigmaPhoto << i+1 << "\t" << ptBoundaries[i] * ptBoundaries[i] << "\t" 
+        fout_sigmaPhoto << i+1 << std::fixed << std::setprecision(4)
+                               << "\t" << ptBoundaries[i] * ptBoundaries[i] << "\t" 
                                << ptBoundaries[i+1] * ptBoundaries[i+1] << "\t" 
                                << std::fixed << std::setprecision(1)
                                << Sigma_photo_val[i] << "\t"
