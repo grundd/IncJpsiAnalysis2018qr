@@ -25,7 +25,7 @@ Int_t iFeedDown = 1;
 // 1 = feed-down from FeedDown.c (FeedDown_debug.c)
 Bool_t plot1 = kTRUE;
 Bool_t plot2 = kTRUE;
-Bool_t plot3 = kFALSE;
+Bool_t plot3 = kTRUE;
 // 1 = HS model
 // 2 = Guzey's model
 // 3 = Heikki's model
@@ -168,9 +168,9 @@ void PhenoPredictions()
     gr3_fluct->SetLineStyle(9);
     gr3_fluct->SetLineColor(1);
     gr3_fluct->SetLineWidth(3);
-    gr3_noflu->SetLineStyle(8);
-    gr3_noflu->SetLineColor(91);
-    gr3_noflu->SetLineWidth(3);
+    gr3_noflu->SetLineStyle(2);
+    gr3_noflu->SetLineColor(222);
+    gr3_noflu->SetLineWidth(4);
 
     // TStyle settings
     gStyle->SetOptStat(0);
@@ -206,25 +206,29 @@ void PhenoPredictions()
         gr2_min->Draw("L SAME");
         gr2_max->Draw("L SAME");
     }    
-    if(plot1){
-        gr1_inc_hs->Draw("CX SAME");
-        gr1_inc_n->Draw("CX SAME");
-    }
     if(plot3){
         gr3_fluct->Draw("L SAME");
         gr3_noflu->Draw("L SAME");
     }
+    if(plot1){
+        gr1_inc_hs->Draw("CX SAME");
+        gr1_inc_n->Draw("CX SAME");
+    }
     grData_stat->Draw("P SAME");
     // Legend
-    TLegend *l = new TLegend(0.15,0.18,0.5,0.42);
-    l->AddEntry(grData_stat,"ALICE measurement","EP");
+    TLegend *l = new TLegend(0.15,0.18,0.6,0.52);
     if(plot1){
-        l->AddEntry(gr1_inc_hs,"GG-hs, incoherent","L");
-        l->AddEntry(gr1_inc_n,"GG-n, incoherent","L");
+        l->AddEntry(gr1_inc_hs,"CCK: GG-hs","L");
+        l->AddEntry(gr1_inc_n,"CCK: GG-n","L");
     }
     if(plot2){
-        l->AddEntry(gr2_min,"GSZ, el + diss","L");
+        l->AddEntry(gr2_min,"GSZ: el. + diss.","L");
     }
+    if(plot3){
+        l->AddEntry(gr3_fluct,"MS: IPsat flu.","L");
+        l->AddEntry(gr3_noflu,"MS: IPsat no flu.","L");
+    }
+    l->AddEntry(grData_stat,"ALICE measurement","EP");
     l->SetTextSize(0.048);
     l->SetBorderSize(0); // no border
     l->SetFillStyle(0);  // legend is transparent
