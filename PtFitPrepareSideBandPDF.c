@@ -122,8 +122,8 @@ void CompareWithBkgFromInvMassFits(){
     hNBkgrBins->SetLineWidth(1.0);      
     hNBkgrBins->Draw("P E1 SAME");  
 
-    c->Print("Results/PtFitWithoutBkg/bkg_comparison.png");
-    c->Print("Results/PtFitWithoutBkg/bkg_comparison.pdf");
+    c->Print("Results/PtFitWithoutBkg/BkgComparison/bkg_comparison.png");
+    c->Print("Results/PtFitWithoutBkg/BkgComparison/bkg_comparison.pdf");
 
     return;
 }

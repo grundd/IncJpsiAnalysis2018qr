@@ -734,6 +734,15 @@ void InvMassFit_SystUncertainties(){
     outfile.close();
     Printf("Results printed to the output file."); 
 
+    // Print the total syst errors from signal extraction to the output file for CalculateCrossSection.c
+    outfile.open(Form("Results/InvMassFit_SystUncertainties/%ibins/ErrSystSignalExtraction_%ibins.txt", nPtBins, nPtBins));
+    outfile << std::fixed << std::setprecision(1);
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        outfile << iBin+1 << "\t" << SystUncr_tot[iBin] << "\n";   
+    }
+    outfile.close();
+    Printf("Results printed to the output file.");
+
     Printf("Done.");
 
     return;

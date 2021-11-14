@@ -10,27 +10,56 @@
 // my headers
 #include "AnalysisManager.h"
 
+//*************************************************
+// Systematic uncertainties (in percent)
+Double_t ErrSyst_SigExtr[nPtBins] = { 0 };
+Double_t ErrSyst_AxE[nPtBins] = { 0 };
+Double_t ErrSyst_fD[nPtBins] = { 0 };
+Double_t ErrSyst_fC[nPtBins] = { 0 };
+Double_t ErrSyst_lumi = 2.7;
+Double_t ErrSyst_veto = 3.0;
+Double_t ErrSyst_EMD = 2.0;
+Double_t ErrSyst_tracks = 2.8;
+Double_t ErrSyst_CCUP31 = 1.3;
+Double_t ErrSyst_flux = 2.0;
+//*************************************************
 Double_t Lumi18q = 90.114;  // 1/(mu barn)
 Double_t Lumi18r = 137.812; // 1/(mu barn)
-Double_t BR = 0.05961;
+Double_t LumiAll_val = Lumi18q + Lumi18r;
+Double_t LumiAll_err = LumiAll_val * ErrSyst_lumi / 100.;
+Double_t BR_val = 0.05961;
 Double_t BR_err = 0.00033;
+Double_t ErrSyst_BR = BR_err / BR_val * 100.;
 Double_t RapWidth = 1.6;
-Double_t EffVetoes = 0.846; // (!) 
+Double_t Eff_veto_val = 92.0; // !!!!!!!!!!!!!!!!!!!!!!! 94.0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Double_t Eff_veto_err = Eff_veto_val * ErrSyst_veto / 100.;
+Double_t Eff_EMD_val = 92.0;
+Double_t Eff_EMD_err = Eff_EMD_val * ErrSyst_EMD / 100.;
+Double_t PhotonFlux_val = 84.9;
+Double_t PhotonFlux_err = PhotonFlux_val * ErrSyst_flux / 100.;
 // Old values
 Double_t Lumi18q_aod = 91.431;  // 1/(mu barn)
 Double_t Lumi18r_aod = 147.292; // 1/(mu barn)
-// Cross section in pt bins
-Double_t NYield[nPtBins] = { 0 };
-Double_t NYield_err[nPtBins] = { 0 };
+Double_t LumiAll_aod_val = Lumi18q_aod + Lumi18r_aod;
+Double_t LumiAll_aod_err = LumiAll_aod_val * ErrSyst_lumi / 100.;
+// Cross section in pT^2 bins
+Double_t N_yield_val[nPtBins] = { 0 };
+Double_t N_yield_err[nPtBins] = { 0 };
 Double_t Pt2Widths[nPtBins] = { 0 };
-Double_t AxE[nPtBins] = { 0 };
+Double_t AxE_val[nPtBins] = { 0 };
 Double_t AxE_err[nPtBins] = { 0 };
-Double_t CorrFD[4][nPtBins] = { 0 };
+Double_t CorrFD_val[4][nPtBins] = { 0 };
 Double_t CorrFD_err[4][nPtBins] = { 0 };
-Double_t CorrFC[nPtBins] = { 0 };
+Double_t CorrFD_sum_val[nPtBins] = { 0 };
+Double_t CorrFD_sum_err[nPtBins] = { 0 };
+Double_t CorrFC_val[nPtBins] = { 0 };
 Double_t CorrFC_err[nPtBins] = { 0 };
-Double_t Sigma[nPtBins] = { 0 };
-Double_t Sigma_err[nPtBins] = { 0 };
+Double_t Sigma_UPC_val[nPtBins] = { 0 };
+Double_t Sigma_UPC_err_stat[nPtBins] = { 0 };
+Double_t Sigma_UPC_err_syst[nPtBins] = { 0 };
+Double_t Sigma_photo_val[nPtBins] = { 0 };
+Double_t Sigma_photo_err_stat[nPtBins] = { 0 };
+Double_t Sigma_photo_err_syst[nPtBins] = { 0 };
 // Total cross section for pt > 0.2 GeV/c
 Double_t NYield_tot = 0;
 Double_t NYield_tot_err = 0;
@@ -42,46 +71,42 @@ Double_t CorrFC_tot = 0;
 Double_t CorrFC_tot_err = 0;
 Double_t Sigma_tot = 0;
 Double_t Sigma_tot_err = 0;
-// Other systematic uncertainties (in percent)
-Double_t Syst_Lumi = 2.7;
-Double_t Syst_V0AD = 3.0;
-Double_t Syst_EMdi = 2.0;
-Double_t Syst_Trck = 2.8;
-Double_t Syst_TrEf = 1.3;
 
-// For temporarily loading bin numbers when reading the text files
 Int_t i_bin;
 
 void CalculateCrossSectionTotal(Bool_t bAOD = kFALSE);
-void CalculateCrossSectionBins();
+void CalculateCrossSectionBins(Int_t iFeedDown);
+void PrintErr(TString str);
 
 void CalculateCrossSection(){
 
     // ESDs
-    CalculateCrossSectionTotal(kFALSE);
+    //CalculateCrossSectionTotal(kFALSE);
 
     // AODs
-    CalculateCrossSectionTotal(kTRUE);
+    //CalculateCrossSectionTotal(kTRUE);
 
-    CalculateCrossSectionBins();
+    CalculateCrossSectionBins(0);
+    CalculateCrossSectionBins(1);
 
     return;
 }
 
+/*
 void CalculateCrossSectionTotal(Bool_t bAOD){
     // for pt > 0.2 GeV/c
 
-    ifstream file_in;
+    ifstream ifs;
 
     // 1) Load N_yield
     if(!bAOD){
-        file_in.open("Results/InvMassFit/inc/inc_signal.txt");
-        if(!(file_in.fail())){
+        ifs.open("Results/InvMassFit/inc/inc_signal.txt");
+        if(!(ifs.fail())){
             // Read data from the file
-            while(!file_in.eof()){
-                file_in >> NYield_tot >> NYield_tot_err;
+            while(!ifs.eof()){
+                ifs >> NYield_tot >> NYield_tot_err;
             }
-            file_in.close(); 
+            ifs.close(); 
             Printf("1) NYield file loaded.");
         } else {
             Printf("1) ERROR: NYield file missing. Terminating...");
@@ -93,19 +118,19 @@ void CalculateCrossSectionTotal(Bool_t bAOD){
     }
 
     // 2) Load AxE
-    if(!bAOD) file_in.open("Results/AccAndEffMC/AxE_JInc_MassCut0_PtCut0.txt");
-    else file_in.open("Results/AccAndEffMC/AOD/AxE_AOD_JInc_MassCut1_PtCut0.txt");
-    if(!(file_in.fail())){
+    if(!bAOD) ifs.open("Results/AccAndEffMC/AxE_JInc_MassCut0_PtCut0.txt");
+    else ifs.open("Results/AccAndEffMC/AOD/AxE_AOD_JInc_MassCut1_PtCut0.txt");
+    if(!(ifs.fail())){
         // Read data from the file
         Int_t i = 0;
         std::string str;
-        while(std::getline(file_in,str)){
+        while(std::getline(ifs,str)){
             istringstream in_stream(str);
             // skip first line
             if(i == 1) in_stream >> AxE_tot >> AxE_tot_err;
             i++;   
         } 
-        file_in.close();
+        ifs.close();
         Printf("2) AxE file loaded.");
     } else {
         Printf("2) ERROR: AxE file missing. Terminating...");
@@ -113,14 +138,14 @@ void CalculateCrossSectionTotal(Bool_t bAOD){
     }
 
     // 3) Load all FD corrections
-    if(!bAOD) file_in.open("Results/FeedDown/FeedDown_Total.txt");
-    else file_in.open("Results/FeedDown/FeedDown_Total_AOD.txt");
-    if(!(file_in.fail())){
+    if(!bAOD) ifs.open("Results/FeedDown/FeedDown_Total.txt");
+    else ifs.open("Results/FeedDown/FeedDown_Total_AOD.txt");
+    if(!(ifs.fail())){
         // Read data from the file
         Int_t i = 0;
         char ch[8];
         std::string str;
-        while(std::getline(file_in,str)){
+        while(std::getline(ifs,str)){
             istringstream in_stream(str);
             // skip first line
             if(i == 1) in_stream >> ch >> CorrFD_tot[0] >> CorrFD_tot_err[0] 
@@ -129,7 +154,7 @@ void CalculateCrossSectionTotal(Bool_t bAOD){
                                     >> CorrFD_tot[3] >> CorrFD_tot_err[3];
             i++;   
         } 
-        file_in.close(); 
+        ifs.close(); 
         Printf("3) FD file loaded.");
     } else {
         Printf("3) ERROR: FD file missing. Terminating...");
@@ -170,210 +195,315 @@ void CalculateCrossSectionTotal(Bool_t bAOD){
     TString FilePath;
     if(!bAOD) FilePath = "Results/CrossSection/total_ESDs_output.txt";
     else FilePath = "Results/CrossSection/total_AODs_output.txt";
-    ofstream outfile(FilePath.Data());
-    outfile << std::fixed << std::setprecision(3);
+    ofstream fout_sigmaUPC(FilePath.Data());
+    fout_sigmaUPC << std::fixed << std::setprecision(3);
     // Print results to the text file
-    outfile << Form("Lumi = %.3f 1/(mili barn)\n", LumiAll);
-    outfile << Form("BR(J/psi -> mu mu) = (%.3f pm %.3f)%%\n", BR*100, BR_err*100);
-    outfile << Form("Delta y = %.1f\n", RapWidth);
-    outfile << Form("EffVetoes = %.1f%%\n", EffVetoes*100);
-    outfile << Form("N \tN_er \tAxE \tAxE_er\tFD [%%]\tFD_err \tFC [%%]\tFC_er \tf [%%]\tf_er \tsig \tsig_er \n");
-    outfile << std::fixed << std::setprecision(2);
-    outfile << NYield_tot << "\t";
-    outfile << NYield_tot_err << "\t";
-    outfile << std::fixed << std::setprecision(3);
-    outfile << AxE_tot << "\t";
-    outfile << AxE_tot_err << "\t";
-    outfile << CorrFD_sum << "\t";
-    outfile << CorrFD_sum_err << "\t";
-    outfile << CorrFC_tot << "\t";
-    outfile << CorrFC_tot_err << "\t";
-    outfile << Factors << "\t";
-    outfile << Factors_err << "\t";
-    outfile << Sigma_tot << "\t";
-    outfile << Sigma_tot_err << "\n";
-    outfile.close();
+    fout_sigmaUPC << Form("Lumi = %.3f 1/(mili barn)\n", LumiAll);
+    fout_sigmaUPC << Form("BR(J/psi -> mu mu) = (%.3f pm %.3f)%%\n", BR*100, BR_err*100);
+    fout_sigmaUPC << Form("Delta y = %.1f\n", RapWidth);
+    fout_sigmaUPC << Form("EffVetoes = %.1f%%\n", EffVetoes*100);
+    fout_sigmaUPC << Form("N \tN_er \tAxE \tAxE_er\tFD [%%]\tFD_err \tFC [%%]\tFC_er \tf [%%]\tf_er \tsig \tsig_er \n");
+    fout_sigmaUPC << std::fixed << std::setprecision(2);
+    fout_sigmaUPC << NYield_tot << "\t";
+    fout_sigmaUPC << NYield_tot_err << "\t";
+    fout_sigmaUPC << std::fixed << std::setprecision(3);
+    fout_sigmaUPC << AxE_tot << "\t";
+    fout_sigmaUPC << AxE_tot_err << "\t";
+    fout_sigmaUPC << CorrFD_sum << "\t";
+    fout_sigmaUPC << CorrFD_sum_err << "\t";
+    fout_sigmaUPC << CorrFC_tot << "\t";
+    fout_sigmaUPC << CorrFC_tot_err << "\t";
+    fout_sigmaUPC << Factors << "\t";
+    fout_sigmaUPC << Factors_err << "\t";
+    fout_sigmaUPC << Sigma_tot << "\t";
+    fout_sigmaUPC << Sigma_tot_err << "\n";
+    fout_sigmaUPC.close();
     Printf("Results printed to %s.", FilePath.Data()); 
 
     return;
 }
+*/
 
-void CalculateCrossSectionBins(){
+void CalculateCrossSectionBins(Int_t iFeedDown){
+    // 0 = feed-down from PtFitWithoutBkg.c
+    // 1 = feed-down from FeedDown.c (FeedDown_debug.c)
 
     SetPtBinning();
 
-    ifstream file_in;
+    ifstream ifs;
+
+    Printf("Calculating cross section in %i bins.", nPtBins);
 
     // 1) Load N_yield per bin
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        file_in.open(Form("Results/InvMassFit/%ibins/bin%i_signal.txt", nPtBins, iBin+1));
+        TString str_yield = Form("Results/InvMassFit/%ibins/bin%i_signal.txt", nPtBins, iBin+1);
+        ifs.open(str_yield.Data());
         // Read data from the file
-        if(!(file_in.fail())){
-            while(!file_in.eof()){
-                file_in >> NYield[iBin] >> NYield_err[iBin];
-            }
+        if(!ifs.fail()){
+            ifs >> N_yield_val[iBin] >> N_yield_err[iBin];
         } else {
-            Printf("1) ERROR: N_yield file missing. Terminating...");
+            PrintErr(str_yield);
             return;
         }
-        file_in.close(); 
+        ifs.close(); 
     } 
     Printf("1) N_yield for %ibins loaded.", nPtBins);
 
     // 2) Load AxE per bin
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        file_in.open(Form("Results/AccAndEffMC/AxE_%ibins/AxE_bin%i_JInc.txt", nPtBins, iBin+1));
+        TString str_AxE = Form("Results/AccAndEffMC/AxE_%ibins/AxE_bin%i_JInc.txt", nPtBins, iBin+1);
+        ifs.open(str_AxE.Data());
         // Read data from the file
-        if(!(file_in.fail())){
+        if(!ifs.fail()){
             Int_t i = 0;
             std::string str;
-            while(std::getline(file_in,str)){
+            while(std::getline(ifs,str)){
                 istringstream in_stream(str);
                 // skip first line
-                if(i == 1) in_stream >> AxE[iBin] >> AxE_err[iBin];
+                if(i == 1) in_stream >> AxE_val[iBin] >> AxE_err[iBin];
                 i++;   
             }
         } else {
-            Printf("2) ERROR: AxE file missing. Terminating...");
+            PrintErr(str_AxE);
             return;            
         }
-        file_in.close();
+        ifs.close();
     }
     Printf("2) AxE from kIncohJpsiToMu for %ibins loaded.", nPtBins);
 
     // 3) Load all FD corrections per bin
-    file_in.open(Form("Results/FeedDown/FeedDown_%ibins.txt", nPtBins));
+    TString str_FD;
+    if(iFeedDown == 0) str_FD = Form("Results/PtFitWithoutBkg/fD_Binning2_%ibins.txt", nPtBins);
+    else str_FD = Form("Results/FeedDown/FeedDown_%ibins.txt", nPtBins);
+    ifs.open(str_FD.Data());
     // Read data from the file
-    if(!(file_in.fail())){
-        Int_t i = 0;
-        std::string str;
-        while(std::getline(file_in,str)){
-            istringstream in_stream(str);
-            // skip first line
-            if(i > 0) in_stream >> i_bin >> CorrFD[0][i-1] >> CorrFD_err[0][i-1] 
-                                >> CorrFD[1][i-1] >> CorrFD_err[1][i-1]
-                                >> CorrFD[2][i-1] >> CorrFD_err[2][i-1]
-                                >> CorrFD[3][i-1] >> CorrFD_err[3][i-1];
-            // Cross-check:
-            //Printf("%.4f", CorrFD[0][i-1]);
-            i++;   
+    if(!ifs.fail()){
+        if(iFeedDown == 0){
+            // 0 = feed-down from PtFitWithoutBkg.c
+            Int_t i = 0;
+            std::string str;
+            while(std::getline(ifs,str)){
+                istringstream in_stream(str);
+                // skip first line
+                if(i > 0) in_stream >> i_bin >> CorrFD_val[0][i-1] >> CorrFD_err[0][i-1]
+                                             >> CorrFD_val[1][i-1] >> CorrFD_err[1][i-1];
+                // Cross-check:
+                // Printf("%.4f pm %.4f", CorrFD_val[0][i-1], CorrFD_err[0][i-1]);
+                i++;   
+            }
+        } else {
+            // 1 = feed-down from FeedDown.c (FeedDown_debug.c)
+            Int_t i = 0;
+            std::string str;
+            while(std::getline(ifs,str)){
+                istringstream in_stream(str);
+                // skip first line
+                if(i > 0) in_stream >> i_bin >> CorrFD_val[0][i-1] >> CorrFD_err[0][i-1] 
+                                    >> CorrFD_val[1][i-1] >> CorrFD_err[1][i-1]
+                                    >> CorrFD_val[2][i-1] >> CorrFD_err[2][i-1]
+                                    >> CorrFD_val[3][i-1] >> CorrFD_err[3][i-1];
+                // Cross-check:
+                // Printf("%.4f pm %.4f", CorrFD_val[0][i-1], CorrFD_err[0][i-1]);
+                i++;   
+            }
         }
         Printf("3) FD corrections for %ibins loaded.", nPtBins);
-        file_in.close();
+        ifs.close();
     } else {
-        Printf("3) ERROR: FD file missing. Terminating...");
+        PrintErr(str_FD);
         return;
     }
     // Calculate total FD per bin
-    Double_t CorrFD_sum[nPtBins] = { 0 };
+    Double_t CorrFD_sum_val[nPtBins] = { 0 };
     Double_t CorrFD_sum_err[nPtBins] = { 0 };
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
         Double_t SumOfSquares = 0;
         for(Int_t iFD = 0; iFD < 4; iFD++){
-            CorrFD_sum[iBin] += CorrFD[iFD][iBin];
+            CorrFD_sum_val[iBin] += CorrFD_val[iFD][iBin];
             SumOfSquares += TMath::Power(CorrFD_err[iFD][iBin],2);
         }
         CorrFD_sum_err[iBin] = TMath::Sqrt(SumOfSquares);
     }
 
     // 4) Load FC corr per bin
-    file_in.open(Form("Results/PtFitWithoutBkg/CohContamination_Binning2_%ibins.txt", nPtBins));
+    TString str_FC = Form("Results/PtFitWithoutBkg/fC_Binning2_%ibins.txt", nPtBins);
+    ifs.open(str_FC.Data());
     // Read data from the file
-    if(!(file_in.fail())){
+    if(!ifs.fail()){
         Int_t i = 0;
         std::string str;
-        while(std::getline(file_in,str)){
+        while(std::getline(ifs,str)){
             istringstream in_stream(str);
             // skip first line
-            if(i > 0) in_stream >> i_bin >> CorrFC[i-1] >> CorrFC_err[i-1];
+            if(i > 0) in_stream >> i_bin >> CorrFC_val[i-1] >> CorrFC_err[i-1];
             // Cross-check:
-            //Printf("%.4f", CorrFC[i-1]);
+            // Printf("%.4f pm %.4f", CorrFC_val[i-1], CorrFC_err[i-1]);
             i++;   
         }
         Printf("4) FC corrections for %ibins loaded.", nPtBins);
-        file_in.close();
+        ifs.close();
     } else {
-        Printf("4) ERROR: FC file missing. Terminating...");
+        PrintErr(str_FC);
         return;
     }
 
-    // 5) Total integrated luminosity
-    Double_t LumiAll = (Lumi18q + Lumi18r) * 1000; // 1/(mili barn)
-    Printf("5) Total integrated lumi calculated.");
-
-    // 6) Widths of pt intervals [in GeV^2]
+    // 5) Widths of pt intervals [in GeV^2]
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
         Pt2Widths[iBin] = TMath::Power(ptBoundaries[iBin+1], 2) - TMath::Power(ptBoundaries[iBin], 2);
     }
-    Printf("6) pt^2 widths calculated.");
+    Printf("5) pt^2 widths calculated.");
 
-    // Calculate the cross section per bin
-    Double_t Factors[nPtBins];
+    // Calculate the UPC cross section per bin
+    Double_t Factors_val[nPtBins];
     Double_t Factors_err[nPtBins];
     for(Int_t iBin = 0; iBin < nPtBins; iBin++){
-        Factors[iBin] = 1.0 + CorrFD_sum[iBin]/100 + CorrFC[iBin]/100;
-        Factors_err[iBin] = TMath::Sqrt(TMath::Power(CorrFD_sum_err[iBin]/100,2) + TMath::Power(CorrFC_err[iBin]/100,2));
-        Sigma[iBin] = NYield[iBin] / (Factors[iBin] * EffVetoes * AxE[iBin]/100 * BR * RapWidth * Pt2Widths[iBin] * LumiAll);
-        Sigma_err[iBin] = Sigma[iBin] * TMath::Sqrt(
-            TMath::Power(NYield_err[iBin] / NYield[iBin], 2)
-            //TMath::Power(AxE_err[iBin] / AxE[iBin], 2) +
-            //TMath::Power(Factors_err[iBin] / Factors[iBin], 2) +
-            //TMath::Power(BR_err / BR, 2) + 
-            //TMath::Power(Syst_Lumi / 100., 2) + 
-            //TMath::Power(Syst_V0AD / 100., 2) + 
-            //TMath::Power(Syst_EMdi / 100., 2) + 
-            //TMath::Power(Syst_Trck / 100., 2) + 
-            //TMath::Power(Syst_TrEf / 100., 2)
-            );
+        Sigma_UPC_val[iBin] = N_yield_val[iBin] / (
+            (1.0 + CorrFD_sum_val[iBin] / 100. + CorrFC_val[iBin] / 100.) * 
+            (AxE_val[iBin] / 100.) * 
+            (Eff_veto_val / 100.) * 
+            (Eff_EMD_val / 100.) * 
+            (LumiAll_val * 1000) *
+            BR_val * 
+            RapWidth * Pt2Widths[iBin]);
+        Sigma_UPC_err_stat[iBin] = Sigma_UPC_val[iBin] * N_yield_err[iBin] / N_yield_val[iBin];
     }
 
-    // Define output text file to print results
-    TString FilePath = Form("Results/CrossSection/%ibins_output.txt", nPtBins);
-    ofstream outfile(FilePath.Data());
-    outfile << std::fixed << std::setprecision(3);
+    // Systematic uncertainties
+    // Signal extraction
+    TString str_ErrSystSigExtr = Form("Results/InvMassFit_SystUncertainties/%ibins/ErrSystSignalExtraction_%ibins.txt", nPtBins, nPtBins);
+    ifs.open(str_ErrSystSigExtr.Data());
+    if(!ifs.fail()){
+        for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+            ifs >> i_bin >> ErrSyst_SigExtr[iBin];
+        }
+    } else {
+        PrintErr(str_ErrSystSigExtr);
+        return;        
+    }
+    // AxE MC
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        ErrSyst_AxE[iBin] = AxE_err[iBin] / AxE_val[iBin] * 100.;
+    }
+    // fC, fD and total systematic uncertainty of sigma UPC
+    Double_t CorrFD_upp[nPtBins] = { 0 };
+    Double_t CorrFD_low[nPtBins] = { 0 };
+    Double_t CorrFC_upp[nPtBins] = { 0 };
+    Double_t CorrFC_low[nPtBins] = { 0 };
+    Double_t Sigma_FD_upp[nPtBins] = { 0 };
+    Double_t Sigma_FD_low[nPtBins] = { 0 };
+    Double_t Sigma_FC_upp[nPtBins] = { 0 };
+    Double_t Sigma_FC_low[nPtBins] = { 0 };
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        CorrFD_upp[iBin] = CorrFD_sum_val[iBin] + CorrFD_sum_err[iBin];
+        CorrFD_low[iBin] = CorrFD_sum_val[iBin] - CorrFD_sum_err[iBin];
+        CorrFC_upp[iBin] = CorrFC_val[iBin] + CorrFC_err[iBin];
+        CorrFC_low[iBin] = CorrFC_val[iBin] - CorrFC_err[iBin];
+        Sigma_FD_upp[iBin] = Sigma_UPC_val[iBin] * (1.0 + CorrFD_sum_val[iBin] / 100. + CorrFC_val[iBin] / 100.) / (1.0 + CorrFD_upp[iBin] / 100. + CorrFC_val[iBin] / 100.);
+        Sigma_FD_low[iBin] = Sigma_UPC_val[iBin] * (1.0 + CorrFD_sum_val[iBin] / 100. + CorrFC_val[iBin] / 100.) / (1.0 + CorrFD_low[iBin] / 100. + CorrFC_val[iBin] / 100.);
+        Sigma_FC_upp[iBin] = Sigma_UPC_val[iBin] * (1.0 + CorrFD_sum_val[iBin] / 100. + CorrFC_val[iBin] / 100.) / (1.0 + CorrFD_sum_val[iBin] / 100. + CorrFC_upp[iBin] / 100.);
+        Sigma_FC_low[iBin] = Sigma_UPC_val[iBin] * (1.0 + CorrFD_sum_val[iBin] / 100. + CorrFC_val[iBin] / 100.) / (1.0 + CorrFD_sum_val[iBin] / 100. + CorrFC_low[iBin] / 100.);
+        Double_t Sigma_fD_upp_diff, Sigma_fD_low_diff, Sigma_fC_upp_diff, Sigma_fC_low_diff;
+        Sigma_fD_upp_diff = TMath::Abs(Sigma_FD_upp[iBin] - Sigma_UPC_val[iBin]);
+        Sigma_fD_low_diff = TMath::Abs(Sigma_FD_low[iBin] - Sigma_UPC_val[iBin]);
+        Sigma_fC_upp_diff = TMath::Abs(Sigma_FC_upp[iBin] - Sigma_UPC_val[iBin]);
+        Sigma_fC_low_diff = TMath::Abs(Sigma_FC_low[iBin] - Sigma_UPC_val[iBin]);
+        ErrSyst_fD[iBin] = TMath::Max(Sigma_fD_upp_diff / Sigma_UPC_val[iBin], Sigma_fD_low_diff / Sigma_UPC_val[iBin]) * 100.;
+        ErrSyst_fC[iBin] = TMath::Max(Sigma_fC_upp_diff / Sigma_UPC_val[iBin], Sigma_fC_low_diff / Sigma_UPC_val[iBin]) * 100.;
+
+        Sigma_UPC_err_syst[iBin] = Sigma_UPC_val[iBin] * TMath::Sqrt(
+            TMath::Power(ErrSyst_SigExtr[iBin] / 100., 2) +
+            TMath::Power(ErrSyst_AxE[iBin] / 100., 2) +
+            TMath::Power(ErrSyst_fD[iBin] / 100., 2) +
+            TMath::Power(ErrSyst_fC[iBin] / 100., 2) +
+            TMath::Power(ErrSyst_lumi / 100., 2) + 
+            TMath::Power(ErrSyst_veto / 100., 2) + 
+            TMath::Power(ErrSyst_EMD / 100., 2) + 
+            TMath::Power(ErrSyst_tracks / 100., 2) + 
+            TMath::Power(ErrSyst_CCUP31 / 100., 2) + 
+            TMath::Power(BR_err / BR_val, 2)
+        );
+    }
+
+    // Calculate the photonuclear cross section per bin
+    for(Int_t iBin = 0; iBin < nPtBins; iBin++){
+        Sigma_photo_val[iBin] = Sigma_UPC_val[iBin] / 2. / PhotonFlux_val * 1000;
+        Sigma_photo_err_stat[iBin] = Sigma_UPC_err_stat[iBin] / 2. / PhotonFlux_val * 1000;
+        Sigma_photo_err_syst[iBin] = Sigma_photo_val[iBin] * TMath::Sqrt(
+            TMath::Power(Sigma_UPC_err_syst[iBin] / Sigma_UPC_val[iBin], 2) + 
+            TMath::Power(ErrSyst_flux / 100., 2)
+        );
+    }
+
     // Print results to the text file
-    outfile << Form("Lumi = %.3f 1/(mili barn)\n", LumiAll);
-    outfile << Form("BR(J/psi -> mu mu) = (%.3f pm %.3f)%%\n", BR*100, BR_err*100);
-    outfile << Form("Delta y = %.1f\n", RapWidth);
-    outfile << Form("EffVetoes = %.1f%%\n", EffVetoes*100);
-    outfile << "Per bins:\n";
-    outfile << Form("Bin\tPtLow \tPtUpp \tPt^2_w \tN \tN_er \tAxE \tAxE_er\tFD [%%]\tFD_err \tFC [%%]\tFC_er \tf [%%]\tf_er \tsig \tsig_er stat.\n");
+    // 1) Print UPC cross section 
+    TString str_out1 = Form("Results/CrossSection/%ibins_FeedDown%i.txt", nPtBins, iFeedDown);
+    ofstream fout_sigmaUPC(str_out1.Data());
+    fout_sigmaUPC << Form("Lumi\terr\tRapW\tBR\terr\te_veto\terr\te_EMD\terr\tflux\terr\n")
+                  << Form("%.1f \t%.1f \t%.1f \t%.3f \t%.3f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \n\n",
+                            LumiAll_val, LumiAll_err, 
+                            RapWidth, 
+                            BR_val*100., BR_err*100., 
+                            Eff_veto_val, Eff_veto_err, 
+                            Eff_EMD_val, Eff_EMD_err,
+                            PhotonFlux_val, PhotonFlux_err);
+    fout_sigmaUPC << Form("Bin\tPt2Low\tPt2Upp\tPt2_W\tN\terr\tAxE\terr\tFD [%%]\terr\tFC [%%]\terr\tsig\terr_sta\terr_sys\n");
     for(Int_t i = 0; i < nPtBins; i++){
-        outfile << i+1 << "\t";
-        outfile << ptBoundaries[i] << "\t";
-        outfile << ptBoundaries[i+1] << "\t";
-        outfile << std::fixed << std::setprecision(4);
-        outfile << Pt2Widths[i] << "\t";
-        outfile << std::fixed << std::setprecision(2);
-        outfile << NYield[i] << "\t";
-        outfile << NYield_err[i] << "\t";
-        outfile << std::fixed << std::setprecision(3);
-        outfile << AxE[i] << "\t";
-        outfile << AxE_err[i] << "\t";
-        outfile << CorrFD_sum[i] << "\t";
-        outfile << CorrFD_sum_err[i] << "\t";
-        outfile << CorrFC[i] << "\t";
-        outfile << CorrFC_err[i] << "\t";
-        outfile << Factors[i] << "\t";
-        outfile << Factors_err[i] << "\t";
-        outfile << Sigma[i] << "\t";
-        outfile << Sigma_err[i] << "\n";
+        fout_sigmaUPC << std::fixed << std::setprecision(3)
+                << i+1 << "\t"
+                << ptBoundaries[i] * ptBoundaries[i] << "\t"
+                << ptBoundaries[i+1] * ptBoundaries[i+1] << "\t"
+                << std::fixed << std::setprecision(4)
+                << Pt2Widths[i] << "\t"
+                << std::fixed << std::setprecision(2)
+                << N_yield_val[i] << "\t" << N_yield_err[i] << "\t"
+                << AxE_val[i] << "\t" << AxE_err[i] << "\t"
+                << std::fixed << std::setprecision(3)
+                << CorrFD_sum_val[i] << "\t" << CorrFD_sum_err[i] << "\t"
+                << CorrFC_val[i] << "\t" << CorrFC_err[i] << "\t"
+                << std::fixed << std::setprecision(2)
+                << Sigma_UPC_val[i] << "\t" << Sigma_UPC_err_stat[i] << "\t" << Sigma_UPC_err_syst[i] << "\n";
     }
-    outfile.close();
-    Printf("Results printed to %s.", FilePath.Data()); 
+    fout_sigmaUPC.close();
+    Printf("Results printed to %s.", str_out1.Data()); 
 
-    TString FilePath2 = Form("Results/CrossSection/%ibins_values_plot.txt", nPtBins);
-    ofstream outfile2(FilePath2.Data());
-    outfile2 << std::fixed << std::setprecision(4);
-    outfile2 << "Bin \ttLow \ttUpp \tSig \tErr \n";
+    // 2) Print systematic uncertainties
+    TString str_out2 = Form("Results/CrossSection/%ibins_FeedDown%i_systematics.txt", nPtBins, iFeedDown);
+    ofstream fout_systErr(str_out2.Data());
+    fout_systErr << "All in percent\n";
+    fout_systErr << "lumi \tveto \tEMD \ttracks \tCCUP31 \tBR \n"
+                 << Form("%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \n\n",
+                    ErrSyst_lumi, ErrSyst_veto, ErrSyst_EMD, ErrSyst_tracks, ErrSyst_CCUP31, ErrSyst_BR);
+    fout_systErr << "Bin \tSigExt \tAxE MC \tfD \tfC \n";
     for(Int_t i = 0; i < nPtBins; i++){
-        outfile2 << i+1 << "\t" << ptBoundaries[i] * ptBoundaries[i] << "\t" 
-                                << ptBoundaries[i+1] * ptBoundaries[i+1] << "\t" 
-                                << Sigma[i] << "\t"
-                                << Sigma_err[i] << "\n";
-    }
-    outfile2.close();
-    Printf("Results printed to %s.", FilePath2.Data()); 
+        fout_systErr << i+1 << std::fixed << std::setprecision(1) << "\t"
+                            << ErrSyst_SigExtr[i] << "\t"
+                            << ErrSyst_AxE[i] << "\t"
+                            << ErrSyst_fD[i] << "\t"
+                            << ErrSyst_fC[i] << "\n";
+    }    
+    fout_systErr.close();
+    Printf("Results printed to %s.", str_out2.Data());
 
+    // 3) Print the photonuclear cross section (also an input for PhenoPredictions.c)
+    TString str_out3 = Form("Results/CrossSection/%ibins_FeedDown%i_photo.txt", nPtBins, iFeedDown);
+    ofstream fout_sigmaPhoto(str_out3.Data());
+    fout_sigmaPhoto << std::fixed << std::setprecision(4);
+    fout_sigmaPhoto << "Bin \tt_low \tt_upp \tsig \terr_sta\terr_syst\n";
+    for(Int_t i = 0; i < nPtBins; i++){
+        fout_sigmaPhoto << i+1 << "\t" << ptBoundaries[i] * ptBoundaries[i] << "\t" 
+                               << ptBoundaries[i+1] * ptBoundaries[i+1] << "\t" 
+                               << std::fixed << std::setprecision(1)
+                               << Sigma_photo_val[i] << "\t"
+                               << Sigma_photo_err_stat[i] << "\t"
+                               << Sigma_photo_err_syst[i] << "\n";
+    }
+    fout_sigmaPhoto.close();
+    Printf("Results printed to %s.", str_out3.Data()); 
+
+    return;
+}
+
+void PrintErr(TString str){
+    Printf("ERR: file %s missing. Terminating.", str.Data());
     return;
 }

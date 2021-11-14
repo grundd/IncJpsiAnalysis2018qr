@@ -410,40 +410,78 @@ void DoPtFitNoBkg(){
     outfile.close();
     Printf("*** Results printed to %s. ***", (*str + ".txt").Data());
 
-    // Print the Latex table
-    outfile.open((*str + "_TeX.txt").Data());
+    // Print the TeX table for fC
+    outfile.open((*str + "_fC_TeX.txt").Data());
     outfile << std::fixed << std::setprecision(1);
-    outfile << R"($p_\mathrm{T} \in (0.2,1.0)$~GeV/$c$ & $)"
-            << N_CohJ_to1_val << R"( \pm )" << N_CohJ_to1_err << "$ \t& $"
-            << N_CohP_to1_val << R"( \pm )" << N_CohP_to1_err << "$ \t& $"
-            << N_IncJ_to1_val << R"( \pm )" << N_IncJ_to1_err << "$ \t& $"
-            << N_IncP_to1_val << R"( \pm )" << N_IncP_to1_err << "$ \t& $"
-            << N_Diss_to1_val << R"( \pm )" << N_Diss_to1_err << R"($ & - \\)" 
+    outfile << "$(0.2,1.0)$\t& $"
+            << N_CohJ_to1_val << R"( \pm )" << N_CohJ_to1_err << "$\t& $"
+            << N_IncJ_to1_val << R"( \pm )" << N_IncJ_to1_err << "$\t& $"
+            << N_Diss_to1_val << R"( \pm )" << N_Diss_to1_err << "$\t& -" << R"( \\)" 
+            //<< N_CohP_to1_val << R"( \pm )" << N_CohP_to1_err << "$ \t& $"
+            //<< N_IncP_to1_val << R"( \pm )" << N_IncP_to1_err << "$ \t& $"
             << "\n";
     for(Int_t i = 0; i < nPtBins; i++){
-        outfile << std::fixed << std::setprecision(1)
-                << Form("Bin %i", i+1) << "\t& $"
-                << N_CohJ_bins_val[i] << R"( \pm )" << N_CohJ_bins_err[i] << "$ \t& $"
-                << N_CohP_bins_val[i] << R"( \pm )" << N_CohP_bins_err[i] << "$ \t& $"
-                << N_IncJ_bins_val[i] << R"( \pm )" << N_IncJ_bins_err[i] << "$ \t& $"
-                << N_IncP_bins_val[i] << R"( \pm )" << N_IncP_bins_err[i] << "$ \t& $"
-                << N_Diss_bins_val[i] << R"( \pm )" << N_Diss_bins_err[i] << "$ \t& $"
+        outfile << std::fixed << std::setprecision(3)
+                << "$(" << ptBoundaries[i] << "," << ptBoundaries[i+1] << ")$\t& $"
+                << std::fixed << std::setprecision(1)
+                << N_CohJ_bins_val[i] << R"( \pm )" << N_CohJ_bins_err[i] << "$\t& $"
+                << N_IncJ_bins_val[i] << R"( \pm )" << N_IncJ_bins_err[i] << "$\t& $"
+                << N_Diss_bins_val[i] << R"( \pm )" << N_Diss_bins_err[i] << "$\t& $"
+                //<< N_CohP_bins_val[i] << R"( \pm )" << N_CohP_bins_err[i] << "$ \t& $"
+                //<< N_IncP_bins_val[i] << R"( \pm )" << N_IncP_bins_err[i] << "$ \t& $"
                 << std::fixed << std::setprecision(3)
-                << fC_bins_val[i]*100 << R"( \pm )" << fC_bins_err[i]*100 << R"($ \\)"
+                << fC_bins_val[i] << R"( \pm )" << fC_bins_err[i] << R"($ \\)"
                 << "\n";
     }
     outfile.close();
-    Printf("*** Results printed to %s. ***", (*str + "_TeX.txt").Data());
+    Printf("*** Results printed to %s. ***", (*str + "_fC_TeX.txt").Data());
 
-    // Print to another file from which the values for CalculateCrossSection.c will be loaded
-    str = new TString(Form("%sCohContamination_Binning%i_%ibins", OutputPtFitWithoutBkg.Data(),BinningOpt, nPtBins));
-    ofstream outfile2((*str + ".txt").Data());
-    outfile2 << std::fixed << std::setprecision(3);
-    outfile2 << Form("Bin \tfC [%%]\tErr \n");
+    // Print the TeX table for fD
+    outfile.open((*str + "_fD_TeX.txt").Data());
+    outfile << std::fixed << std::setprecision(1);
+    outfile << "$(0.2,1.0)$\t& $"
+            //<< N_CohJ_to1_val << R"( \pm )" << N_CohJ_to1_err << "$ \t& $"
+            << N_IncJ_to1_val << R"( \pm )" << N_IncJ_to1_err << "$\t& $"
+            << N_Diss_to1_val << R"( \pm )" << N_Diss_to1_err << "$\t& $"
+            << N_CohP_to1_val << R"( \pm )" << N_CohP_to1_err << "$\t& $" 
+            << N_IncP_to1_val << R"( \pm )" << N_IncP_to1_err << "$\t& -" << R"( \\)" 
+            << "\n";
     for(Int_t i = 0; i < nPtBins; i++){
-        outfile2 << i+1 << "\t" << fC_bins_val[i] * 100 << "\t" << fC_bins_err[i] * 100 << "\n";
+        outfile << std::fixed << std::setprecision(3)
+                << "$(" << ptBoundaries[i] << "," << ptBoundaries[i+1] << ")$ &\t$"
+                << std::fixed << std::setprecision(1)
+                //<< N_CohJ_bins_val[i] << R"( \pm )" << N_CohJ_bins_err[i] << "$ \t& $"
+                << N_IncJ_bins_val[i] << R"( \pm )" << N_IncJ_bins_err[i] << "$\t& $"
+                << N_Diss_bins_val[i] << R"( \pm )" << N_Diss_bins_err[i] << "$\t& $"
+                << N_CohP_bins_val[i] << R"( \pm )" << N_CohP_bins_err[i] << "$\t& $"
+                << N_IncP_bins_val[i] << R"( \pm )" << N_IncP_bins_err[i] << "$\t& $"
+                << std::fixed << std::setprecision(3)
+                << fD_bins_val[i] << R"( \pm )" << fD_bins_err[i] << R"($ \\)"
+                << "\n";
     }
-    outfile2.close();
+    outfile.close();
+    Printf("*** Results printed to %s. ***", (*str + "_fD_TeX.txt").Data());
+
+    // Print to another file from which the values of fC for CalculateCrossSection.c will be loaded
+    str = new TString(Form("%sfC_Binning%i_%ibins", OutputPtFitWithoutBkg.Data(),BinningOpt, nPtBins));
+    ofstream outfile_fC((*str + ".txt").Data());
+    outfile_fC << std::fixed << std::setprecision(3);
+    outfile_fC << Form("Bin \tfC [%%]\terr \n");
+    for(Int_t i = 0; i < nPtBins; i++){
+        outfile_fC << i+1 << "\t" << fC_bins_val[i] << "\t" << fC_bins_err[i] << "\n";
+    }
+    outfile_fC.close();
+    Printf("*** Results printed to %s. ***", (*str + ".txt").Data());
+
+    // Print to another file from which the values of fD for CalculateCrossSection.c will be loaded
+    str = new TString(Form("%sfD_Binning%i_%ibins", OutputPtFitWithoutBkg.Data(),BinningOpt, nPtBins));
+    ofstream outfile_fD((*str + ".txt").Data());
+    outfile_fD << std::fixed << std::setprecision(1);
+    outfile_fD << Form("Bin \tfD [%%]\terr \n");
+    for(Int_t i = 0; i < nPtBins; i++){
+        outfile_fD << i+1 << "\t" << fD_bins_val[i] << "\t" << fD_bins_err[i] << "\n";
+    }
+    outfile_fD.close();
     Printf("*** Results printed to %s. ***", (*str + ".txt").Data());
 
     // ###############################################################################################################
