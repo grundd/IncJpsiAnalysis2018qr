@@ -252,7 +252,7 @@ void ReadInputMeasurement()
     t_boundaries[0] = 0.04;
     TString str = Form("Results/CrossSection/%ibins_FeedDown%i_photo.txt", nPtBins, iFeedDown);
     ifs.open(str.Data());
-    if(!(ifs.fail())){
+    if(!ifs.fail()){
         Int_t i = 0;
         std::string str;
         while(std::getline(ifs,str)){
@@ -270,7 +270,7 @@ void ReadInputMeasurement()
 
     str = Form("DependenceOnT/output_%ibins.txt", nPtBins);
     ifs.open(str.Data()); 
-    if(!(ifs.fail())){
+    if(!ifs.fail()){
         Int_t i = 0;
         std::string str;
         while(std::getline(ifs,str)){

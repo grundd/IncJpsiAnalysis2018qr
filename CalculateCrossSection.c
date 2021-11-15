@@ -60,6 +60,7 @@ Double_t Sigma_UPC_err_syst[nPtBins] = { 0 };
 Double_t Sigma_photo_val[nPtBins] = { 0 };
 Double_t Sigma_photo_err_stat[nPtBins] = { 0 };
 Double_t Sigma_photo_err_syst[nPtBins] = { 0 };
+Double_t t_avg_val[nPtBins] = { 0 };
 // Total cross section for pt > 0.2 GeV/c
 Double_t NYield_tot = 0;
 Double_t NYield_tot_err = 0;
@@ -376,6 +377,7 @@ void CalculateCrossSectionBins(Int_t iFeedDown){
         for(Int_t iBin = 0; iBin < nPtBins; iBin++){
             ifs >> i_bin >> ErrSyst_SigExtr[iBin];
         }
+        ifs.close();
     } else {
         PrintErr(str_ErrSystSigExtr);
         return;        
@@ -434,10 +436,29 @@ void CalculateCrossSectionBins(Int_t iFeedDown){
         );
     }
 
+    // Load avg values of |t| per bin
+    TString str_avgT = Form("DependenceOnT/output_%ibins.txt", nPtBins);
+    ifs.open(str_avgT.Data()); 
+    if(!ifs.fail()){
+        Int_t i = 0;
+        std::string str;
+        while(std::getline(ifs,str)){
+            Printf("Reading line %i: %s", i, str.data());
+            istringstream istr(str);
+            istr >> i_bin >> t_avg_val[i];
+            i++;   
+        }
+        ifs.close();
+    } else {
+        PrintErr(str_avgT);
+        return;         
+    }
+    Printf("6) Values of avg |t| values per bin loaded.");
+
     // Print results to the text file
-    // 1) Print the UPC cross section 
-    TString str_out1 = Form("Results/CrossSection/%ibins_FeedDown%i.txt", nPtBins, iFeedDown);
-    ofstream fout_sigmaUPC(str_out1.Data());
+    // 1a) Print the UPC cross section 
+    TString str_out_1a = Form("Results/CrossSection/%ibins_FeedDown%i.txt", nPtBins, iFeedDown);
+    ofstream fout_sigmaUPC(str_out_1a.Data());
     fout_sigmaUPC << Form("Lumi\terr\tRapW\tBR\terr\te_veto\terr\te_EMD\terr\tflux\terr\n")
                   << Form("%.1f \t%.1f \t%.1f \t%.3f \t%.3f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \t%.1f \n\n",
                             LumiAll_val, LumiAll_err, 
@@ -464,9 +485,36 @@ void CalculateCrossSectionBins(Int_t iFeedDown){
                 << Sigma_UPC_val[i] << "\t" << Sigma_UPC_err_stat[i] << "\t" << Sigma_UPC_err_syst[i] << "\n";
     }
     fout_sigmaUPC.close();
-    Printf("Results printed to %s.", str_out1.Data()); 
+    Printf("Results printed to %s.", str_out_1a.Data()); 
+    // 1b) Print the UPC cross section: TeX file
+    TString str_out_1b = Form("Results/CrossSection/%ibins_FeedDown%i_TeX.txt", nPtBins, iFeedDown);
+    ofstream fout_sigmaUPC_TeX(str_out_1b.Data());
+    fout_sigmaUPC_TeX << Form("$%.0f", LumiAll_val) << R"( \pm )" << Form("%.0f$", LumiAll_err) << " &\t"
+                      << Form("%.1f", RapWidth) << "\t"
+                      << Form("$%.3f", BR_val*100.) << R"( \pm )" << Form("%.3f$", BR_err*100.) << " &\t"
+                      << Form("$%.1f",Eff_veto_val) << R"( \pm )" << Form("%.1f$",Eff_veto_err) << " &\t"
+                      << Form("$%.1f", Eff_EMD_val) << R"( \pm )" << Form("%.1f$", Eff_EMD_err) << " &\t"
+                      << Form("$%.1f", PhotonFlux_val) << R"( \pm )" << Form("%.1f$", PhotonFlux_err) << R"( \\)" << "\n\n";
+    for(Int_t i = 0; i < nPtBins; i++){
+        fout_sigmaUPC_TeX << std::fixed << std::setprecision(3)
+                          << "$(" << ptBoundaries[i] << "," << ptBoundaries[i+1] << ")$ & "
+                          << std::fixed << std::setprecision(4)
+                          << Pt2Widths[i] << " &\t$"
+                          << std::fixed << std::setprecision(0)
+                          << N_yield_val[i] << R"( \pm )" << N_yield_err[i] << "$ &\t$"
+                          << std::fixed << std::setprecision(2)
+                          << AxE_val[i] << R"( \pm )" << AxE_err[i] << "$ &\t$"
+                          << std::fixed << std::setprecision(2)
+                          << CorrFD_sum_val[i] << R"( \pm )" << CorrFD_sum_err[i] << "$ &\t$"
+                          << std::fixed << std::setprecision(3)
+                          << CorrFC_val[i] << R"( \pm )" << CorrFC_err[i] << "$ &\t$"
+                          << std::fixed << std::setprecision(2)
+                          << Sigma_UPC_val[i] << R"( \pm )" << Sigma_UPC_err_stat[i] << R"((stat.) \pm )" << Sigma_UPC_err_syst[i] << R"((syst.)$ \\)" << "\n";
+    }                  
+    fout_sigmaUPC_TeX.close();
+    Printf("Results printed to %s.", str_out_1b.Data());
 
-    // 2) Print the systematic uncertainties
+    // 2a) Print the systematic uncertainties
     TString str_out2 = Form("Results/CrossSection/%ibins_FeedDown%i_systematics.txt", nPtBins, iFeedDown);
     ofstream fout_systErr(str_out2.Data());
     fout_systErr << "All in percent\n";
@@ -483,10 +531,25 @@ void CalculateCrossSectionBins(Int_t iFeedDown){
     }    
     fout_systErr.close();
     Printf("Results printed to %s.", str_out2.Data());
+    // 2b) Print the systematic uncertainties: TeX file
+    TString str_out2b = Form("Results/CrossSection/%ibins_FeedDown%i_systematics_TeX.txt", nPtBins, iFeedDown);
+    ofstream fout_systErr_TeX(str_out2b.Data());
+    for(Int_t i = 0; i < nPtBins; i++){
+        fout_systErr_TeX << std::fixed << std::setprecision(3)
+                        << "$(" << ptBoundaries[i] << "," << ptBoundaries[i+1] << ")$ & "
+                        << std::fixed << std::setprecision(1)
+                        << ErrSyst_SigExtr[i] << " & "
+                        << ErrSyst_AxE[i] << " & "
+                        << ErrSyst_fD[i] << " & "
+                        << ErrSyst_fC[i] << R"( \\)" << "\n";
+                            
+    }
+    fout_systErr_TeX.close();
+    Printf("Results printed to %s.", str_out2b.Data()); 
 
-    // 3) Print the photonuclear cross section (also an input for PhenoPredictions.c)
-    TString str_out3 = Form("Results/CrossSection/%ibins_FeedDown%i_photo.txt", nPtBins, iFeedDown);
-    ofstream fout_sigmaPhoto(str_out3.Data());
+    // 3a) Print the photonuclear cross section (also an input for PhenoPredictions.c)
+    TString str_out3a = Form("Results/CrossSection/%ibins_FeedDown%i_photo.txt", nPtBins, iFeedDown);
+    ofstream fout_sigmaPhoto(str_out3a.Data());
     fout_sigmaPhoto << std::fixed << std::setprecision(4);
     fout_sigmaPhoto << "Bin \tt_low \tt_upp \tsig \terr_sta\terr_syst\n";
     for(Int_t i = 0; i < nPtBins; i++){
@@ -499,7 +562,19 @@ void CalculateCrossSectionBins(Int_t iFeedDown){
                                << Sigma_photo_err_syst[i] << "\n";
     }
     fout_sigmaPhoto.close();
-    Printf("Results printed to %s.", str_out3.Data()); 
+    Printf("Results printed to %s.", str_out3a.Data()); 
+    // 3b) Print the photonuclear cross section: TeX file
+    TString str_out3b = Form("Results/CrossSection/%ibins_FeedDown%i_photo_TeX.txt", nPtBins, iFeedDown);
+    ofstream fout_sigmaPhoto_TeX(str_out3b.Data());
+    for(Int_t i = 0; i < nPtBins; i++){
+        fout_sigmaPhoto_TeX << std::fixed << std::setprecision(3)
+                            << "$(" << ptBoundaries[i] * ptBoundaries[i] << "," << ptBoundaries[i+1] * ptBoundaries[i+1] << ")$ & "
+                            << t_avg_val[i] << " &\t$"
+                            << std::fixed << std::setprecision(1)
+                            << Sigma_photo_val[i] << R"( \pm )" << Sigma_photo_err_stat[i] << R"((stat.) \pm )" << Sigma_photo_err_syst[i] << R"((syst.)$ \\)" << "\n";
+    }
+    fout_sigmaPhoto_TeX.close();
+    Printf("Results printed to %s.", str_out3b.Data()); 
 
     return;
 }
