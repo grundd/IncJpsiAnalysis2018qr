@@ -448,7 +448,7 @@ void DoPtFitNoBkg(){
             << "\n";
     for(Int_t i = 0; i < nPtBins; i++){
         outfile << std::fixed << std::setprecision(3)
-                << "$(" << ptBoundaries[i] << "," << ptBoundaries[i+1] << ")$ &\t$"
+                << "$(" << ptBoundaries[i] << "," << ptBoundaries[i+1] << ")$ & $"
                 << std::fixed << std::setprecision(1)
                 //<< N_CohJ_bins_val[i] << R"( \pm )" << N_CohJ_bins_err[i] << "$ \t& $"
                 << N_IncJ_bins_val[i] << R"( \pm )" << N_IncJ_bins_err[i] << "$\t& $"
@@ -456,6 +456,8 @@ void DoPtFitNoBkg(){
                 << N_CohP_bins_val[i] << R"( \pm )" << N_CohP_bins_err[i] << "$\t& $"
                 << N_IncP_bins_val[i] << R"( \pm )" << N_IncP_bins_err[i] << "$\t& $"
                 << std::fixed << std::setprecision(3)
+                << fDCoh_bins_val[i] << R"( \pm )" << fDCoh_bins_err[i] << "$\t& $"
+                << fDInc_bins_val[i] << R"( \pm )" << fDInc_bins_err[i] << "$\t& $"
                 << fD_bins_val[i] << R"( \pm )" << fD_bins_err[i] << R"($ \\)"
                 << "\n";
     }

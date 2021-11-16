@@ -11,6 +11,7 @@
 #include <TGraphErrors.h>
 #include <TGraphAsymmErrors.h>
 #include <TH1.h>
+#include <TFile.h>
 #include <TCanvas.h>
 #include <TLegend.h>
 #include <TStyle.h>
@@ -26,9 +27,11 @@ Int_t iFeedDown = 1;
 Bool_t plot1 = kTRUE;
 Bool_t plot2 = kTRUE;
 Bool_t plot3 = kTRUE;
+Bool_t plot4 = kTRUE;
 // 1 = HS model
 // 2 = Guzey's model
 // 3 = Heikki's model
+// 4 = STARlight
 
 // To read the values from the files:
 Double_t Sigma_val[nPtBins] = { 0 };
@@ -75,13 +78,23 @@ Double_t abs_t_3[nData3];
 Double_t sig_inc_fluct[nData3];
 Double_t sig_inc_noflu[nData3];
 
+// STARlight predictions
+const Int_t nData4 = 100;
+Double_t fPt2VM, fPt2Pm;
+Double_t SigmaIncSL = 4.233;
+Double_t abs_t_4[nData4];
+Double_t sig_SL[nData4];
+
 void ReadInputMeasurement();
 void ReadInputHSModel();
 void ReadInputGuzey();
 void ReadInputHeikki();
+void CalculateSTARlightPredictions();
 
 void PhenoPredictions()
 {
+    CalculateSTARlightPredictions();
+
     ReadInputMeasurement();
 
     ReadInputHSModel();
@@ -128,7 +141,7 @@ void PhenoPredictions()
     gr1_inc_n->SetMarkerStyle(20);
     gr1_inc_n->SetMarkerColor(kBlue);
     gr1_inc_n->SetLineStyle(2);
-    gr1_inc_n->SetLineColor(kBlue);
+    gr1_inc_n->SetLineColor(217);
     gr1_inc_n->SetLineWidth(4);
     // With hotspots:
     TGraphErrors *gr1_inc_hs = new TGraphErrors(nData1,abs_t_1,inc_hs,NULL,inc_hs_err);
@@ -172,6 +185,12 @@ void PhenoPredictions()
     gr3_noflu->SetLineColor(222);
     gr3_noflu->SetLineWidth(4);
 
+    // Define graphs for incoherent predictions of STARlight
+    TGraph *gr4_STARlight = new TGraph(nData4, abs_t_4, sig_SL);
+    gr4_STARlight->SetLineStyle(1);
+    gr4_STARlight->SetLineColor(215);
+    gr4_STARlight->SetLineWidth(3);
+
     // TStyle settings
     gStyle->SetOptStat(0);
     gStyle->SetOptTitle(0);
@@ -209,6 +228,9 @@ void PhenoPredictions()
     if(plot3){
         gr3_fluct->Draw("L SAME");
         gr3_noflu->Draw("L SAME");
+    }
+    if(plot4){
+        gr4_STARlight->Draw("L SAME");
     }
     if(plot1){
         gr1_inc_hs->Draw("CX SAME");
@@ -355,6 +377,72 @@ void ReadInputHeikki()
     }
     ifs.close();
     Printf("Predictions of Heikki's model loaded.");
+
+    return;
+}
+
+void CalculateSTARlightPredictions(){
+
+    TH1D *hSL = new TH1D("hSL","hSL",nData4,0.0,2.0);
+
+    TFile *f = TFile::Open("DependenceOnT/SL_simulations_10-19-2021/tree.root","read");
+    if(f) Printf("File %s loaded.", f->GetName());
+
+    TList *l = (TList*) f->Get("TreeList");
+    if(l) Printf("List %s loaded.", l->GetName()); 
+
+    TTree *tPtVMPom = (TTree*)l->FindObject("tPtVMPom");
+    if(tPtVMPom) Printf("Tree %s loaded.", tPtVMPom->GetName());
+
+    tPtVMPom->SetBranchAddress("fPt2Pm", &fPt2Pm);
+    tPtVMPom->SetBranchAddress("fPt2VM", &fPt2VM);
+
+    Int_t nGenEv = tPtVMPom->GetEntries();
+    Printf("Tree contains %i entries.", nGenEv);
+
+    for(Int_t iEntry = 0; iEntry < nGenEv; iEntry++){
+        tPtVMPom->GetEntry(iEntry);
+        hSL->Fill(fPt2Pm);
+    }
+
+    Int_t opt = 0;
+
+    if(opt == 0){
+        // option 0 ~ Guillermo
+        Double_t L = nGenEv / SigmaIncSL;
+        for(Int_t i = 0; i < nData4; i++){
+            abs_t_4[i] = hSL->GetBinCenter(i+1);
+            sig_SL[i] = hSL->GetBinContent(i+1) / L;
+        }
+        // Check the value of the integral
+        Double_t Integral = 0;
+        for(Int_t iBin = 0; iBin < nData4; iBin++){
+            Integral += sig_SL[iBin];
+        }
+        Printf("Integral is %.4f.\n", Integral);
+
+    } else if(opt == 1){
+        // option 1 ~ me
+        hSL->Scale(SigmaIncSL/hSL->Integral());
+        // Check the value of the integral
+        Double_t Integral = 0;
+        for(Int_t iBin = 1; iBin <= nData4; iBin++){
+            Integral += hSL->GetBinContent(iBin) * (hSL->GetBinLowEdge(iBin+1) - hSL->GetBinLowEdge(iBin));
+        }
+        Printf("Integral is %.3f (%.3f).\n", Integral, hSL->Integral());
+
+        for(Int_t i = 0; i < nData4; i++){
+            abs_t_4[i] = hSL->GetBinCenter(i+1);
+            sig_SL[i] = hSL->GetBinContent(i+1);
+        }
+    }
+
+    Bool_t plot = kTRUE;
+    if(plot){
+        TCanvas *cSL = new TCanvas("cSL","cSL",900,600);
+        cSL->SetLogy();
+        hSL->Draw();
+    }
 
     return;
 }
