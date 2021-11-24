@@ -1,0 +1,2 @@
+fD[%] 	CohCh 	Err 	IncCh 	Err 	CohNe 	Err 	IncNe 	Err 
+Total:	2.0359	0.0195	2.1741	0.0210	4.3421	0.0562	4.7496	0.0616

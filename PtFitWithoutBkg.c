@@ -9,7 +9,7 @@
 
 //#######################################
 // Options to set:
-Int_t iCohJShape = 2;
+Int_t iCohJShape = 0;
 // 0 => classic histogram from STARlight (R_A = 6.624 fm)
 // 1 => histogram from STARlight generated with R_A = 7.53 fm
 // 2 => fit using "Gaussian shape" pT * exp(-b * pT^2)
@@ -217,7 +217,7 @@ void DoPtFitNoBkg(){
     Double_t fDCohCh, fDCohChErr, fDIncCh, fDIncChErr, fDCohNe, fDCohNeErr, fDIncNe, fDIncNeErr;
     char ch[8];
     ifstream file_in;
-    file_in.open("Results/FeedDown/FeedDown_PtFit.txt");
+    file_in.open("Results/FeedDown/FeedDown_PtFit_ratMeas.txt");
     if(!(file_in.fail())){
         // Read data from the file
         Int_t i = 0;

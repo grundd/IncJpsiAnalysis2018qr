@@ -15,7 +15,7 @@ TString path = "Results/FeedDown/";
 
 void CalculateFD_Total(Bool_t bAOD = kFALSE);
 void CalculateFD_PtBins();
-void CalculateFD_PtFit(Bool_t bAOD = kFALSE);
+void CalculateFD_PtFit(Bool_t bAOD = kFALSE, Bool_t bRatioMeasured = kFALSE);
 
 // Temporary variables when loading the data:
 Int_t iBin;
@@ -40,6 +40,7 @@ Double_t sig_SL_j_inc = 5.247; //mb
 Double_t sig_SL_j_coh = 12.504;//mb
 Double_t sig_SL_p_inc = 0.92;  //mb
 Double_t sig_SL_p_coh = 2.52;  //mb
+Double_t ratio_coh = 0.18; // from Michal's paper
 // Weighing of SL cross sections by NGen(bin)/NGen(tot)
 // order: JInc 	PCohCh 	PIncCh 	PCohNe 	PIncNe 
 Double_t NGen_tot[5] = { 0 };
@@ -61,11 +62,17 @@ void FeedDown(){
     // Pt bins
     CalculateFD_PtBins();
 
-    // For PtFit
+    // For PtFit, with ratio from SL
     // ESDs
-    CalculateFD_PtFit(kFALSE);
+    CalculateFD_PtFit(kFALSE, kFALSE);
     // AODs
-    CalculateFD_PtFit(kTRUE);
+    CalculateFD_PtFit(kTRUE, kFALSE);
+
+    // For PtFit, with measured ratio
+    // ESDs
+    CalculateFD_PtFit(kFALSE, kTRUE);
+    // AODs
+    CalculateFD_PtFit(kTRUE, kTRUE);
 
     return;
 }
@@ -266,7 +273,7 @@ void CalculateFD_PtBins(){
     return;
 }
 
-void CalculateFD_PtFit(Bool_t bAOD){
+void CalculateFD_PtFit(Bool_t bAOD, Bool_t bRatioMeasured){
 
     // 1) Load values of AxE for all datasets
     TString str;
@@ -295,8 +302,10 @@ void CalculateFD_PtFit(Bool_t bAOD){
     Printf("Input file loaded...");
 
     // 2) Define output file
-    if(bAOD == kFALSE) str = Form("%sFeedDown_PtFit.txt", path.Data());
-    else str = Form("%sFeedDown_PtFit_AOD.txt", path.Data());
+    str = Form("%sFeedDown_PtFit", path.Data());
+    if(bAOD) str.Append("_AOD");
+    if(bRatioMeasured) str.Append("_ratMeas");
+    str.Append(".txt");
     ofstream outfile(str.Data());
     outfile << std::fixed << std::setprecision(4);
     outfile << Form("fD[%%] \tCohCh \tErr \tIncCh \tErr \tCohNe \tErr \tIncNe \tErr \n");
@@ -304,9 +313,11 @@ void CalculateFD_PtFit(Bool_t bAOD){
     // 3) Calculate fD correction
     for(Int_t i = 0; i < 1; i++){
         // all values of fD in percent already
-        fD_coh_ch_val[i] = sig_SL_p_coh / sig_SL_j_coh * AxE_Psi2s_val[0][i] / AxE_CohJ_val * BR_ch * 100;
+        if(!bRatioMeasured) fD_coh_ch_val[i] = sig_SL_p_coh / sig_SL_j_coh * AxE_Psi2s_val[0][i] / AxE_CohJ_val * BR_ch * 100;
+        else fD_coh_ch_val[i] = ratio_coh * AxE_Psi2s_val[0][i] / AxE_CohJ_val * BR_ch * 100;
         fD_inc_ch_val[i] = sig_SL_p_inc / sig_SL_j_inc * AxE_Psi2s_val[1][i] / AxE_IncJ_val[i] * BR_ch * 100;
-        fD_coh_ne_val[i] = sig_SL_p_coh / sig_SL_j_coh * AxE_Psi2s_val[2][i] / AxE_CohJ_val * BR_ne * 100;
+        if(!bRatioMeasured) fD_coh_ne_val[i] = sig_SL_p_coh / sig_SL_j_coh * AxE_Psi2s_val[2][i] / AxE_CohJ_val * BR_ne * 100;
+        else fD_coh_ne_val[i] = ratio_coh * AxE_Psi2s_val[2][i] / AxE_CohJ_val * BR_ne * 100;
         fD_inc_ne_val[i] = sig_SL_p_inc / sig_SL_j_inc * AxE_Psi2s_val[3][i] / AxE_IncJ_val[i] * BR_ne * 100;
         if(AxE_Psi2s_val[0][i] != 0){
             fD_coh_ch_err[i] = fD_coh_ch_val[i] * TMath::Sqrt(
