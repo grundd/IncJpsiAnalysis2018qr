@@ -30,11 +30,15 @@ Double_t SigSL_p_coh[2] = {2.526, 0}; //mb
 
 void CalculateNewCS(Int_t iMC);
 
-void STARlightCrossSections(){
+void STARlight_CrossSections(){
 
+    CalculateNewCS(0);
+
+    /*
     for(Int_t i = 0; i < 4; i++){
         CalculateNewCS(i);
     }
+    */
 
     return;
 }

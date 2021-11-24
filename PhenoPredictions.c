@@ -33,6 +33,8 @@ Bool_t plot4 = kTRUE;
 // 3 = Heikki's model
 // 4 = STARlight
 
+Int_t lineWidth = 2;
+
 // To read the values from the files:
 Double_t Sigma_val[nPtBins] = { 0 };
 Double_t Sigma_err_stat[nPtBins] = { 0 };
@@ -79,9 +81,7 @@ Double_t sig_inc_fluct[nData3];
 Double_t sig_inc_noflu[nData3];
 
 // STARlight predictions
-const Int_t nData4 = 100;
-Double_t fPt2VM, fPt2Pm;
-Double_t SigmaIncSL = 4.233;
+const Int_t nData4 = 50;
 Double_t abs_t_4[nData4];
 Double_t sig_SL[nData4];
 
@@ -89,12 +89,10 @@ void ReadInputMeasurement();
 void ReadInputHSModel();
 void ReadInputGuzey();
 void ReadInputHeikki();
-void CalculateSTARlightPredictions();
+void ReadInputSTARlight();
 
 void PhenoPredictions()
 {
-    CalculateSTARlightPredictions();
-
     ReadInputMeasurement();
 
     ReadInputHSModel();
@@ -102,6 +100,8 @@ void PhenoPredictions()
     ReadInputGuzey();
 
     ReadInputHeikki();
+
+    ReadInputSTARlight();
 
     // Fill the histogram
     for(Int_t i = 0; i < nPtBins; i++){
@@ -142,14 +142,14 @@ void PhenoPredictions()
     gr1_inc_n->SetMarkerColor(kBlue);
     gr1_inc_n->SetLineStyle(2);
     gr1_inc_n->SetLineColor(217);
-    gr1_inc_n->SetLineWidth(4);
+    gr1_inc_n->SetLineWidth(lineWidth);
     // With hotspots:
     TGraphErrors *gr1_inc_hs = new TGraphErrors(nData1,abs_t_1,inc_hs,NULL,inc_hs_err);
     gr1_inc_hs->SetMarkerStyle(20);
     gr1_inc_hs->SetMarkerColor(kRed);  
     gr1_inc_hs->SetLineStyle(7);
     gr1_inc_hs->SetLineColor(kRed);
-    gr1_inc_hs->SetLineWidth(4);    
+    gr1_inc_hs->SetLineWidth(lineWidth);    
 
     // Define graphs for incoherent predictions of Guzey's model
     // First scale the values (Guzey uses nb instead of mb)
@@ -168,10 +168,10 @@ void PhenoPredictions()
     }
     gr2_min->SetLineStyle(10);
     gr2_min->SetLineColor(8);
-    gr2_min->SetLineWidth(3);
+    gr2_min->SetLineWidth(lineWidth);
     gr2_max->SetLineStyle(10);
     gr2_max->SetLineColor(8);
-    gr2_max->SetLineWidth(3);
+    gr2_max->SetLineWidth(lineWidth);
     gr2_area->SetFillStyle(3013);
     gr2_area->SetFillColor(212);
 
@@ -180,16 +180,16 @@ void PhenoPredictions()
     TGraph *gr3_noflu = new TGraph(nData3, abs_t_3, sig_inc_noflu);
     gr3_fluct->SetLineStyle(9);
     gr3_fluct->SetLineColor(1);
-    gr3_fluct->SetLineWidth(3);
+    gr3_fluct->SetLineWidth(lineWidth);
     gr3_noflu->SetLineStyle(2);
     gr3_noflu->SetLineColor(222);
-    gr3_noflu->SetLineWidth(4);
+    gr3_noflu->SetLineWidth(lineWidth);
 
     // Define graphs for incoherent predictions of STARlight
     TGraph *gr4_STARlight = new TGraph(nData4, abs_t_4, sig_SL);
     gr4_STARlight->SetLineStyle(1);
     gr4_STARlight->SetLineColor(215);
-    gr4_STARlight->SetLineWidth(3);
+    gr4_STARlight->SetLineWidth(lineWidth);
 
     // TStyle settings
     gStyle->SetOptStat(0);
@@ -238,17 +238,20 @@ void PhenoPredictions()
     }
     grData_stat->Draw("P SAME");
     // Legend
-    TLegend *l = new TLegend(0.15,0.18,0.6,0.52);
-    if(plot1){
-        l->AddEntry(gr1_inc_hs,"CCK: GG-hs","L");
-        l->AddEntry(gr1_inc_n,"CCK: GG-n","L");
-    }
-    if(plot2){
-        l->AddEntry(gr2_min,"GSZ: el. + diss.","L");
+    TLegend *l = new TLegend(0.15,0.18,0.48,0.56);
+    if(plot4){
+        l->AddEntry(gr4_STARlight,"STARlight","L");
     }
     if(plot3){
         l->AddEntry(gr3_fluct,"MS: IPsat flu.","L");
         l->AddEntry(gr3_noflu,"MS: IPsat no flu.","L");
+    }
+    if(plot2){
+        l->AddEntry(gr2_area,"GSZ: el. + diss.","F");
+    }
+    if(plot1){
+        l->AddEntry(gr1_inc_hs,"CCK: GG-hs","L");
+        l->AddEntry(gr1_inc_n,"CCK: GG-n","L");
     }
     l->AddEntry(grData_stat,"ALICE measurement","EP");
     l->SetTextSize(0.048);
@@ -381,68 +384,18 @@ void ReadInputHeikki()
     return;
 }
 
-void CalculateSTARlightPredictions(){
+void ReadInputSTARlight(){
 
-    TH1D *hSL = new TH1D("hSL","hSL",nData4,0.0,2.0);
-
-    TFile *f = TFile::Open("DependenceOnT/SL_simulations_10-19-2021/tree.root","read");
-    if(f) Printf("File %s loaded.", f->GetName());
-
-    TList *l = (TList*) f->Get("TreeList");
-    if(l) Printf("List %s loaded.", l->GetName()); 
-
-    TTree *tPtVMPom = (TTree*)l->FindObject("tPtVMPom");
-    if(tPtVMPom) Printf("Tree %s loaded.", tPtVMPom->GetName());
-
-    tPtVMPom->SetBranchAddress("fPt2Pm", &fPt2Pm);
-    tPtVMPom->SetBranchAddress("fPt2VM", &fPt2VM);
-
-    Int_t nGenEv = tPtVMPom->GetEntries();
-    Printf("Tree contains %i entries.", nGenEv);
-
-    for(Int_t iEntry = 0; iEntry < nGenEv; iEntry++){
-        tPtVMPom->GetEntry(iEntry);
-        hSL->Fill(fPt2Pm);
+    // read the input file for Guzey's model predictions
+    ifstream ifs;
+    ifs.open("PhenoPredictions/STARlight/inc_tDep.txt");
+    for(Int_t i = 0; i < nData4; i++){
+        ifs >> abs_t_4[i];
+        ifs >> sig_SL[i];
+        //std::cout << i << " " << abs_t_4[i] << " " << sig_SL[i] << endl;
     }
-
-    Int_t opt = 0;
-
-    if(opt == 0){
-        // option 0 ~ Guillermo
-        Double_t L = nGenEv / SigmaIncSL;
-        for(Int_t i = 0; i < nData4; i++){
-            abs_t_4[i] = hSL->GetBinCenter(i+1);
-            sig_SL[i] = hSL->GetBinContent(i+1) / L;
-        }
-        // Check the value of the integral
-        Double_t Integral = 0;
-        for(Int_t iBin = 0; iBin < nData4; iBin++){
-            Integral += sig_SL[iBin];
-        }
-        Printf("Integral is %.4f.\n", Integral);
-
-    } else if(opt == 1){
-        // option 1 ~ me
-        hSL->Scale(SigmaIncSL/hSL->Integral());
-        // Check the value of the integral
-        Double_t Integral = 0;
-        for(Int_t iBin = 1; iBin <= nData4; iBin++){
-            Integral += hSL->GetBinContent(iBin) * (hSL->GetBinLowEdge(iBin+1) - hSL->GetBinLowEdge(iBin));
-        }
-        Printf("Integral is %.3f (%.3f).\n", Integral, hSL->Integral());
-
-        for(Int_t i = 0; i < nData4; i++){
-            abs_t_4[i] = hSL->GetBinCenter(i+1);
-            sig_SL[i] = hSL->GetBinContent(i+1);
-        }
-    }
-
-    Bool_t plot = kTRUE;
-    if(plot){
-        TCanvas *cSL = new TCanvas("cSL","cSL",900,600);
-        cSL->SetLogy();
-        hSL->Draw();
-    }
+    ifs.close();
+    Printf("STARlight predictions loaded.");
 
     return;
 }
