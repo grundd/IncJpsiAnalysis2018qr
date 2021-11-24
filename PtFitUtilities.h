@@ -33,6 +33,8 @@ using namespace RooFit;
 TString NamesPDFs[6] = {"hCohJ","hIncJ","hCohP","hIncP","hBkg","hDiss"};
 TString OutputPDFs = "Trees/PtFit/";
 
+Double_t fPtGenerated;
+
 Double_t fPtLow = 0.0;
 Double_t fPtUpp = 2.0;
 Int_t nBins;
@@ -165,7 +167,7 @@ void PreparePDFs_MC(){
 
     TFile *file = TFile::Open(Form("%sPDFs_MC_Binning%i.root", OutputPDFs.Data(), BinningOpt),"read");
     if(file){
-        Printf("MC PDFs for this binning already created.");
+        Printf("MC PDFs with this binning already created.");
         return;
     }
 
@@ -204,6 +206,70 @@ void PreparePDFs_MC(){
     // Save results to the output file
     // Create the output file
     TFile *f = new TFile(Form("%sPDFs_MC_Binning%i.root", OutputPDFs.Data(), BinningOpt),"RECREATE");
+    l->Write("HistList", TObject::kSingleKey);
+    f->ls();
+
+    return;
+}
+
+void PreparePDF_modRA(){
+
+    TFile *file = TFile::Open(Form("%sPDFs_MC_modRA_Binning%i.root", OutputPDFs.Data(), BinningOpt),"read");
+    if(file){
+        Printf("MC PDFs for modRA with this binning already created.");
+        return;
+    }
+
+    // ***************************************************************
+    // Go over MC data
+    // Define output histograms with predefined binning to create PDFs
+    TList *l = new TList();
+    TH1D *hCohJ_modRA = new TH1D("hCohJ_modRA", "hCohJ_modRA", nBins, ptEdges); 
+
+    // Fill the histogram
+    FillHistogramsMC(0, hCohJ_modRA);
+
+    // Correct the shape => calculate the ratios
+    TH1D *hGenOld2 = new TH1D("hGenOld2", "hGenOld2", nBins, ptEdges);
+    TH1D *hGenNew2 = new TH1D("hGenNew2", "hGenNew2", nBins, ptEdges);
+    TH1D *hRatios = NULL;    
+
+    TFile *fRatios = TFile::Open("Trees/STARlight/CoherentShape/trees_CoherentShape.root","read");
+    if(!fRatios){
+        Printf("File not found! Terminating...");
+        return;
+    }
+
+    TList *list = (TList*) fRatios->Get("OutputList");
+    if(list) Printf("List %s loaded.", list->GetName()); 
+
+    TTree *tGenOld2 = (TTree*)list->FindObject("tGenOld2");
+    if(tGenOld2) Printf("Tree %s loaded.", tGenOld2->GetName());
+    tGenOld2->SetBranchAddress("fPtGen", &fPtGenerated);
+
+    TTree *tGenNew2 = (TTree*)list->FindObject("tGenNew2");
+    if(tGenNew2) Printf("Tree %s loaded.", tGenNew2->GetName());
+    tGenNew2->SetBranchAddress("fPtGen", &fPtGenerated);
+
+    for(Int_t iEntry = 0; iEntry < tGenOld2->GetEntries(); iEntry++){
+        tGenOld2->GetEntry(iEntry);
+        hGenOld2->Fill(fPtGenerated);
+        tGenNew2->GetEntry(iEntry);
+        hGenNew2->Fill(fPtGenerated);
+    }
+    // Calculate the ratios
+    hRatios = (TH1D*)hGenNew2->Clone("hRatios");
+    hRatios->SetTitle("hRatios");
+    hRatios->Sumw2();
+    hRatios->Divide(hGenOld2);
+    // Correct the shape of reconstructed events by the ratios
+    hCohJ_modRA->Multiply(hRatios);
+
+    l->Add(hCohJ_modRA);
+    // ***************************************************************
+    // Save results to the output file
+    // Create the output file
+    TFile *f = new TFile(Form("%sPDFs_MC_modRA_Binning%i.root", OutputPDFs.Data(), BinningOpt),"RECREATE");
     l->Write("HistList", TObject::kSingleKey);
     f->ls();
 

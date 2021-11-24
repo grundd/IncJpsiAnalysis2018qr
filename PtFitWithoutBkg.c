@@ -7,7 +7,14 @@
 #include "AnalysisManager.h"
 #include "PtFitUtilities.h"
 
-using namespace RooFit;
+//#######################################
+// Options to set:
+Int_t iCohJShape = 0;
+// 0 => classic histogram from STARlight (R_A = 6.624 fm)
+// 1 => histogram from STARlight generated with R_A = 7.53 fm
+// 2 => fit using "Gaussian shape" pT * exp(-b * pT^2)
+// 3 => fit using STARlight formfactor, R_A left free
+//#######################################
 
 // Main function
 void PrepareDataTree();
@@ -33,6 +40,9 @@ void PtFitWithoutBkg(){
     SubtractBackground();
 
     PreparePDFs_MC();
+
+    //if(iCohJShape == 1) 
+    PreparePDF_modRA();
 
     DoPtFitNoBkg();
 
@@ -98,8 +108,23 @@ void DoPtFitNoBkg(){
 
     // Load histograms
     // 1) kCohJpsiToMu
-    TH1D *hCohJ = (TH1D*)list->FindObject(NamesPDFs[0].Data());
-    if(hCohJ) Printf("Histogram %s loaded.", hCohJ->GetName());
+    TH1D *hCohJ = NULL;
+    if(iCohJShape == 0){
+
+        hCohJ = (TH1D*)list->FindObject(NamesPDFs[0].Data());
+        if(hCohJ) Printf("Histogram %s loaded.", hCohJ->GetName());
+
+    } else if(iCohJShape == 1){
+
+        TFile *f_modRA = TFile::Open(Form("%sPDFs_MC_modRA_Binning%i.root", OutputPDFs.Data(), BinningOpt),"read");
+        if(f_modRA) Printf("Input file %s loaded.", f_modRA->GetName()); 
+
+        TList *l_modRA = (TList*) f_modRA->Get("HistList");
+        if(l_modRA) Printf("List %s loaded.", l_modRA->GetName()); 
+
+        hCohJ = (TH1D*)l_modRA->FindObject("hCohJ_modRA");
+        if(hCohJ) Printf("Histogram %s loaded.", hCohJ->GetName());
+    }
 
     // 2) kIncohJpsiToMu
     TH1D *hIncJ = (TH1D*)list->FindObject(NamesPDFs[1].Data());
@@ -215,7 +240,7 @@ void DoPtFitNoBkg(){
     // ###############################################################################################################
     // ###############################################################################################################
     // 10) Output to text file
-    TString *str = new TString(Form("%sPtFitNoBkg_Binning%i_%ibins", OutputPtFitWithoutBkg.Data(),BinningOpt, nPtBins));
+    TString *str = new TString(Form("%s%ibins_Binn%i_CohSh%i", OutputPtFitWithoutBkg.Data(), nPtBins, BinningOpt, iCohJShape));
     // Integrals of the PDFs in the whole pt range 
     fPt.setRange("fPtAll",0.0,2.0);
     RooAbsReal *fN_CohJ_all = hPDFCohJ.createIntegral(fPt,NormSet(fPt),Range("fPtAll"));
@@ -465,7 +490,7 @@ void DoPtFitNoBkg(){
     Printf("*** Results printed to %s. ***", (*str + "_fD_TeX.txt").Data());
 
     // Print to another file from which the values of fC for CalculateCrossSection.c will be loaded
-    str = new TString(Form("%sfC_Binning%i_%ibins", OutputPtFitWithoutBkg.Data(),BinningOpt, nPtBins));
+    str = new TString(Form("%sfC_%ibins_Binn%i_CohSh%i", OutputPtFitWithoutBkg.Data(), nPtBins, BinningOpt, iCohJShape));
     ofstream outfile_fC((*str + ".txt").Data());
     outfile_fC << std::fixed << std::setprecision(3);
     outfile_fC << Form("Bin \tfC [%%]\terr \n");
@@ -476,7 +501,7 @@ void DoPtFitNoBkg(){
     Printf("*** Results printed to %s. ***", (*str + ".txt").Data());
 
     // Print to another file from which the values of fD for CalculateCrossSection.c will be loaded
-    str = new TString(Form("%sfD_Binning%i_%ibins", OutputPtFitWithoutBkg.Data(),BinningOpt, nPtBins));
+    str = new TString(Form("%sfD_%ibins_Binn%i_CohSh%i", OutputPtFitWithoutBkg.Data(), nPtBins, BinningOpt, iCohJShape));
     ofstream outfile_fD((*str + ".txt").Data());
     outfile_fD << std::fixed << std::setprecision(1);
     outfile_fD << Form("Bin \tfD [%%]\terr \n");
@@ -497,9 +522,7 @@ void DoPtFitNoBkg(){
     DrawCorrelationMatrix(cCM,ResFit);
 
     // 11.2) Draw the pt fit
-    TCanvas *cPt = new TCanvas("cPt","cPt",900,600);
-    SetCanvas(cPt, kTRUE); 
-
+    // Without log scale
     RooPlot* PtFrame = fPt.frame(Title("Pt fit"));
     DHisData.plotOn(PtFrame,Name("DSetData"),MarkerStyle(20), MarkerSize(1.),Binning(fPtBins));
     Mod.plotOn(PtFrame,Name("hPDFCohJ"),Components(hPDFCohJ), LineColor(222),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
@@ -509,7 +532,7 @@ void DoPtFitNoBkg(){
     Mod.plotOn(PtFrame,Name("hPDFDiss"),Components(hPDFDiss), LineColor(15),    LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
     Mod.plotOn(PtFrame,Name("Mod"),                           LineColor(215),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
 
-    PtFrame->SetAxisRange(0,2,"X");
+    PtFrame->SetAxisRange(0,1,"X");
     // Set X axis
     PtFrame->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
     PtFrame->GetXaxis()->SetTitleSize(0.05);
@@ -521,11 +544,47 @@ void DoPtFitNoBkg(){
     PtFrame->GetYaxis()->SetTitleOffset(0.95);
     PtFrame->GetYaxis()->SetLabelSize(0.05);
     PtFrame->GetYaxis()->SetLabelOffset(0.01);
-    PtFrame->Draw("][");
+    PtFrame->GetYaxis()->SetMaxDigits(2);
+    PtFrame->GetYaxis()->SetDecimals(1);
+    // Draw
+    TCanvas *cPt = new TCanvas("cPt","cPt",900,600);
+    SetCanvas(cPt, kFALSE); 
+    cPt->SetTopMargin(0.06);
+    cPt->SetLeftMargin(0.10);
+    PtFrame->Draw("]["); 
+
+    // With log scale
+    RooPlot* PtFrameLog = fPt.frame(Title("Pt fit log"));
+    DHisData.plotOn(PtFrameLog,Name("DSetData"),MarkerStyle(20), MarkerSize(1.),Binning(fPtBins));
+    Mod.plotOn(PtFrameLog,Name("hPDFCohJ"),Components(hPDFCohJ), LineColor(222),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrameLog,Name("hPDFIncJ"),Components(hPDFIncJ), LineColor(kRed),  LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrameLog,Name("hPDFCohP"),Components(hPDFCohP), LineColor(222),   LineStyle(7),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrameLog,Name("hPDFIncP"),Components(hPDFIncP), LineColor(kRed),  LineStyle(7),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrameLog,Name("hPDFDiss"),Components(hPDFDiss), LineColor(15),    LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    Mod.plotOn(PtFrameLog,Name("Mod"),                           LineColor(215),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+
+    PtFrameLog->SetAxisRange(0,2,"X");
+    // Set X axis
+    PtFrameLog->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
+    PtFrameLog->GetXaxis()->SetTitleSize(0.05);
+    PtFrameLog->GetXaxis()->SetLabelSize(0.05);
+    // Set Y axis
+    //PtFrame->GetYaxis()->SetTitle(Form("Counts per bin"));
+    PtFrameLog->GetYaxis()->SetTitle(Form("d#it{N}/d#it{p}_{T}"));
+    PtFrameLog->GetYaxis()->SetTitleSize(0.05);
+    PtFrameLog->GetYaxis()->SetTitleOffset(0.95);
+    PtFrameLog->GetYaxis()->SetLabelSize(0.05);
+    PtFrameLog->GetYaxis()->SetLabelOffset(0.01);
+    PtFrameLog->GetYaxis()->SetMaxDigits(2);
+    PtFrameLog->GetYaxis()->SetDecimals(1);
+    // Draw
+    TCanvas *cPtLog = new TCanvas("cPtLog","cPtLog",900,600);
+    SetCanvas(cPtLog, kTRUE);
+    PtFrameLog->Draw("][");
 
     // 12) Draw the legends
     // Legend 1
-    TLegend *l1 = new TLegend(0.16,0.71,0.52,0.935);
+    TLegend *l1 = new TLegend(0.16,0.705,0.52,0.93);
     l1->SetHeader("ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
     l1->AddEntry((TObject*)0,Form("J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
     l1->AddEntry((TObject*)0,Form("|#it{y}| < 0.8"),"");
@@ -533,10 +592,9 @@ void DoPtFitNoBkg(){
     l1->SetTextSize(0.05);
     l1->SetBorderSize(0); // no border
     l1->SetFillStyle(0);  // legend is transparent
-    l1->Draw();
 
     // Legend 2
-    TLegend *l2 = new TLegend(0.59,0.60,0.9,0.935);
+    TLegend *l2 = new TLegend(0.59,0.595,0.9,0.93);
     //leg2->SetTextSize(0.027);
     l2->AddEntry("DSetData","Data", "P");
     l2->AddEntry("Mod","sum","L");
@@ -549,14 +607,23 @@ void DoPtFitNoBkg(){
     l2->SetTextSize(0.043);
     l2->SetBorderSize(0);
     l2->SetFillStyle(0);
+
+    cPt->cd();
+    l1->Draw();
+    l2->Draw();
+
+    cPtLog->cd();
+    l1->Draw();
     l2->Draw();
 
     // 13) Print the results to pdf and png
-    str = new TString(Form("%sPtFitNoBkg_Binning%i", OutputPtFitWithoutBkg.Data(),BinningOpt));
+    str = new TString(Form("%sBinn%i_CohSh%i", OutputPtFitWithoutBkg.Data(), BinningOpt, iCohJShape));
     cCM->Print((*str + "_CM.pdf").Data());
     cCM->Print((*str + "_CM.png").Data());
     cPt->Print((*str + ".pdf").Data());
     cPt->Print((*str + ".png").Data());
+    cPtLog->Print((*str + "_log.pdf").Data());
+    cPtLog->Print((*str + "_log.png").Data());
 
     return;
 }

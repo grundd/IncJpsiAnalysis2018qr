@@ -273,8 +273,8 @@ void CalculateCrossSectionBins(Int_t iFeedDown){
     Printf("2) AxE from kIncohJpsiToMu for %ibins loaded.", nPtBins);
 
     // 3) Load all FD corrections per bin
-    TString str_FD;
-    if(iFeedDown == 0) str_FD = Form("Results/PtFitWithoutBkg/fD_Binning2_%ibins.txt", nPtBins);
+    TString str_FD; 
+    if(iFeedDown == 0) str_FD = Form("Results/PtFitWithoutBkg/fD_%ibins_Binn2_CohSh0.txt", nPtBins);
     else str_FD = Form("Results/FeedDown/FeedDown_%ibins.txt", nPtBins);
     ifs.open(str_FD.Data());
     // Read data from the file
@@ -327,7 +327,7 @@ void CalculateCrossSectionBins(Int_t iFeedDown){
     }
 
     // 4) Load FC corr per bin
-    TString str_FC = Form("Results/PtFitWithoutBkg/fC_Binning2_%ibins.txt", nPtBins);
+    TString str_FC = Form("Results/PtFitWithoutBkg/fC_%ibins_Binn2_CohSh0.txt", nPtBins);
     ifs.open(str_FC.Data());
     // Read data from the file
     if(!ifs.fail()){
