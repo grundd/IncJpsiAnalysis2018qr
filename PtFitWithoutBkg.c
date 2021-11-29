@@ -2,14 +2,17 @@
 // David Grund, Sep 27, 2021
 
 // roofit headers
+#include "RooAbsPdf.h"
 #include "RooCBShape.h"
+#include "RooTFnBinding.h"
+#include "RooRealSumPdf.h"
 // my headers
 #include "AnalysisManager.h"
 #include "PtFitUtilities.h"
 
 //#######################################
 // Options to set:
-Int_t iCohJShape = 0;
+Int_t iCohJShape = 3;
 // 0 => classic histogram from STARlight (R_A = 6.624 fm)
 // 1 => histogram from STARlight generated with R_A = 7.53 fm
 // 2 => fit using "Gaussian shape" pT * exp(-b * pT^2)
@@ -34,6 +37,31 @@ Double_t N_Jpsi_val = 0;
 Double_t N_Jpsi_err = 0;
 Double_t N_Bkgr_val = 0;
 Double_t N_Bkgr_err = 0;
+
+const Double_t hbarC = 0.197; // GeV*fm
+const Double_t PbAtomicNumber = 208.; // Pb
+
+Double_t VMD_model(Double_t *pT, Double_t *par){
+    // input and parameters
+    Double_t q = pT[0];     // q = sqrt of transferred momentum |t|, unit is GeV 
+    if (q == 0.) return 0.; // protection against floating point exception
+    //Double_t norm = par[2]; // normalization
+    Double_t R_A = par[0];  // fm (radius of the lead nucleus, SL: R_A = 6.62 fm)
+    Double_t a = par[1];    // fm (SL: a = 0.7 fm)
+    // computation of the form factor
+    Double_t K = 4.0 * TMath::Pi() * hbarC * hbarC * hbarC / PbAtomicNumber; // Gev^3*fm^3
+    Double_t qR_A = q * R_A / hbarC;                        // unit dimension is zero
+    Double_t F1 = K / (q * q * q);                          // fm^3
+    Double_t F2 = TMath::Sin(qR_A) - qR_A*TMath::Cos(qR_A); // unit dimension is zero
+    Double_t F3 = 1 + (a * a * q * q / (hbarC*hbarC));      // unit dimension is zero
+    if (F3 == 0.) return 0.; // protection against floating point exception 
+    Double_t FF = F1 * F2 / F3;
+
+    return FF * FF;
+}
+Double_t Zero_func(Double_t pT){
+    return 0.;
+}
 
 void PtFitWithoutBkg(){
 
@@ -154,19 +182,31 @@ void DoPtFitNoBkg(){
     // 1) kCohJpsiToMu
     RooDataHist DHisCohJ("DHisCohJ","DHisCohJ",fPt,hCohJ);
     RooHistPdf  hPDFCohJ("hPDFCohJ","hPDFCohJ",fSetOfVariables,DHisCohJ,0);
-    RooGenericPdf *gPDFCohJ = NULL;
+
     // iCohJShape == 2 => Fit with pT * exp(-b * pT^2)
-    // iCohJShape == 3 => Fit with STARlight form factor and R_A left free
     RooRealVar par_b("par_b","b",100.,1.,500.);
-    RooRealVar R_A("R_A","R_A",6.624,1.,12.); // 6.624 = original SL value
-    if(iCohJShape == 2){
-        gPDFCohJ = new RooGenericPdf("gPDFCohJ","gPDFCohJ","fPt*exp(-par_b*pow(fPt,2))",RooArgSet(fPt,par_b));
-    } else if(iCohJShape == 3){
-        // ... not working ...
-        gPDFCohJ = new RooGenericPdf("gPDFCohJ","gPDFCohJ",
-        "1e17 / 208 / pow(fPt,6) / pow((1 + 0.49*fPt),2) * pow((sin(fPt*R_A) - fPt*R_A*cos(fPt*R_A)), 2)",
-        RooArgSet(fPt,R_A));
-    }
+    RooGenericPdf *gPDFCohJ = new RooGenericPdf("gPDFCohJ","gPDFCohJ","fPt*exp(-par_b*pow(fPt,2))",RooArgSet(fPt,par_b));
+    
+    // iCohJShape == 3 => Fit with STARlight form factor and R_A left free
+    // https://root.cern.ch/download/doc/RooFit_Users_Manual_2.91-33.pdf
+    // https://root-forum.cern.ch/t/bind-tf1-into-roofit-pdf-using-bindpdf/26623
+    // https://root-forum.cern.ch/t/defining-a-roogenericpdf-from-a-rooaddition-or-any-rooabsreal/20483 
+    // https://root-forum.cern.ch/t/roofit-fitting-a-tf1-binded-function/7656
+
+    // Create RooAbsReal from a TF1 function defined using C++ function VMD_model()
+    TF1 *fFormFactorSL = new TF1("fFormFactorSL",VMD_model,fPtLow,fPtUpp,2); // 2 = number of parameters
+    RooRealVar R_A("R_A","R_A",6.624,1.,12.); // 6.624 fm = original SL value
+    RooRealVar a("a","a", 0.7, 0.7, 0.7); // 0.7 fm = SL value
+    a.setConstant(kTRUE);
+    //RooRealVar norm("norm","norm",1e3,0,1e5);
+    RooAbsReal *absRealCohJ = bindFunction(fFormFactorSL, fPt, RooArgList(R_A, a));
+    // Create zero function
+    TF1 *fZero = new TF1("fZero","Zero_func(x)",fPtLow,fPtUpp);
+    RooAbsReal *absRealZero = bindFunction(fZero, fPt);
+    // Convert RooAbsReal to PDF: use RooRealSumPdf
+    RooRealVar coef("coef","coef",1.,1.,1.);
+    coef.setConstant(kTRUE);
+    RooRealSumPdf *sumPdfCohJ = new RooRealSumPdf("sumPdfCohJ","sumPdfCohJ",RooArgList(*absRealCohJ,*absRealZero),RooArgList(coef));
 
     // 2) kIncohJpsiToMu
     RooDataHist DHisIncJ("DHisIncJ","DHisIncJ",fPt,hIncJ);
@@ -251,9 +291,14 @@ void DoPtFitNoBkg(){
             RooArgList(hPDFCohJ, hPDFIncJ, hPDFCohP, hPDFIncP, hPDFDiss),
             RooArgList(NCohJ, NIncJ, NCohP, NIncP, NDiss)
         );
-    } else if(iCohJShape == 2 || iCohJShape == 3){
+    } else if(iCohJShape == 2){
         Mod = new RooAddPdf("Mod","Sum of all PDFs",
             RooArgList(*gPDFCohJ, hPDFIncJ, hPDFCohP, hPDFIncP, hPDFDiss),
+            RooArgList(NCohJ, NIncJ, NCohP, NIncP, NDiss)
+        );        
+    } else if(iCohJShape == 3){
+        Mod = new RooAddPdf("Mod","Sum of all PDFs",
+            RooArgList(*sumPdfCohJ, hPDFIncJ, hPDFCohP, hPDFIncP, hPDFDiss),
             RooArgList(NCohJ, NIncJ, NCohP, NIncP, NDiss)
         );        
     }
@@ -269,7 +314,8 @@ void DoPtFitNoBkg(){
     fPt.setRange("fPtAll",0.0,2.0);
     RooAbsReal *fN_CohJ_all = NULL;
     if(iCohJShape == 0 || iCohJShape == 1) fN_CohJ_all = hPDFCohJ.createIntegral(fPt,NormSet(fPt),Range("fPtAll"));
-    else if(iCohJShape == 2 || iCohJShape == 3) fN_CohJ_all = gPDFCohJ->createIntegral(fPt,NormSet(fPt),Range("fPtAll"));
+    else if(iCohJShape == 2) fN_CohJ_all = gPDFCohJ->createIntegral(fPt,NormSet(fPt),Range("fPtAll"));
+    else if(iCohJShape == 3) fN_CohJ_all = sumPdfCohJ->createIntegral(fPt,NormSet(fPt),Range("fPtAll"));
     RooAbsReal *fN_IncJ_all = hPDFIncJ.createIntegral(fPt,NormSet(fPt),Range("fPtAll"));
     RooAbsReal *fN_Diss_all = hPDFDiss.createIntegral(fPt,NormSet(fPt),Range("fPtAll"));  
     RooAbsReal *fN_CohP_all = hPDFCohP.createIntegral(fPt,NormSet(fPt),Range("fPtAll")); 
@@ -278,7 +324,8 @@ void DoPtFitNoBkg(){
     fPt.setRange("fPtIES",0.2,2.0);
     RooAbsReal *fN_CohJ_ies = NULL;
     if(iCohJShape == 0 || iCohJShape == 1) fN_CohJ_ies = hPDFCohJ.createIntegral(fPt,NormSet(fPt),Range("fPtIES"));
-    else if(iCohJShape == 2 || iCohJShape == 3) fN_CohJ_ies = gPDFCohJ->createIntegral(fPt,NormSet(fPt),Range("fPtIES"));
+    else if(iCohJShape == 2) fN_CohJ_ies = gPDFCohJ->createIntegral(fPt,NormSet(fPt),Range("fPtIES"));
+    else if(iCohJShape == 3) fN_CohJ_ies = sumPdfCohJ->createIntegral(fPt,NormSet(fPt),Range("fPtIES"));
     RooAbsReal *fN_IncJ_ies = hPDFIncJ.createIntegral(fPt,NormSet(fPt),Range("fPtIES"));
     RooAbsReal *fN_Diss_ies = hPDFDiss.createIntegral(fPt,NormSet(fPt),Range("fPtIES"));  
     RooAbsReal *fN_CohP_ies = hPDFCohP.createIntegral(fPt,NormSet(fPt),Range("fPtIES")); 
@@ -287,7 +334,8 @@ void DoPtFitNoBkg(){
     fPt.setRange("fPtTo1",0.2,1.0);
     RooAbsReal *fN_CohJ_to1 = NULL;
     if(iCohJShape == 0 || iCohJShape == 1) fN_CohJ_to1 = hPDFCohJ.createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));
-    else if(iCohJShape == 2 || iCohJShape == 3) fN_CohJ_to1 = gPDFCohJ->createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));
+    else if(iCohJShape == 2) fN_CohJ_to1 = gPDFCohJ->createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));
+    else if(iCohJShape == 3) fN_CohJ_to1 = sumPdfCohJ->createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));
     RooAbsReal *fN_IncJ_to1 = hPDFIncJ.createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));
     RooAbsReal *fN_Diss_to1 = hPDFDiss.createIntegral(fPt,NormSet(fPt),Range("fPtTo1"));  
     RooAbsReal *fN_CohP_to1 = hPDFCohP.createIntegral(fPt,NormSet(fPt),Range("fPtTo1")); 
@@ -373,7 +421,8 @@ void DoPtFitNoBkg(){
         fPt.setRange(Form("fPtBin%i",i+1), ptBoundaries[i], ptBoundaries[i+1]);
         Printf("Now calculating for bin %i, (%.3f, %.3f) GeV", i+1, ptBoundaries[i], ptBoundaries[i+1]);
         if(iCohJShape == 0 || iCohJShape == 1) fN_CohJ_bins[i] = hPDFCohJ.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
-        else if(iCohJShape == 2 || iCohJShape == 3) fN_CohJ_bins[i] = gPDFCohJ->createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
+        else if(iCohJShape == 2) fN_CohJ_bins[i] = gPDFCohJ->createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
+        else if(iCohJShape == 3) fN_CohJ_bins[i] = sumPdfCohJ->createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
         fN_IncJ_bins[i] = hPDFIncJ.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
         fN_Diss_bins[i] = hPDFDiss.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
         fN_CohP_bins[i] = hPDFCohP.createIntegral(fPt,NormSet(fPt),Range(Form("fPtBin%i",i+1)));
@@ -558,8 +607,10 @@ void DoPtFitNoBkg(){
     DHisData.plotOn(PtFrame,Name("DSetData"),MarkerStyle(20), MarkerSize(1.),Binning(fPtBins));
     if(iCohJShape == 0 || iCohJShape == 1){
         Mod->plotOn(PtFrame,Name("hPDFCohJ"),Components(hPDFCohJ), LineColor(222),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
-    } else if(iCohJShape == 2 || iCohJShape == 3){
+    } else if(iCohJShape == 2){
         Mod->plotOn(PtFrame,Name("gPDFCohJ"),Components(*gPDFCohJ), LineColor(222),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    } else if(iCohJShape == 3){
+        Mod->plotOn(PtFrame,Name("sumPdfCohJ"),Components(*sumPdfCohJ), LineColor(222),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
     }
     Mod->plotOn(PtFrame,Name("hPDFIncJ"),Components(hPDFIncJ), LineColor(kRed),  LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
     Mod->plotOn(PtFrame,Name("hPDFCohP"),Components(hPDFCohP), LineColor(222),   LineStyle(7),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
@@ -593,8 +644,10 @@ void DoPtFitNoBkg(){
     DHisData.plotOn(PtFrameLog,Name("DSetData"),MarkerStyle(20), MarkerSize(1.),Binning(fPtBins));
     if(iCohJShape == 0 || iCohJShape == 1){
         Mod->plotOn(PtFrameLog,Name("hPDFCohJ"),Components(hPDFCohJ), LineColor(222),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
-    } else if(iCohJShape == 2 || iCohJShape == 3){
+    } else if(iCohJShape == 2){
         Mod->plotOn(PtFrameLog,Name("gPDFCohJ"),Components(*gPDFCohJ), LineColor(222),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
+    } else if(iCohJShape == 3){
+        Mod->plotOn(PtFrameLog,Name("sumPdfCohJ"),Components(*sumPdfCohJ), LineColor(222),   LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
     }
     Mod->plotOn(PtFrameLog,Name("hPDFIncJ"),Components(hPDFIncJ), LineColor(kRed),  LineStyle(1),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
     Mod->plotOn(PtFrameLog,Name("hPDFCohP"),Components(hPDFCohP), LineColor(222),   LineStyle(7),LineWidth(3),Normalization(sum_all,RooAbsReal::NumEvent));
@@ -635,10 +688,11 @@ void DoPtFitNoBkg(){
     // Legend 2
     TLegend *l2 = new TLegend(0.59,0.595,0.9,0.93);
     //leg2->SetTextSize(0.027);
-    l2->AddEntry("DSetData","Data", "P");
+    l2->AddEntry("DSetData","Data", "EP");
     l2->AddEntry("Mod","sum","L");
     if(iCohJShape == 0 || iCohJShape == 1) l2->AddEntry("hPDFCohJ","coherent J/#psi", "L");
-    else if(iCohJShape == 2 || iCohJShape == 3) l2->AddEntry("gPDFCohJ","coherent J/#psi", "L");
+    else if(iCohJShape == 2) l2->AddEntry("gPDFCohJ","coherent J/#psi", "L");
+    else if(iCohJShape == 3) l2->AddEntry("sumPdfCohJ","coherent J/#psi", "L");
     l2->AddEntry("hPDFIncJ","incoherent J/#psi", "L");
     l2->AddEntry("hPDFDiss","inc. J/#psi with nucl. diss.", "L");
     l2->AddEntry("hPDFCohP","J/#psi from coh. #psi(2#it{S}) decay", "L");
