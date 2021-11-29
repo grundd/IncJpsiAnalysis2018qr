@@ -27,7 +27,7 @@ Documents/
 *.ods
 
 # Ignore the whole STARlight folder
-STARlight/
+STARlight_src/
 
 .token.txt
 
