@@ -6,7 +6,7 @@
 Int_t nGenEv = 0;
 TString str = "";
 
-Int_t iProd = 6;
+Int_t iProd = 7;
 
 void STARlight_AnalyzeOutput(){
 
@@ -37,6 +37,11 @@ void STARlight_AnalyzeOutput(){
         // R_A set to 6.62 in src/nucleus.cpp 
         nGenEv = 109443;
         str = "Trees/STARlight/bkg_sudakov_2/";
+    } else if(iProd == 7){
+        // Sudakov corrections included in gammagammaleptonpair.cpp
+        // R_A set to 6.62 in src/nucleus.cpp 
+        nGenEv = 20000;
+        str = "Trees/STARlight/bkg_sudakov_3/";
     }
 
     PrepareTreesPtGammaVMPom(nGenEv, str);

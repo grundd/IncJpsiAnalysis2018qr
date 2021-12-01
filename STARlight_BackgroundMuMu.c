@@ -9,7 +9,7 @@
 #include "AnalysisManager.h"
 #include "STARlight_Utilities.h"
 
-TString str_folder = "Trees/STARlight/bkg_sudakov_2/";
+TString str_folder = "Trees/STARlight/bkg_sudakov_3/";
 Int_t nBins = 200;
 Double_t pT_low = 0.0;
 Double_t pT_upp = 1.0;
@@ -76,7 +76,8 @@ void CompareBkgShapesRecGen(){
 
         // Rapidity |y| < 0.8
         // Mass 3.0 < m < 3.2 GeV
-        if(EventPassedMCGen() && fMGen > 3.0 && fMGen < 3.2){
+        //if(EventPassedMCGen() && fMGen > 3.0 && fMGen < 3.2){
+        if(EventPassedMCGen()){
             nEvPassed++;
             hGen->Fill(fPtGen);
         } 
@@ -105,20 +106,20 @@ void CompareBkgShapesRecGen(){
     c->SetLeftMargin(0.1);
     c->SetLogy();
     // Vertical axis
-    hRec->GetYaxis()->SetTitle("#it{N}_{rec} or #it{N}_{gen}");
-    hRec->GetYaxis()->SetTitleSize(0.05);
-    hRec->GetYaxis()->SetTitleOffset(0.95);
-    hRec->GetYaxis()->SetLabelSize(0.05);
+    hGen->GetYaxis()->SetTitle("#it{N}_{rec} or #it{N}_{gen}");
+    hGen->GetYaxis()->SetTitleSize(0.05);
+    hGen->GetYaxis()->SetTitleOffset(0.95);
+    hGen->GetYaxis()->SetLabelSize(0.05);
     // Horizontal axis
-    hRec->GetXaxis()->SetTitle("#it{p}_{T}^{gen} (GeV/#it{c})");
-    hRec->GetXaxis()->SetTitleSize(0.05);
-    hRec->GetXaxis()->SetTitleOffset(1.2);
-    hRec->GetXaxis()->SetLabelSize(0.05);
+    hGen->GetXaxis()->SetTitle("#it{p}_{T}^{gen} (GeV/#it{c})");
+    hGen->GetXaxis()->SetTitleSize(0.05);
+    hGen->GetXaxis()->SetTitleOffset(1.2);
+    hGen->GetXaxis()->SetLabelSize(0.05);
     // Draw
-    hRec->SetLineColor(kBlue);
-    hRec->Draw("E1");
     hGen->SetLineColor(kRed);
-    hGen->Draw("E1 SAME"); 
+    hGen->Draw("E1"); 
+    //hRec->SetLineColor(kBlue);
+    //hRec->Draw("E1 SAME");
 
     // New bkg shape (with Sudakov corrections)
     NewBkgShape();
