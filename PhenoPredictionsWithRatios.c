@@ -173,15 +173,17 @@ void PhenoPredictionsWithRatios()
     gStyle->SetTextFont(42);
 
     TCanvas *cCSont = new TCanvas ("cCSont","Cross section dependence on p_{t}^{2}",1050,800);
-    SetPadMargins(gPad,0.13,0.02,0.045,0.11);
+    SetPadMargins(gPad,0.13,0.03,0.03,0.11);
     gStyle->SetOptStat("0");
     gStyle->SetOptFit(0);
 
     // Draw frame
     TH1F* fCSont = gPad->DrawFrame(0.04,
-        0.2*TMath::MinElement(grData_stat->GetN(),grData_stat->GetY()), // GetN() = get number of points stored in TGraph
+        //0.2*TMath::MinElement(grData_stat->GetN(),grData_stat->GetY()), // GetN() = get number of points stored in TGraph
+        0.00002,
         1.0,
-        1.4*TMath::MaxElement(grData_stat->GetN(),grData_stat->GetY()));
+        //1.4*TMath::MaxElement(grData_stat->GetN(),grData_stat->GetY()));
+        0.08);
     SetFrame(fCSont);
     fCSont->GetYaxis()->SetTickLength(0.025); 
     fCSont->GetXaxis()->SetTickLength(0.025); 
@@ -286,13 +288,13 @@ void PhenoPredictionsWithRatios()
     cCSont->Update(); 
 
     // ALICE PbPb label
-    TLegend *leg0 = SetLegend(0.22,0.93,0.88,0.97);
-    leg0->Draw();
+    //TLegend *leg0 = SetLegend(0.22,0.93,0.88,0.97);
+    //leg0->Draw();
     TLatex* latex = new TLatex();
     latex->SetTextSize(0.035);
     latex->SetTextAlign(21);
     latex->SetNDC();
-    latex->DrawLatex(0.55,0.94,"ALICE Preliminary Pb+Pb #rightarrow Pb+Pb+J/#psi   #sqrt{#it{s}_{NN}} = 5.02 TeV");
+    latex->DrawLatex(0.55,0.93,"ALICE Pb+Pb #rightarrow Pb+Pb+J/#psi   #sqrt{#it{s}_{NN}} = 5.02 TeV");
 
     // Draw legend with models
     TLegend *leg1 = SetLegend(0.17,0.14,0.42,0.40);
@@ -309,7 +311,7 @@ void PhenoPredictionsWithRatios()
     cCSont->Update();
 
     // Draw legend with data+unc. description
-    TLegend *leg2 = SetLegend(0.59,0.75,0.94,0.90);
+    TLegend *leg2 = SetLegend(0.59,0.76,0.94,0.90);
     leg2->SetTextSize(0.035);
     leg2->SetMargin(0.11);
     leg2->AddEntry((TObject*)0,"ALICE incoherent J/#psi, |y|<0.8", "");
@@ -369,7 +371,7 @@ void PhenoPredictionsWithRatios()
     gStyle->SetTickLength(0.02,"y");
     TCanvas *cDataModel = new TCanvas ("cDataModel","",1600,300);
     SetPadMargins(gPad,0.05,0.03,0.03,0.12);
-    TH1F* fCSratio = gPad->DrawFrame(0.04,0.3,1.0,3.69);
+    TH1F* fCSratio = gPad->DrawFrame(0.04,0.0,1.0,4.5);
     SetFrame(fCSratio);
     fCSratio->SetTitle("Ratios model/data;|#it{t}| (GeV^{2} #it{c}^{-2});Model / Data");
     fCSratio->GetYaxis()->SetTitleOffset(0.5);
@@ -448,11 +450,13 @@ void PhenoPredictionsWithRatios()
     leg1mod->AddEntry(gr_HS_n, "CCK: GG-n", "L");
 
     TPad *pMain = new TPad("pMain","pMain",0.,0.25,1.,1.);
-    SetPadMargins(pMain,0.13,0.02,0.045,0.0);
+    SetPadMargins(pMain,0.13,0.03,0.03,0.0);
     pMain->SetLogy();
     pMain->Draw();
     pMain->cd();
     // Draw everything needed
+    fCSont->GetXaxis()->SetLabelSize(0);
+    fCSont->GetXaxis()->SetTitle("");
     fCSont->Draw("AXIS");
     gr_GZ_area->Draw("F SAME");
     grData_syst->Draw("5 SAME");
@@ -464,14 +468,14 @@ void PhenoPredictionsWithRatios()
     gr_HM_fluct->Draw("CX SAME");
     gr_HM_noflu->Draw("CX SAME");    
     grData_stat->Draw("P SAME");
-    leg0->Draw();
-    latex->DrawLatex(0.55,0.94,"ALICE Preliminary Pb+Pb #rightarrow Pb+Pb+J/#psi   #sqrt{#it{s}_{NN}} = 5.02 TeV");
+    //leg0->Draw();
+    latex->DrawLatex(0.55,0.93,"ALICE Pb+Pb #rightarrow Pb+Pb+J/#psi   #sqrt{#it{s}_{NN}} = 5.02 TeV");
     leg1mod->Draw();
     leg2->Draw();
 
     cBoth->cd();
     TPad *pRatio = new TPad("pRatio","pRatio",0.,0.,1.,0.25);
-    SetPadMargins(pRatio,0.13,0.0,0.045,0.33);
+    SetPadMargins(pRatio,0.13,0.0,0.03,0.33);
     pRatio->Draw();
     pRatio->cd();
     fCSratio->GetYaxis()->SetTickLength(0.025);

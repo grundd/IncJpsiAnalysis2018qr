@@ -12,14 +12,14 @@
 
 //#######################################
 // Options to set:
-Int_t iCohJShape = 3;
+Int_t iCohJShape = 0;
 // 0 => classic histogram from STARlight (R_A = 6.624 fm)
 // 1 => histogram from STARlight generated with R_A = 7.53 fm
 // 2 => fit using "Gaussian shape" pT * exp(-b * pT^2)
 // 3 => fit using STARlight formfactor, R_A left free
 Int_t iNormFD = 0;
-// 0 => taken from STARlight (~ 7%), the same way as Roman
-// 1 => ratio of cross sections fixed to the value from Michal's paper
+// 0 => taken from STARlight (f_D^coh ~ 7%), the same way as Roman
+// 1 => ratio of coherent cross sections fixed to the value from Michal's paper
 //#######################################
 
 // Main function
@@ -73,8 +73,7 @@ void PtFitWithoutBkg(){
 
     PreparePDFs_MC();
 
-    //if(iCohJShape == 1) 
-    PreparePDF_modRA();
+    if(iCohJShape == 1) PreparePDF_modRA();
 
     DoPtFitNoBkg();
 
