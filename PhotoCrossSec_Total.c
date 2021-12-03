@@ -3,6 +3,8 @@
 
 // cpp headers
 #include <vector>
+// root headers
+#include "TAxis.h"
 // my headers
 #include "PhotoCrossSec_Utilities.h"
 
@@ -154,7 +156,7 @@ void GraphIntegralAll(Double_t t_min, Double_t t_max)
     return;
 }
 
-void PhotoCrossSec_Total()
+void PlotTotal()
 {
     // Integrate data in 0.04 < |t| < 1.0 GeV^2
     ReadInputMeasurement();
@@ -166,14 +168,104 @@ void PhotoCrossSec_Total()
 
     GraphIntegralAll(0.04, 1.00);
 
-    GraphIntegralAll(0.00, 1.00);
+    TGraph *gr_data = new TGraph(); gr_data->SetPoint(0, integral_data * 1e3, 8.);
+    gr_data->SetMarkerStyle(kFullSquare);
+    gr_data->SetMarkerColor(kRed);
+    gr_data->SetMarkerSize(2.);
+    // Models
+    Double_t integrals[7] = {
+        integral_SL,
+        integral_HS_hs, integral_HS_n,
+        integral_MS_fl, integral_MS_fl,
+        integral_GZ_up, integral_GZ_lo
+    };
+    TGraph *gr_models = new TGraph();
+    Double_t y = 7.;
+    for(Int_t i = 6; i >= 0; i--){
+        gr_models->SetPoint(i,integrals[i] * 1e3,y);
+        gr_models->SetMarkerStyle(kFullCircle);
+        gr_models->SetMarkerColor(kBlack);
+        gr_models->SetMarkerSize(2.);
+        y = y - 1.;
+    }  
+    gr_models->GetYaxis()->SetTickLength(0.0);
+    gr_models->GetYaxis()->SetRangeUser(0.,9.);
+    gr_models->GetXaxis()->SetTitle("#sigma_{#gammaPb} (#mub)");
+    gr_models->GetXaxis()->SetTitleSize(0.05);
+    gr_models->GetXaxis()->SetTitleOffset(1.2);
+    gr_models->GetXaxis()->SetLabelSize(0.05);
+    // Set range on x-axis
+    // https://root-forum.cern.ch/t/setrangeuser-on-tgraphs/8213
+    TAxis *axis = gr_models->GetXaxis();
+    axis->SetLimits(0.8,20.0); 
+    // Make the plot 
+    TCanvas *c = new TCanvas("c","c",900,600);
+    TPad *pL = new TPad("pL","pL",0.0,0.0,0.03,1.0);
+    pL->Draw();
+    TPad *pR = new TPad("pR","pR",0.03,0.0,1.0,1.0);
+    pR->Draw();
+    pR->cd();
+    // Margins
+    pR->SetTopMargin(0.03);
+    pR->SetBottomMargin(0.14);
+    pR->SetRightMargin(0.03);
+    pR->SetLeftMargin(0.0);   
+    // Draw points
+    gr_models->Draw("AP");
+    for(Int_t i = 0; i < 7; i++) gr_data->Draw("P SAME");
 
-    GraphIntegralAll(0.00, 2.00);
+    c->Print("PhotoCrossSec/.Total/TotalCrossSection.pdf");
+    c->Print("PhotoCrossSec/.Total/TotalCrossSection.png");
 
-    // STARlight
-    ReadInputSTARlight();
-    TString str_SL = "STARlight";
-    integral_SL = GraphIntegral(str_SL,nData_SL,abs_t_SL,sig_SL, 0.00, 2.00); 
+    return;
+}
+
+void ModelsRatios(Double_t t_low_1, Double_t t_upp_1, Double_t t_low_2, Double_t t_upp_2)
+{
+    GraphIntegralAll(t_low_1, t_upp_1);
+    Double_t int_SL_1 = integral_SL;
+    Double_t int_HS_hs_1 = integral_HS_hs;
+    Double_t int_HS_n_1 = integral_HS_n;
+    Double_t int_MS_fl_1 = integral_MS_fl;
+    Double_t int_MS_nf_1 = integral_MS_nf;
+    Double_t int_GZ_up_1 = integral_GZ_up;
+    Double_t int_GZ_lo_1 = integral_GZ_lo;
+    GraphIntegralAll(t_low_2, t_upp_2);
+    Double_t int_SL_2 = integral_SL;
+    Double_t int_HS_hs_2 = integral_HS_hs;
+    Double_t int_HS_n_2 = integral_HS_n;
+    Double_t int_MS_fl_2 = integral_MS_fl;
+    Double_t int_MS_nf_2 = integral_MS_nf;
+    Double_t int_GZ_up_2 = integral_GZ_up;
+    Double_t int_GZ_lo_2 = integral_GZ_lo;
+
+    Printf("Ratio SL: %.3f", int_SL_1/int_SL_2);
+    Printf("Ratio HS hs: %.3f", int_HS_hs_1/int_HS_hs_2);
+    Printf("Ratio HS n: %.3f", int_HS_n_1/int_HS_n_2);
+    Printf("Ratio MS fl: %.3f", int_MS_fl_1/int_MS_fl_2);
+    Printf("Ratio MS nf: %.3f", int_MS_nf_1/int_MS_nf_2);
+    Printf("Ratio GZ up: %.3f", int_GZ_up_1/int_GZ_up_2);
+    Printf("Ratio GZ lo: %.3f", int_GZ_lo_1/int_GZ_lo_2);
+
+    ofstream fout_ratios("PhotoCrossSec/.Total/ratios.txt");
+    fout_ratios << std::fixed << std::setprecision(3);
+    fout_ratios << Form("Ratio STARlight: %.3f\n", int_SL_1/int_SL_2);
+    fout_ratios << Form("Ratio HS GG-hs:\t %.3f\n", int_HS_hs_1/int_HS_hs_2);
+    fout_ratios << Form("Ratio HS GG-n:\t %.3f\n", int_HS_n_1/int_HS_n_2);
+    fout_ratios << Form("Ratio MS fluct:\t %.3f\n", int_MS_fl_1/int_MS_fl_2);
+    fout_ratios << Form("Ratio MS noflu:\t %.3f\n", int_MS_nf_1/int_MS_nf_2);
+    fout_ratios << Form("Ratio GZ upp: \t %.3f\n", int_GZ_up_1/int_GZ_up_2);
+    fout_ratios << Form("Ratio GZ low: \t %.3f\n", int_GZ_lo_1/int_GZ_lo_2);
+    fout_ratios.close();
+
+    return;
+}
+
+void PhotoCrossSec_Total()
+{
+    PlotTotal();
+
+    //ModelsRatios(0.04,1.00,0.00,2.00);
 
     return;
 }
