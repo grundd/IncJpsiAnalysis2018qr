@@ -1,44 +1,40 @@
 // STARlight_tDependence.c
 // David Grund, Nov 21, 2021
 
+// cpp headers
+#include <vector>
 // root headers
 #include "TH1.h"
-#include "TCanvas.h"
 #include "TGraph.h"
+#include "TStyle.h"
+#include "TCanvas.h"
+#include "TLegend.h"
 // my headers
 #include "STARlight_Utilities.h"
 
-TString str_folder = "";
-Double_t sig_gPb, rap_cut;
-Double_t pT_low, pT_upp;
-Double_t nEv_tot = 0;
-const Int_t t_nBins = 50;
-Double_t sigma[t_nBins] = { 0 };
-Double_t t_abs[t_nBins] = { 0 };
+TString str_folder = "Trees/STARlight/inc_tDep/";
+Double_t sig_gPb = 0.015499; // see output.txt, line y = +0.000
+Double_t rap_cut = 0.01;
+Double_t t_step = 0.02; // GeV^2
 
-Int_t iProd = 1;
+void Calc_tDependence(Double_t t_low, Double_t t_upp);
 
-void CalculateDependence();
-
-void STARlight_tDependence(){
-
-    if(iProd == 1){
-        str_folder = "Trees/STARlight/inc_tDep/";
-        sig_gPb = 0.015499; // see output.txt, line y = +0.000
-        rap_cut = 0.01;
-        pT_low = 0.15;
-        pT_upp = 1.02;
-    } 
-
-    CalculateDependence();
+void STARlight_tDependence()
+{
+    Calc_tDependence(0.00,1.10);
+    
+    Calc_tDependence(0.00,2.50);
 
     return;
 }
 
-void CalculateDependence(){
+void Calc_tDependence(Double_t t_low, Double_t t_upp)
+{
+    Int_t t_nBins = (t_upp - t_low) / t_step;
+    Printf("%i bins will be defined.", t_nBins);
 
-    Double_t t_low = TMath::Power(pT_low, 2);
-    Double_t t_upp = TMath::Power(pT_upp, 2);
+    Double_t pT_low = TMath::Sqrt(t_low);
+    Double_t pT_upp = TMath::Sqrt(t_upp);
 
     TFile *fSL = TFile::Open((str_folder + "trees_starlight.root").Data(), "read");
     if(fSL) Printf("Input file SL loaded.");
@@ -62,13 +58,14 @@ void CalculateDependence(){
 
     TH1D *hSigmaPhotoNuc = new TH1D("hSigmaPhotoNuc","hSigmaPhotoNuc", t_nBins, t_low, t_upp);
 
+    Double_t nEv_tot = 0;
     for(Int_t iEntry = 0; iEntry < tSL->GetEntries(); iEntry++){
         tSL->GetEntry(iEntry);
         tPtGammaVMPom->GetEntry(iEntry);
 
         // if the values differ by more than 10% => something wrong
         if(TMath::Abs(fPtVM - parent->Pt())/fPtVM > 0.05){
-            Printf("Entry no. %i: fPtVM = %.6f, from SL = %.6f", iEntry+1, fPtVM, parent->Pt());
+            Printf("(!) Entry no. %i: fPtVM = %.6f, from SL = %.6f", iEntry+1, fPtVM, parent->Pt());
         }
 
         if(TMath::Abs(parent->Rapidity()) < rap_cut){
@@ -81,16 +78,35 @@ void CalculateDependence(){
 
     Printf("No. of events with |y| < %.2f: %.0f", rap_cut, nEv_tot);
     Printf("No. of entries in histogram: %.0f", hSigmaPhotoNuc->GetEntries());
+
+    // Plot the histogram with events
+    TCanvas *c1 = new TCanvas("c1","c1",900,600);
+    c1->SetLogy(); 
+    // Margins
+    c1->SetTopMargin(0.03);
+    c1->SetBottomMargin(0.14);
+    c1->SetRightMargin(0.03);
+    c1->SetLeftMargin(0.12);    
+    hSigmaPhotoNuc->SetTitle(";|#it{t}| (GeV^{2} #it{c}^{-2}); Events per bin");
+    hSigmaPhotoNuc->SetLineStyle(1);
+    hSigmaPhotoNuc->SetLineColor(kRed);
+    hSigmaPhotoNuc->SetLineWidth(2);
+
+    hSigmaPhotoNuc->Draw("HIST");
+    c1->Print(Form("PhotoCrossSec/STARlight/gen_events_%.2f-%.2f.pdf", t_low, t_upp));
+    c1->Print(Form("PhotoCrossSec/STARlight/gen_events_%.2f-%.2f.png", t_low, t_upp));
+
     // Normalize the histogram
     hSigmaPhotoNuc->Scale(1.0/nEv_tot);
-    Printf("Integral is %.5f", hSigmaPhotoNuc->Integral());
-    Printf("Integral is %.5f", hSigmaPhotoNuc->Integral("width"));
+    //Printf("Integral is %.5f", hSigmaPhotoNuc->Integral());
+    //Printf("Integral is %.5f", hSigmaPhotoNuc->Integral("width"));
     hSigmaPhotoNuc->Scale(sig_gPb);
-    Printf("Integral is %.5f", hSigmaPhotoNuc->Integral());
-    Printf("Integral is %.5f", hSigmaPhotoNuc->Integral("width"));
+    //Printf("Integral is %.5f", hSigmaPhotoNuc->Integral());
+    //Printf("Integral is %.5f", hSigmaPhotoNuc->Integral("width"));
     hSigmaPhotoNuc->Scale(1.0, "width");
-    Printf("Integral is %.5f", hSigmaPhotoNuc->Integral());
+    //Printf("Integral is %.5f", hSigmaPhotoNuc->Integral());
     Printf("Integral is %.5f", hSigmaPhotoNuc->Integral("width"));
+
     // Check the value of the integral
     Double_t integral = 0;
     for(Int_t iBin = 1; iBin <= t_nBins; iBin++){
@@ -98,32 +114,55 @@ void CalculateDependence(){
     }
     Printf("Manually calculated integral is %.5f", integral);
 
-    // Fill arrays
+    // Fill the arrays
+    vector<Double_t> sigma; 
+    vector<Double_t> t_abs; 
     for(Int_t iBin = 1; iBin <= t_nBins; iBin++){
-        t_abs[iBin-1] = hSigmaPhotoNuc->GetBinCenter(iBin);
-        sigma[iBin-1] = hSigmaPhotoNuc->GetBinContent(iBin);
+        t_abs.push_back(hSigmaPhotoNuc->GetBinCenter(iBin));
+        sigma.push_back(hSigmaPhotoNuc->GetBinContent(iBin));
     }
     // Define TGraph
-    TGraph *grSL = new TGraph(t_nBins, t_abs, sigma);
+    Double_t *sigma_ptr, *t_abs_ptr;
+    sigma_ptr = &sigma[0];
+    t_abs_ptr = &t_abs[0];
+    TGraph *grSL = new TGraph(t_nBins, t_abs_ptr, sigma_ptr);
     grSL->SetLineStyle(1);
-    grSL->SetLineColor(215);
+    grSL->SetLineColor(kBlue);
     grSL->SetLineWidth(2);
     grSL->GetXaxis()->SetRangeUser(t_low,t_upp);
+    grSL->SetTitle(";|#it{t}| (GeV^{2} #it{c}^{-2}); d#sigma_{#gammaPb}/d|#it{t}| (mb #it{c}^{2} GeV^{-2})");
 
-    grSL->Print();
+    //grSL->Print();
     
-    TCanvas *c1 = new TCanvas("c1","c1",900,600);
-    c1->SetLogy();
-    grSL->Draw("AL");
+    // TStyle settings
+    gStyle->SetOptStat(0);
+    gStyle->SetOptTitle(0);
+    // Plots
+    TCanvas *c2 = new TCanvas("c2","c2",900,600);
+    c2->SetLogy(); 
+    // Margins
+    c2->SetTopMargin(0.03);
+    c2->SetBottomMargin(0.14);
+    c2->SetRightMargin(0.03);
+    c2->SetLeftMargin(0.12);
 
-    nEv_tot = 0;
+    TLegend *l1 = new TLegend(0.55,0.75,0.80,0.95);
+    l1->SetMargin(0.);
+    l1->AddEntry((TObject*)0,Form("Total #sigma_{#gammaPb} = %.6f #mub", hSigmaPhotoNuc->Integral("width")), "");
+    l1->SetTextSize(0.045);
+    l1->SetBorderSize(0); // no border
+    l1->SetFillStyle(0);  // legend is transparent
+
+    grSL->Draw("AL");
+    l1->Draw();
+    c2->Print(Form("PhotoCrossSec/STARlight/sigma_gPb_%.2f-%.2f.pdf", t_low, t_upp));
+    c2->Print(Form("PhotoCrossSec/STARlight/sigma_gPb_%.2f-%.2f.png", t_low, t_upp));
 
     // Print the results to text file
-    TString str_out = "";
-    if(iProd == 1) str_out = "PhenoPredictions/STARlight/inc_tDep.txt";
+    TString str_out = Form("PhotoCrossSec/STARlight/inc_tDep_%.2f-%.2f.txt", t_low, t_upp);
     ofstream outfile(str_out.Data());
     for(Int_t iBin = 0; iBin < t_nBins; iBin++){
-        outfile << Form("%.4f \t%.6f \n", t_abs[iBin], sigma[iBin]);
+        outfile << Form("%.2f \t%.6f \n", t_abs[iBin], sigma[iBin]);
     }
     outfile.close();
     Printf("*** Results printed to %s.***", str_out.Data());

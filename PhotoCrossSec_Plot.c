@@ -134,7 +134,7 @@ void Plot()
     c->SetLeftMargin(0.12);
     //Plot the graphs
     TH1 *h = (TH1*) gr_GZ_area->GetHistogram();
-    h->SetTitle(";|#it{t}| (GeV^{2}); d#sigma_{#gammaPb}/d|#it{t}| (mb/GeV^{2})");
+    h->SetTitle(";|#it{t}| (GeV^{2} #it{c}^{-2}); d#sigma_{#gammaPb}/d|#it{t}| (mb #it{c}^{2} GeV^{-2})");
     h->SetMinimum(1e-6);
     h->SetMaximum(0.1);
     // Vertical axis

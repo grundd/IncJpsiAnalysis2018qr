@@ -56,7 +56,7 @@ Double_t sig_HS_inc_hs[nData_HS];
 Double_t sig_HS_inc_hs_err[nData_HS];
 
 // Guzey predictions
-const Int_t nData_GZ = 51;
+const Int_t nData_GZ = 100;
 Double_t abs_t_GZ[nData_GZ];
 Double_t sig_GZ_el_min[nData_GZ];
 Double_t sig_GZ_el_max[nData_GZ];
@@ -72,7 +72,7 @@ Double_t sig_HM_fluct[nData_HM];
 Double_t sig_HM_noflu[nData_HM];
 
 // STARlight predictions
-const Int_t nData_SL = 50;
+const Int_t nData_SL = 125;
 Double_t abs_t_SL[nData_SL];
 Double_t sig_SL[nData_SL];
 
@@ -197,7 +197,7 @@ void ReadInputSTARlight(){
 
     // read the input file for Guzey's model predictions
     ifstream ifs;
-    ifs.open("PhotoCrossSec/STARlight/inc_tDep.txt");
+    ifs.open("PhotoCrossSec/STARlight/inc_tDep_0.00-2.50.txt");
     for(Int_t i = 0; i < nData_SL; i++){
         ifs >> abs_t_SL[i];
         ifs >> sig_SL[i];

@@ -20,15 +20,22 @@ Double_t GraphIntegral(TString str_name, Int_t n_data, Double_t *abs_t_val, Doub
     Int_t iPoint = 0;
     while(abs_t_val[iPoint] <= t_min) iPoint++;
     while(abs_t_val[iPoint] < t_max){
+        if(iPoint == n_data-1){
+            t_edges.push_back(abs_t_val[iPoint] + (abs_t_val[iPoint] - t_edges.back()));
+            sigmas.push_back(sig_val[iPoint]);
+            break;
+        } 
         if((abs_t_val[iPoint] + abs_t_val[iPoint+1]) / 2. < t_max){
             t_edges.push_back((abs_t_val[iPoint] + abs_t_val[iPoint+1]) / 2.);
             sigmas.push_back(sig_val[iPoint]);
-            Printf("%.4f \t%.5f", (abs_t_val[iPoint] + abs_t_val[iPoint+1]) / 2., sig_val[iPoint]);
+            //Printf("%.4f \t%.5f", (abs_t_val[iPoint] + abs_t_val[iPoint+1]) / 2., sig_val[iPoint]);
             iPoint++;
-        } else break;
+        } else {
+            t_edges.push_back(t_max);
+            sigmas.push_back(sig_val[iPoint]);
+            break;
+        }
     }
-    t_edges.push_back(t_max);
-    sigmas.push_back(sig_val[iPoint]);
 
     // Histograms
     Double_t *t_edges_ptr;
@@ -57,15 +64,16 @@ Double_t GraphIntegral(TString str_name, Int_t n_data, Double_t *abs_t_val, Doub
     hist->GetYaxis()->SetTitleSize(0.05);
     hist->GetYaxis()->SetTitleOffset(1.2);
     hist->GetYaxis()->SetLabelSize(0.05);
+    //hist->GetYaxis()->SetRangeUser(1e-8,1e-1);
     // Horizontal axis
     hist->GetXaxis()->SetTitleSize(0.05);
     hist->GetXaxis()->SetTitleOffset(1.2);
     hist->GetXaxis()->SetLabelSize(0.05);
-    hist->GetXaxis()->SetRangeUser(0.04,1.0);
+    hist->GetXaxis()->SetRangeUser(t_min,t_max);
     // Draw histogram
     hist->Draw("");
     // Draw graph
-    graph->SetLineStyle(9);
+    graph->SetLineStyle(2);
     graph->SetLineColor(kRed);
     graph->SetLineWidth(2);  
     graph->Draw("C SAME");
@@ -85,16 +93,65 @@ Double_t GraphIntegral(TString str_name, Int_t n_data, Double_t *abs_t_val, Doub
     l->SetMargin(0.);
     l->AddEntry((TObject*)0,Form("%s",str_name.Data()), "");
     l->AddEntry((TObject*)0,Form("In range |#it{t}| #in (%.2f,%.2f) GeV^{2} #it{c}^{-2}:", t_min, t_max), "");
-    l->AddEntry((TObject*)0,Form("integral = %.3f #mub c^{2} GeV^{-2}", integral_graph * 1000.), "");
+    l->AddEntry((TObject*)0,Form("integral = %.3f #mub", integral_graph * 1000.), "");
     l->SetTextSize(0.045);
     l->SetBorderSize(0); // no border
     l->SetFillStyle(0);  // legend is transparent
     l->Draw();
 
-    c->Print(Form("PhotoCrossSec/.Total/%s.pdf",str_name.Data()));
-    c->Print(Form("PhotoCrossSec/.Total/%s.png",str_name.Data()));
+    Int_t oldLevel = gErrorIgnoreLevel; 
+    gErrorIgnoreLevel = kWarning; 
+    c->Print(Form("PhotoCrossSec/.Total/%.2f-%.2f/%s.pdf", t_min, t_max, str_name.Data()));
+    c->Print(Form("PhotoCrossSec/.Total/%.2f-%.2f/%s.png", t_min, t_max, str_name.Data()));
+    gErrorIgnoreLevel = oldLevel; 
+
+    Printf("%s: %.3f micro barns.", str_name.Data(), integral_graph * 1e3);
+
+    delete c;
+    delete hist;
 
     return integral_graph;
+}
+
+void GraphIntegralAll(Double_t t_min, Double_t t_max)
+{
+    // STARlight
+    ReadInputSTARlight();
+    TString str_SL = "STARlight";
+    integral_SL = GraphIntegral(str_SL,nData_SL,abs_t_SL,sig_SL, t_min, t_max);    
+
+    // HS model
+    ReadInputHSModel();
+    // GG-hs
+    TString str_HS_hs = "CCK: GG-hs";
+    integral_HS_hs = GraphIntegral(str_HS_hs,nData_HS,abs_t_HS,sig_HS_inc_hs, t_min, t_max);
+    // GG-n
+    TString str_HS_n = "CCK: GG-n";
+    integral_HS_n = GraphIntegral(str_HS_n,nData_HS,abs_t_HS,sig_HS_inc_n, t_min, t_max);
+
+    // Heikki's model
+    ReadInputHeikki();
+    // IPsat fluctuations
+    TString str_MS_fl = "MS: IPsat flu";
+    integral_MS_fl = GraphIntegral(str_MS_fl,nData_HM,abs_t_HM,sig_HM_fluct, t_min, t_max);
+    // IPsat no fluctuations
+    TString str_MS_nf = "MS: IPsat no flu";
+    integral_MS_nf = GraphIntegral(str_MS_nf,nData_HM,abs_t_HM,sig_HM_noflu, t_min, t_max);
+
+    // Guzey's model
+    ReadInputGuzey();
+    for (Int_t i = 0; i < nData_GZ; i++){
+        sig_GZ_tot_min[i] = sig_GZ_tot_min[i] / 1e6;
+        sig_GZ_tot_max[i] = sig_GZ_tot_max[i] / 1e6;
+    }
+    // Upper error
+    TString str_GZ_up = "GSZ: upp";
+    integral_GZ_up = GraphIntegral(str_GZ_up,nData_GZ,abs_t_GZ,sig_GZ_tot_max, t_min, t_max);
+    // Lower error
+    TString str_GZ_lo = "GSZ: low";
+    integral_GZ_lo = GraphIntegral(str_GZ_lo,nData_GZ,abs_t_GZ,sig_GZ_tot_min, t_min, t_max);
+
+    return;
 }
 
 void PhotoCrossSec_Total()
@@ -105,50 +162,18 @@ void PhotoCrossSec_Total()
         sig_val[i] = sig_val[i] / 1e3;
         integral_data += sig_val[i] * (t_boundaries[i+1] - t_boundaries[i]);
     }
-    Printf("Data: %.3f micro barns/GeV^2.", integral_data * 1e3);
+    Printf("Data: %.3f micro barns.", integral_data * 1e3);
+
+    GraphIntegralAll(0.04, 1.00);
+
+    GraphIntegralAll(0.00, 1.00);
+
+    GraphIntegralAll(0.00, 2.00);
 
     // STARlight
     ReadInputSTARlight();
     TString str_SL = "STARlight";
-    integral_SL = GraphIntegral(str_SL,nData_SL,abs_t_SL,sig_SL);
-    Printf("STARlight: %.3f micro barns/GeV^2.", integral_SL * 1e3);
-
-    // HS model
-    ReadInputHSModel();
-    // GG-hs
-    TString str_HS_hs = "CCK: GG-hs";
-    integral_HS_hs = GraphIntegral(str_HS_hs,nData_HS,abs_t_HS,sig_HS_inc_hs);
-    Printf("CCK: GG-hs: %.3f micro barns/GeV^2.", integral_HS_hs * 1e3);
-    // GG-n
-    TString str_HS_n = "CCK: GG-n";
-    integral_HS_n = GraphIntegral(str_HS_n,nData_HS,abs_t_HS,sig_HS_inc_n);
-    Printf("CCK: GG-n: %.3f micro barns/GeV^2.", integral_HS_n * 1e3);
-
-    // Heikki's model
-    ReadInputHeikki();
-    // IPsat fluctuations
-    TString str_MS_fl = "MS: IPsat flu";
-    integral_MS_fl = GraphIntegral(str_MS_fl,nData_HM,abs_t_HM,sig_HM_fluct);
-    Printf("MS: IPsat flu: %.3f micro barns/GeV^2.", integral_MS_fl * 1e3);
-    // IPsat no fluctuations
-    TString str_MS_nf = "MS: IPsat no flu";
-    integral_MS_nf = GraphIntegral(str_MS_nf,nData_HM,abs_t_HM,sig_HM_noflu);
-    Printf("MS: IPsat no flu: %.3f micro barns/GeV^2.", integral_MS_nf * 1e3);
-
-    // Guzey's model
-    ReadInputGuzey();
-    for (Int_t i = 0; i < nData_GZ; i++){
-        sig_GZ_tot_min[i] = sig_GZ_tot_min[i] / 1e6;
-        sig_GZ_tot_max[i] = sig_GZ_tot_max[i] / 1e6;
-    }
-    // Upper error
-    TString str_GZ_up = "GSZ: upp";
-    integral_GZ_up = GraphIntegral(str_GZ_up,nData_GZ,abs_t_GZ,sig_GZ_tot_max);
-    Printf("GSZ: upp: %.3f micro barns/GeV^2.", integral_GZ_up * 1e3);
-    // Lower error
-    TString str_GZ_lo = "GSZ: low";
-    integral_GZ_lo = GraphIntegral(str_GZ_lo,nData_GZ,abs_t_GZ,sig_GZ_tot_min);
-    Printf("GSZ: low: %.3f micro barns/GeV^2.", integral_GZ_lo * 1e3);
+    integral_SL = GraphIntegral(str_SL,nData_SL,abs_t_SL,sig_SL, 0.00, 2.00); 
 
     return;
 }
