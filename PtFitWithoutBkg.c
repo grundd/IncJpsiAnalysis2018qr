@@ -12,7 +12,7 @@
 
 //#######################################
 // Options to set:
-Int_t iCohJShape = 0;
+Int_t iCohJShape = 3;
 // 0 => classic histogram from STARlight (R_A = 6.624 fm)
 // 1 => histogram from STARlight generated with R_A = 7.53 fm
 // 2 => fit using "Gaussian shape" pT * exp(-b * pT^2)
@@ -55,9 +55,9 @@ Double_t VMD_model(Double_t *pT, Double_t *par){
     Double_t F2 = TMath::Sin(qR_A) - qR_A*TMath::Cos(qR_A); // unit dimension is zero
     Double_t F3 = 1 + (a * a * q * q / (hbarC*hbarC));      // unit dimension is zero
     if (F3 == 0.) return 0.; // protection against floating point exception 
-    Double_t FF = F1 * F2 / F3;
+    Double_t FF = F1 * F2 / F3; 
 
-    return FF * FF;
+    return q * FF * FF; // q (= pT) from the Jacobian ! (see a photo from Dec 2)
 }
 Double_t Zero_func(Double_t pT){
     return 0.;
@@ -194,7 +194,8 @@ void DoPtFitNoBkg(){
 
     // Create RooAbsReal from a TF1 function defined using C++ function VMD_model()
     TF1 *fFormFactorSL = new TF1("fFormFactorSL",VMD_model,fPtLow,fPtUpp,2); // 2 = number of parameters
-    RooRealVar R_A("R_A","R_A",6.624,1.,12.); // 6.624 fm = original SL value
+    RooRealVar R_A("R_A","R_A",6.62,1.,12.); // 6.624 fm = original SL value
+    //R_A.setConstant(kTRUE);
     RooRealVar a("a","a", 0.7, 0.7, 0.7); // 0.7 fm = SL value
     a.setConstant(kTRUE);
     //RooRealVar norm("norm","norm",1e3,0,1e5);
@@ -1163,6 +1164,16 @@ void DrawCorrelationMatrixModified(TCanvas *cCM, RooFitResult* ResFit){
         hCorr->GetYaxis()->SetBinLabel(2,"#it{N}_{inc}");
         hCorr->GetYaxis()->SetBinLabel(3,"#it{N}_{diss}");
         hCorr->GetYaxis()->SetBinLabel(4,"#it{N}_{coh}");        
+    } else if(iCohJShape == 3){
+        hCorr->GetXaxis()->SetBinLabel(1,"#it{N}_{coh}");
+        hCorr->GetXaxis()->SetBinLabel(2,"#it{N}_{diss}");
+        hCorr->GetXaxis()->SetBinLabel(3,"#it{N}_{inc}");
+        hCorr->GetXaxis()->SetBinLabel(4,"#it{R}_{A}");
+        //
+        hCorr->GetYaxis()->SetBinLabel(1,"#it{R}_{A}");
+        hCorr->GetYaxis()->SetBinLabel(2,"#it{N}_{inc}");
+        hCorr->GetYaxis()->SetBinLabel(3,"#it{N}_{diss}");
+        hCorr->GetYaxis()->SetBinLabel(4,"#it{N}_{coh}");            
     }
 
     // Set corr hist and draw it

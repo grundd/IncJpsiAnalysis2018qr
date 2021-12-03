@@ -34,7 +34,7 @@ void DrawCorrelationMatrix(TCanvas *cCorrMat, RooFitResult* fResFit);
 void SetCanvas(TCanvas *c, Bool_t bLogScale);
 void PrepareMCTree();
 
-void InvMassFitMC(){
+void InvMassFit_MC(){
 
     //PrepareMCTree();
 
