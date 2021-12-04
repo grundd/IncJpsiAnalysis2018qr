@@ -13,6 +13,9 @@ Double_t integral_data(0),
     integral_HS_hs(0), integral_HS_n(0), 
     integral_MS_fl(0), integral_MS_nf(0),
     integral_GZ_up(0), integral_GZ_lo(0);
+Double_t err_stat_low(0), err_syst_low(0), 
+    err_stat_upp(0), err_syst_upp(0),
+    err_tot(0);
 
 Double_t GraphIntegral(TString str_name, Int_t n_data, Double_t *abs_t_val, Double_t *sig_val, Double_t t_min = 0.04, Double_t t_max = 1.00)
 {
@@ -158,26 +161,69 @@ void GraphIntegralAll(Double_t t_min, Double_t t_max)
 
 void PlotTotal()
 {
+    Double_t MarkerSize = 1.;
     // Integrate data in 0.04 < |t| < 1.0 GeV^2
     ReadInputMeasurement();
+    Double_t integral_stat_low(0), integral_stat_upp(0);
+    Double_t integral_syst_low(0), integral_syst_upp(0);
     for(Int_t i = 0; i < nPtBins; i++){
         sig_val[i] = sig_val[i] / 1e3;
+        sig_err_stat[i] = sig_err_stat[i] / 1e3;
+        sig_err_syst[i] = sig_err_syst[i] / 1e3;
         integral_data += sig_val[i] * (t_boundaries[i+1] - t_boundaries[i]);
+        integral_stat_low += (sig_val[i] - sig_err_stat[i]) * (t_boundaries[i+1] - t_boundaries[i]);
+        integral_stat_upp += (sig_val[i] + sig_err_stat[i]) * (t_boundaries[i+1] - t_boundaries[i]);
+        integral_syst_low += (sig_val[i] - sig_err_syst[i]) * (t_boundaries[i+1] - t_boundaries[i]);
+        integral_syst_upp += (sig_val[i] + sig_err_syst[i]) * (t_boundaries[i+1] - t_boundaries[i]);
     }
-    Printf("Data: %.3f micro barns.", integral_data * 1e3);
+    err_stat_low = integral_data - integral_stat_low;
+    err_syst_low = integral_data - integral_syst_low;
+    err_stat_upp = integral_stat_upp - integral_data;
+    err_syst_upp = integral_syst_upp - integral_data;
+    err_tot = TMath::Sqrt(TMath::Power(err_stat_low, 2) + TMath::Power(err_syst_low, 2));
+    Printf("Err stat low: %.3f", err_stat_low * 1e3);
+    Printf("Err stat upp: %.3f", err_stat_upp * 1e3);
+    Printf("Err syst low: %.3f", err_syst_low * 1e3);
+    Printf("Err syst upp: %.3f", err_syst_upp * 1e3);
+    Printf("Data: (%.3f pm %.3f (stat.) pm %.3f (syst.)) micro barns.", 
+        integral_data * 1e3, err_stat_low * 1e3, err_syst_low * 1e3);
+    Printf("Data: (%.3f pm %.3f) micro barns (stat. and syst. added in quadrature).", 
+        integral_data * 1e3, err_tot * 1e3);
 
     GraphIntegralAll(0.04, 1.00);
 
-    TGraph *gr_data = new TGraph(); gr_data->SetPoint(0, integral_data * 1e3, 8.);
+    // Graph with data point and stat uncertainty
+    TGraphErrors *gr_data = new TGraphErrors(); 
+    gr_data->SetPoint(0, integral_data * 1e3, 8.);
+    gr_data->SetPointError(0, err_stat_low * 1e3, 0.);
     gr_data->SetMarkerStyle(kFullSquare);
-    gr_data->SetMarkerColor(kRed);
-    gr_data->SetMarkerSize(2.);
+    gr_data->SetMarkerColor(215);
+    gr_data->SetMarkerSize(MarkerSize);
+    gr_data->SetLineColor(215);
+    gr_data->SetLineWidth(2.);
+    // Graph with the systematic uncertainty (colored box)
+    Double_t arr_err_syst_x[4] = {integral_syst_low * 1e3, integral_syst_low * 1e3, 
+        integral_syst_upp * 1e3, integral_syst_upp * 1e3};
+    Double_t arr_err_syst_y[4] = {0., 9., 9., 0.};
+    TGraph *gr_err_syst = new TGraph(4,arr_err_syst_x,arr_err_syst_y);
+    gr_err_syst->SetFillStyle(3004);
+    gr_err_syst->SetFillColor(215);
+    // Graph with the total uncertainty (colored box)
+    Double_t arr_err_tot_x[4] = {(integral_data - err_tot) * 1e3, (integral_data - err_tot) * 1e3, 
+        (integral_data + err_tot) * 1e3, (integral_data + err_tot) * 1e3};
+    Double_t arr_err_tot_y[4] = {0., 9., 9., 0.};
+    TGraph *gr_err_tot = new TGraph(4,arr_err_tot_x,arr_err_tot_y);
+    gr_err_tot->SetFillStyle(3005);
+    gr_err_tot->SetFillColor(kGray+2);
     // Models
     Double_t integrals[7] = {
-        integral_SL,
-        integral_HS_hs, integral_HS_n,
-        integral_MS_fl, integral_MS_fl,
-        integral_GZ_up, integral_GZ_lo
+        integral_HS_n,
+        integral_HS_hs, 
+        integral_GZ_lo,
+        integral_GZ_up, 
+        integral_MS_nf,
+        integral_MS_fl, 
+        integral_SL
     };
     TGraph *gr_models = new TGraph();
     Double_t y = 7.;
@@ -185,19 +231,21 @@ void PlotTotal()
         gr_models->SetPoint(i,integrals[i] * 1e3,y);
         gr_models->SetMarkerStyle(kFullCircle);
         gr_models->SetMarkerColor(kBlack);
-        gr_models->SetMarkerSize(2.);
+        gr_models->SetMarkerSize(MarkerSize);
         y = y - 1.;
     }  
-    gr_models->GetYaxis()->SetTickLength(0.0);
-    gr_models->GetYaxis()->SetRangeUser(0.,9.);
-    gr_models->GetXaxis()->SetTitle("#sigma_{#gammaPb} (#mub)");
-    gr_models->GetXaxis()->SetTitleSize(0.05);
-    gr_models->GetXaxis()->SetTitleOffset(1.2);
-    gr_models->GetXaxis()->SetLabelSize(0.05);
+    gr_err_tot->GetYaxis()->SetTickLength(0.0);
+    gr_err_tot->GetYaxis()->SetRangeUser(0.,9.);
+    gr_err_tot->GetXaxis()->SetTitle("#sigma_{#gammaPb} (#mub)");
+    gr_err_tot->GetXaxis()->SetTitleSize(0.05);
+    gr_err_tot->GetXaxis()->SetTitleOffset(1.2);
+    gr_err_tot->GetXaxis()->SetLabelSize(0.05);
     // Set range on x-axis
     // https://root-forum.cern.ch/t/setrangeuser-on-tgraphs/8213
-    TAxis *axis = gr_models->GetXaxis();
-    axis->SetLimits(0.8,20.0); 
+    TAxis *axis = gr_err_tot->GetXaxis();
+    Double_t x_min = 0.8;
+    Double_t x_max = 20.;
+    axis->SetLimits(x_min,x_max);
     // Make the plot 
     TCanvas *c = new TCanvas("c","c",900,600);
     TPad *pL = new TPad("pL","pL",0.0,0.0,0.03,1.0);
@@ -211,8 +259,35 @@ void PlotTotal()
     pR->SetRightMargin(0.03);
     pR->SetLeftMargin(0.0);   
     // Draw points
-    gr_models->Draw("AP");
+    gr_err_tot->Draw("AF");
+    gr_err_syst->Draw("F SAME");
+    gr_models->Draw("P SAME");
     for(Int_t i = 0; i < 7; i++) gr_data->Draw("P SAME");
+
+    Double_t y_line = 0;
+    TLine *line[4] = { NULL };
+    for(Int_t i = 0; i < 4; i++){
+        if(i == 0) y_line = 7.5;
+        if(i == 1) y_line = 6.5;
+        if(i == 2) y_line = 4.5;
+        if(i == 3) y_line = 2.5;
+        line[i] = new TLine(x_min,y_line,x_max,y_line);
+        line[i]->SetLineColor(kBlack);
+        line[i]->SetLineWidth(1);
+        line[i]->SetLineStyle(7);
+        line[i]->Draw("SAME");
+    }
+    TLatex *latex[8] = { NULL };
+    TString names[8] = {"ALICE","STARlight","MS IPsat flu.","MS IPsat no flu.","GSZ upper","GSZ lower","GG-hs","GG-n"};
+    Double_t y_step = 0.08;
+    for(Int_t i = 0; i < 8; i++){
+        latex[i] = new TLatex(); 
+        latex[i]->SetTextSize(0.05);
+        // https://root-forum.cern.ch/t/settextalign/7458
+        latex[i]->SetTextAlign(12);
+        latex[i]->DrawLatex(15.,8.0-i,Form("#bf{%s}", names[i].Data()));
+        if(i == 0) latex[i]->DrawLatex(15.,8.0-i,Form("#bf{#color[215]{%s}}", names[i].Data()));
+    }    
 
     c->Print("PhotoCrossSec/.Total/TotalCrossSection.pdf");
     c->Print("PhotoCrossSec/.Total/TotalCrossSection.png");

@@ -191,7 +191,7 @@ void PlotWithRatios()
     leg1->SetMargin(0.30);
     leg1->AddEntry(gr_SL,"STARlight", "L");
     leg1->AddEntry(gr_HM_fluct,"MS: IPsat flu.", "L");
-    leg1->AddEntry(gr_HM_noflu,"MS: IPsat no. flu.", "L");
+    leg1->AddEntry(gr_HM_noflu,"MS: IPsat no flu.", "L");
     leg1->AddEntry(gr_GZ_area,"GSZ: el. + diss.", "F");
     leg1->AddEntry(gr_HS_hs,"CCK: GG-hs", "L");
     leg1->AddEntry(gr_HS_n, "CCK: GG-n", "L");
@@ -334,7 +334,7 @@ void PlotWithRatios()
     leg1mod->SetMargin(0.30);
     leg1mod->AddEntry(gr_SL,"STARlight", "L");
     leg1mod->AddEntry(gr_HM_fluct,"MS: IPsat flu.", "L");
-    leg1mod->AddEntry(gr_HM_noflu,"MS: IPsat no. flu.", "L");
+    leg1mod->AddEntry(gr_HM_noflu,"MS: IPsat no flu.", "L");
     leg1mod->AddEntry(gr_GZ_area,"GSZ: el. + diss.", "F");
     leg1mod->AddEntry(gr_HS_hs,"CCK: GG-hs", "L");
     leg1mod->AddEntry(gr_HS_n, "CCK: GG-n", "L");
