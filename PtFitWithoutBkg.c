@@ -674,6 +674,14 @@ void DoPtFitNoBkg(){
     SetCanvas(cPtLog, kTRUE);
     PtFrameLog->Draw("][");
 
+    // 11.3) Get chi2 
+    Double_t chi2 = PtFrameLog->chiSquare("Mod","DSetData",ResFit->floatParsFinal().getSize()); // last argument = number of parameters
+    Printf("********************");
+    Printf("chi2/ndof = %.3f", chi2);
+    Printf("ndof = %i", ResFit->floatParsFinal().getSize());
+    Printf("chi2/ndof = %.3f/%i", chi2*ResFit->floatParsFinal().getSize(), ResFit->floatParsFinal().getSize());
+    Printf("********************");    
+
     // 12) Draw the legends
     // Legend 1
     TLegend *l1 = new TLegend(0.16,0.705,0.52,0.93);
@@ -686,10 +694,11 @@ void DoPtFitNoBkg(){
     l1->SetFillStyle(0);  // legend is transparent
 
     // Legend 2
-    TLegend *l2 = new TLegend(0.59,0.595,0.9,0.93);
+    TLegend *l2 = new TLegend(0.59,0.555,0.9,0.93);
     //leg2->SetTextSize(0.027);
     l2->AddEntry("DSetData","Data", "EP");
     l2->AddEntry("Mod","sum","L");
+    l2->AddEntry((TObject*)0,Form("#chi^{2}/NDF = %.3f",chi2),"");
     if(iCohJShape == 0 || iCohJShape == 1) l2->AddEntry("hPDFCohJ","coherent J/#psi", "L");
     else if(iCohJShape == 2) l2->AddEntry("gPDFCohJ","coherent J/#psi", "L");
     else if(iCohJShape == 3) l2->AddEntry("sumPdfCohJ","coherent J/#psi", "L");

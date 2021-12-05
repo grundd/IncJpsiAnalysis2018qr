@@ -161,7 +161,7 @@ void GraphIntegralAll(Double_t t_min, Double_t t_max)
 
 void PlotTotal()
 {
-    Double_t MarkerSize = 1.;
+    Double_t MarkerSize = 2.;
     // Integrate data in 0.04 < |t| < 1.0 GeV^2
     ReadInputMeasurement();
     Double_t integral_stat_low(0), integral_stat_upp(0);
@@ -200,7 +200,7 @@ void PlotTotal()
     gr_data->SetMarkerColor(215);
     gr_data->SetMarkerSize(MarkerSize);
     gr_data->SetLineColor(215);
-    gr_data->SetLineWidth(2.);
+    gr_data->SetLineWidth(3.);
     // Graph with the systematic uncertainty (colored box)
     Double_t arr_err_syst_x[4] = {integral_syst_low * 1e3, integral_syst_low * 1e3, 
         integral_syst_upp * 1e3, integral_syst_upp * 1e3};
@@ -237,13 +237,13 @@ void PlotTotal()
     gr_err_tot->GetYaxis()->SetTickLength(0.0);
     gr_err_tot->GetYaxis()->SetRangeUser(0.,9.);
     gr_err_tot->GetXaxis()->SetTitle("#sigma_{#gammaPb} (#mub)");
-    gr_err_tot->GetXaxis()->SetTitleSize(0.05);
-    gr_err_tot->GetXaxis()->SetTitleOffset(1.2);
-    gr_err_tot->GetXaxis()->SetLabelSize(0.05);
+    gr_err_tot->GetXaxis()->SetTitleSize(0.06);
+    gr_err_tot->GetXaxis()->SetTitleOffset(1.05);
+    gr_err_tot->GetXaxis()->SetLabelSize(0.06);
     // Set range on x-axis
     // https://root-forum.cern.ch/t/setrangeuser-on-tgraphs/8213
     TAxis *axis = gr_err_tot->GetXaxis();
-    Double_t x_min = 0.8;
+    Double_t x_min = 1.0;
     Double_t x_max = 20.;
     axis->SetLimits(x_min,x_max);
     // Make the plot 
@@ -282,11 +282,11 @@ void PlotTotal()
     Double_t y_step = 0.08;
     for(Int_t i = 0; i < 8; i++){
         latex[i] = new TLatex(); 
-        latex[i]->SetTextSize(0.05);
+        latex[i]->SetTextSize(0.06);
         // https://root-forum.cern.ch/t/settextalign/7458
         latex[i]->SetTextAlign(12);
-        latex[i]->DrawLatex(15.,8.0-i,Form("#bf{%s}", names[i].Data()));
-        if(i == 0) latex[i]->DrawLatex(15.,8.0-i,Form("#bf{#color[215]{%s}}", names[i].Data()));
+        if(i == 0) latex[i]->DrawLatex(14.5,8.0-i,Form("#bf{#color[215]{%s}}", names[i].Data()));
+        else latex[i]->DrawLatex(14.5,8.0-i,Form("#bf{%s}", names[i].Data()));
     }    
 
     c->Print("PhotoCrossSec/.Total/TotalCrossSection.pdf");

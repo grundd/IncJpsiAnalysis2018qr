@@ -260,8 +260,8 @@ void PlotWithRatios()
     gStyle->SetTickLength(0.02,"y");
     TCanvas *cDataModel = new TCanvas ("cDataModel","",1600,300);
     SetPadMargins(gPad,0.05,0.03,0.03,0.12);
-    //TH1F* fCSratio = gPad->DrawFrame(0.04,0.0,1.0,4.5);
-    TH1F* fCSratio = gPad->DrawFrame(0.04,0.01,1.0,9.5);
+    TH1F* fCSratio = gPad->DrawFrame(0.04,0.0,1.0,4.5);
+    //TH1F* fCSratio = gPad->DrawFrame(0.04,0.01,1.0,9.5);
     SetFrame(fCSratio);
     fCSratio->SetTitle("Ratios model/data;|#it{t}| (GeV^{2} #it{c}^{-2});Model / Data");
     fCSratio->GetYaxis()->SetTitleOffset(0.5);
@@ -367,7 +367,7 @@ void PlotWithRatios()
     TPad *pRatio = new TPad("pRatio","pRatio",0.,0.,1.,0.25);
     SetPadMargins(pRatio,0.13,0.0,0.03,0.33);
     pRatio->Draw();
-    pRatio->SetLogy();
+    //pRatio->SetLogy();
     pRatio->cd();
     fCSratio->GetYaxis()->SetTickLength(0.025);
     fCSratio->GetXaxis()->SetTickLength(0.025);

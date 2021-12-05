@@ -299,7 +299,12 @@ void DoInvMassFitMain(Int_t opt = 0){
     fFrameM->Draw();
 
     // Get chi2 
-    Double_t chi2 = fFrameM->chiSquare("DSCBAndBkgPdf","data",fResFit->floatParsFinal().getSize());
+    Double_t chi2 = fFrameM->chiSquare("DSCBAndBkgPdf","fDataSet",fResFit->floatParsFinal().getSize()); // last argument = number of parameters
+    Printf("********************");
+    Printf("chi2/NDF = %.3f", chi2);
+    Printf("NDF = %i", fResFit->floatParsFinal().getSize());
+    Printf("chi2/NDF = %.3f/%i", chi2*fResFit->floatParsFinal().getSize(), fResFit->floatParsFinal().getSize());
+    Printf("********************");   
 
     // -------------------------------------------------------------------------------- 
     // Legend1
@@ -331,7 +336,7 @@ void DoInvMassFitMain(Int_t opt = 0){
     TLegend *l2 = new TLegend(0.465,0.29,0.95,0.87);
     //l2->SetHeader("ALICE, PbPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
     l2->AddEntry("DSCBAndBkgPdf","sum","L");
-    //l2->AddEntry((TObject*)0,Form("#chi^{2}/NDF = %.3f",chi2),"");
+    l2->AddEntry((TObject*)0,Form("#chi^{2}/NDF = %.3f",chi2),"");
     l2->AddEntry("DoubleSidedCB","J/#psi signal","L");
     l2->AddEntry((TObject*)0,Form("#it{N}_{J/#psi} = %.0f #pm %.0f",N_Jpsi_out[0],N_Jpsi_out[1]),"");
     // Incoherent: lower precision:
