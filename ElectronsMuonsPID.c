@@ -166,7 +166,7 @@ Bool_t EventPassedLocal(){
     if(!(fM > 2.2 && fM < 4.5)) return kFALSE;
 
     // 13) Transverse momentum cut
-    if(!(fPt > 0.0 && fPt < 2.0)) return kFALSE;
+    if(!(fPt > 0.2 && fPt < 1.0)) return kFALSE;
 
     // Event passed all the selections =>
     return kTRUE;
