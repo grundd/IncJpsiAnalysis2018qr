@@ -278,7 +278,7 @@ void PlotTotal()
         line[i]->Draw("SAME");
     }
     TLatex *latex[8] = { NULL };
-    TString names[8] = {"ALICE","STARlight","MS IPsat flu.","MS IPsat no flu.","GSZ upper","GSZ lower","GG-hs","GG-n"};
+    TString names[8] = {"ALICE","STARlight","MS IPsat flu.","MS IPsat no flu.","GSZ upper","GSZ lower","CCK GG-hs","CCK GG-n"};
     Double_t y_step = 0.08;
     for(Int_t i = 0; i < 8; i++){
         latex[i] = new TLatex(); 

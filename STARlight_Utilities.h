@@ -138,7 +138,7 @@ double IDtoMass(int particleCode){
     return mass;
 }
 
-void ConvertStarlightAsciiToTree(TString str_folder){
+void ConvertStarlightAsciiToTree(Int_t nGenEv, TString str_folder){
 
 	// create output tree
 	TFile* outFile = new TFile((str_folder + "trees_starlight.root").Data(), "RECREATE");
@@ -151,6 +151,11 @@ void ConvertStarlightAsciiToTree(TString str_folder){
   	TClonesArray*   daughterParticles = new TClonesArray("TLorentzVector");
 	outTree->Branch("parent",    "TLorentzVector", &parentParticle,    32000, -1);
 	outTree->Branch("daughters", "TClonesArray",   &daughterParticles, 32000, -1);
+
+    Int_t nEntriesAnalysed = 0;
+    Int_t nEntriesProgress = (Double_t)nGenEv / 100.;
+    Int_t nPercent = 0;
+    Int_t i = 0;
 
 	ifstream inFile;
 	inFile.open((str_folder + "slight.out").Data());
@@ -205,6 +210,13 @@ void ConvertStarlightAsciiToTree(TString str_folder){
 		}
 		daughterParticles->Compress();
 		outTree->Fill();
+
+        if((i+1) % nEntriesProgress == 0){
+        nPercent += 1;
+        nEntriesAnalysed += nEntriesProgress;
+        Printf("[%i%%] %i entries analysed.", nPercent, nEntriesAnalysed);
+        }
+        i++;
 	}
 
 	outTree->Write("",TObject::kWriteDelete);

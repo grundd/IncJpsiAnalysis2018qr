@@ -9,7 +9,7 @@
 #include "AnalysisManager.h"
 #include "STARlight_Utilities.h"
 
-TString str_folder = "Trees/STARlight/bkg_sudakov_3/";
+TString str_folder = "Trees/STARlight/bkg_sudakov/";
 Int_t nBins = 200;
 Double_t pT_low = 0.0;
 Double_t pT_upp = 1.0;
