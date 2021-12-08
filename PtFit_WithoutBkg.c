@@ -1,4 +1,4 @@
-// PtFitWithoutBkg.c
+// PtFit_WithoutBkg.c
 // David Grund, Sep 27, 2021
 
 // roofit headers
@@ -8,7 +8,7 @@
 #include "RooRealSumPdf.h"
 // my headers
 #include "AnalysisManager.h"
-#include "PtFitUtilities.h"
+#include "PtFit_Utilities.h"
 
 //#######################################
 // Options to set:
@@ -41,8 +41,7 @@ void PrepareDataTree();
 void SubtractBackground();
 void DoPtFitNoBkg(Int_t iCohJShape);
 void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFALSE, Int_t bin = -1);
-//void DoInvMassFitMainMC(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFALSE, Int_t bin = -1);
-void DrawCorrelationMatrixModified(TCanvas *cCM, RooFitResult* ResFit);
+void DrawCorrelationMatrixModified(TCanvas *cCM, RooFitResult* ResFit, Int_t iCohJShape);
 
 TString OutputPtFitWithoutBkg = "Results/PtFitWithoutBkg/";
 TString OutputTrees = "Trees/PtFit/";
@@ -55,7 +54,8 @@ Double_t N_Bkgr_err = 0;
 const Double_t hbarC = 0.197; // GeV*fm
 const Double_t PbAtomicNumber = 208.; // Pb
 
-Double_t VMD_model(Double_t *pT, Double_t *par){
+Double_t VMD_model(Double_t *pT, Double_t *par)
+{
     // input and parameters
     Double_t q = pT[0];     // q = sqrt of transferred momentum |t|, unit is GeV 
     if (q == 0.) return 0.; // protection against floating point exception
@@ -73,12 +73,13 @@ Double_t VMD_model(Double_t *pT, Double_t *par){
 
     return q * FF * FF; // q (= pT) from the Jacobian ! (see a photo from Dec 2)
 }
-Double_t Zero_func(Double_t pT){
+Double_t Zero_func(Double_t pT)
+{
     return 0.;
 }
 
-void PtFitWithoutBkg(){
-
+void PtFit_WithoutBkg()
+{
     //PrepareDataTree();
 
     SetPtBins(2);
@@ -87,15 +88,20 @@ void PtFitWithoutBkg(){
 
     PreparePDFs_MC();
 
-    if(iCohJShape == 1 || iCohJShape > 1000) PreparePDF_modRA();
+    PreparePDF_modRA();
 
     DoPtFitNoBkg(0);
+    DoPtFitNoBkg(1);
+    DoPtFitNoBkg(2);
+    DoPtFitNoBkg(3);
+
+    for(Int_t i = 1001; i < 1014; i++) DoPtFitNoBkg(i);
 
     return;
 }
 
-void SubtractBackground(){
-
+void SubtractBackground()
+{
     TString path = Form("%sJpsiSignalNoBkg_Binning%i.root", OutputTrees.Data(), BinningOpt);
     TFile *file = TFile::Open(path.Data(),"read");
     if(file){
@@ -140,8 +146,8 @@ void SubtractBackground(){
     return;
 }
 
-void DoPtFitNoBkg(Int_t iCohJShape){
-
+void DoPtFitNoBkg(Int_t iCohJShape)
+{
     SetPtBinning();
 
     // Load the file with PDFs
@@ -167,8 +173,14 @@ void DoPtFitNoBkg(Int_t iCohJShape){
         TList *l_modRA = (TList*) f_modRA->Get("HistList");
         if(l_modRA) Printf("List %s loaded.", l_modRA->GetName()); 
 
-        hCohJ = (TH1D*)l_modRA->FindObject("hCohJ_modRA");
+        Double_t R_A = 0;
+        if(iCohJShape == 1) R_A = 7.53;
+        if(iCohJShape > 1000) R_A = 6.6 + (Double_t)(iCohJShape-1001) * 0.1;
+
+        hCohJ = (TH1D*)l_modRA->FindObject(Form("hCohJ_modRA_%.2f", R_A));
         if(hCohJ) Printf("Histogram %s loaded.", hCohJ->GetName());
+
+        f_modRA->Close();
     } 
 
     // 2) kIncohJpsiToMu
@@ -613,7 +625,7 @@ void DoPtFitNoBkg(Int_t iCohJShape){
 
     // 11.1) Draw the Correlation Matrix
     TCanvas *cCM = new TCanvas("cCM","cCM",600,500);
-    DrawCorrelationMatrixModified(cCM,ResFit);
+    DrawCorrelationMatrixModified(cCM,ResFit,iCohJShape);
 
     // 11.2) Draw the pt fit
     // Without log scale
@@ -712,7 +724,7 @@ void DoPtFitNoBkg(Int_t iCohJShape){
     //leg2->SetTextSize(0.027);
     l2->AddEntry("DSetData","Data", "EP");
     l2->AddEntry("Mod","sum","L");
-    l2->AddEntry((TObject*)0,Form("#chi^{2}/NDF = %.3f",chi2),"");
+    l2->AddEntry((TObject*)0,Form("#chi^{2}/NDF = %.3f = %.3f/%i",chi2,chi2*ResFit->floatParsFinal().getSize(), ResFit->floatParsFinal().getSize()),"");
     if(iCohJShape == 0 || iCohJShape == 1 || iCohJShape > 1000) l2->AddEntry("hPDFCohJ","coherent J/#psi", "L");
     else if(iCohJShape == 2) l2->AddEntry("gPDFCohJ","coherent J/#psi", "L");
     else if(iCohJShape == 3) l2->AddEntry("sumPdfCohJ","coherent J/#psi", "L");
@@ -735,6 +747,10 @@ void DoPtFitNoBkg(Int_t iCohJShape){
 
     // 13) Print the results to pdf and png
     str = new TString(Form("%sBinn%i_CohSh%i", OutputPtFitWithoutBkg.Data(), BinningOpt, iCohJShape));
+    if(iCohJShape > 1000){
+        Double_t R_A = 6.6 + (Double_t)(iCohJShape-1001) * 0.1;        
+        str = new TString(Form("%sOptimalRA/coh_modRA_%.2f", OutputPtFitWithoutBkg.Data(), R_A));
+    } 
     cCM->Print((*str + "_CM.pdf").Data());
     cCM->Print((*str + "_CM.png").Data());
     cPt->Print((*str + ".pdf").Data());
@@ -746,7 +762,8 @@ void DoPtFitNoBkg(Int_t iCohJShape){
 }
 
 
-void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t bin){
+void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t bin)
+{
     // Fit the invariant mass distribution using Double-sided CB function
     // Fix the values of the tail parameters to MC values
     // Peak corresponding to psi(2s) excluded
@@ -818,22 +835,6 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
         }
         file_in.close();
     }
-
-    /*
-    if(file_in.fail()){
-        Printf("\n");
-        Printf("*** MC values for this bin not found. Will be calculated... *** \n");
-        DoInvMassFitMainMC(fPtCutLow,fPtCutUpp,kTRUE,bin);
-    } 
-
-    file_in.open(pathMC->Data());
-    Int_t i_line = 0;
-    while(!file_in.eof()){
-        file_in >> name >> values[i_line] >> errors[i_line];
-        i_line++;
-    }
-    file_in.close();
-    */
 
     fAlpha_L = values[0];
     fAlpha_R = values[1];
@@ -976,8 +977,8 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     return;
 }
 
-void PrepareDataTree(){
-
+void PrepareDataTree()
+{
     TFile *fFileIn = TFile::Open("Trees/AnalysisData/AnalysisResultsLHC18qrMerged.root", "read");
     if(fFileIn) Printf("Input data loaded.");
 
@@ -1012,155 +1013,8 @@ void PrepareDataTree(){
     return;
 }
 
-/*
-void DoInvMassFitMainMC(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t bin){
-    // Fit the invariant mass distribution using Double-sided CB function
-
-    // Cuts:
-    char fStrReduce[120];
-    Double_t fYCut      = 0.80;
-    Double_t fMCutLow   = 2.90;
-    Double_t fMCutUpp   = 3.30;
-
-    sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
-
-    // Binning:
-    Int_t nBins = 75; // so that each bin between 2.95 and 3.25 GeV is 4 MeV wide
-    RooBinning binM(nBins,fMCutLow,fMCutUpp);
-    Double_t BinSizeDouble = (fMCutUpp - fMCutLow) * 1000 / nBins; // in MeV
-    BinSizeDouble = BinSizeDouble + 0.5;
-    // https://stackoverflow.com/questions/9695329/c-how-to-round-a-double-to-an-int
-    Int_t BinSize = (Int_t)BinSizeDouble;
-
-    Printf("\n");
-    Printf("*** Bin size (double): %.3f ***", BinSizeDouble);
-    Printf("*** Bin size (int): %i ***\n", BinSize);
-
-    // Roofit variables
-    RooRealVar fM("fM","fM",fMCutLow,fMCutUpp);
-    RooRealVar fPt("fPt","fPt",0,10.);
-    RooRealVar fY("fY","fY",-0.8,0.8);
-
-    //fM.setBinning(binM);
-
-    // Get the data trees
-    TFile *fFileIn = new TFile("Trees/InvMassFitMC/InvMassFitMC.root"); 
-    TTree *fTreeIn = NULL;
-    fFileIn->GetObject("tMixedSample",fTreeIn);
-
-    RooDataSet *fDataIn = new RooDataSet("fDataIn", "fDataIn", RooArgSet(fM,fY,fPt), Import(*fTreeIn));
-    RooAbsData* fDataSet = fDataIn->reduce(fStrReduce);
-
-    // Print the number of entries in the dataset
-    Int_t nEvents = fDataSet->numEntries();
-    Printf("*** Number of events in the dataset: %i ***\n", nEvents);
-
-    // Roofit variables
-    RooRealVar norm_L("norm_L","N_{L}(J/#psi)",nEvents,0,1e06);
-    RooRealVar norm_R("norm_R","N_{R}(J/#psi)",nEvents,0,1e06);
-    RooRealVar N("N","N(J/#psi)",nEvents,0,1e06);
-
-    RooRealVar mean_L("m","m_{J/#psi}",3.097,3.0,3.2);
-    RooRealVar sigma_L("sig","#sigma_{J/#psi}",0.0186,0.01,0.2);
-    RooRealVar alpha_L("#alpha_{L}","alpha_{L}",1.,0.0,20.0);
-    RooRealVar n_L("n_{L}","n_{L}",1.,0,30);
-
-    RooGenericPdf mean_R("mean_R","m_{J/#psi}","m",RooArgSet(mean_L));
-    RooGenericPdf sigma_R("sigma_R","#sigma_{J/#psi}","sig",RooArgSet(sigma_L));
-    RooRealVar alpha_R("#alpha_{R}","alpha_{R}",-1.,-20.0,0.0); 
-    RooRealVar n_R("n_{R}","n_{R}",1.,0,30);
-
-    RooCBShape CB_left("CB_left","CB_left",fM,mean_L,sigma_L,alpha_L,n_L);
-    RooCBShape CB_right("CB_right","CB_right",fM,mean_R,sigma_R,alpha_R,n_R);
-    RooRealVar frac("frac","fraction of CBs",0.5);
-    RooAddPdf DoubleSidedCB("DoubleSidedCB","DoubleSidedCB",RooArgList(CB_left,CB_right),RooArgList(frac));
-
-    // Create model
-    RooExtendPdf DSCBExtended("DSCBExtended","Extended DSCB",DoubleSidedCB,N);
-    // Perform fit
-    RooFitResult* fResFit = DSCBExtended.fitTo(*fDataSet,Extended(kTRUE),Range(fMCutLow,fMCutUpp),Save());
-
-    // ##########################################################
-    // Plot the results
-    // Draw histogram and fit
-    TCanvas *cHist = new TCanvas("cHist","cHist",800,600);
-    SetCanvas(cHist,kFALSE);
-
-    RooPlot* frameM = fM.frame(Title("Mass fit")); 
-    fDataSet->plotOn(frameM,Name("data"),Binning(binM),MarkerStyle(20),MarkerSize(1.));
-    DoubleSidedCB.plotOn(frameM,Name("DoubleSidedCB"),LineColor(215),LineWidth(3),LineStyle(kDashed));
-    // Y axis
-    frameM->GetYaxis()->SetTitleSize(0.045);
-    frameM->GetYaxis()->SetLabelSize(0.045);
-    frameM->GetYaxis()->SetLabelOffset(0.01);
-    frameM->GetYaxis()->SetTitle(Form("Counts per %i MeV/#it{c}^{2}", BinSize));
-    frameM->GetYaxis()->SetTitleOffset(1);
-    frameM->GetYaxis()->SetMaxDigits(3);
-    // X axis
-    frameM->GetXaxis()->SetTitleSize(0.045);
-    frameM->GetXaxis()->SetLabelSize(0.045);
-    frameM->GetXaxis()->SetLabelOffset(0.01);
-    frameM->GetXaxis()->SetTitle("#it{m}_{#mu#mu} (GeV/#it{c}^{2})");
-    frameM->GetXaxis()->SetTitleOffset(1.1);
-    frameM->Draw();
-
-    // Get chi2 
-    Double_t chi2 = frameM->chiSquare("CB_ext","data",fResFit->floatParsFinal().getSize());
-
-    TLegend *leg = new TLegend(0.655,0.5,0.945,0.935);
-    leg->AddEntry((TObject*)0,Form("#it{N} = %.f #pm %.f", N.getVal(), N.getError()),"");
-    leg->AddEntry((TObject*)0,Form("#mu = %.4f GeV/#it{c}^{2}", mean_L.getVal()),""); // mean_L.getError()
-    leg->AddEntry((TObject*)0,Form("#sigma = %.4f GeV/#it{c}^{2}", sigma_L.getVal()),""); // sigma_L.getError()
-    leg->AddEntry((TObject*)0,Form("#alpha_{L} = %.3f #pm %.3f", alpha_L.getVal(), alpha_L.getError()),"");
-    leg->AddEntry((TObject*)0,Form("#alpha_{R} = %.3f #pm %.3f", (-1)*(alpha_R.getVal()), alpha_R.getError()),"");
-    leg->AddEntry((TObject*)0,Form("#it{n}_{L} = %.2f #pm %.2f", n_L.getVal(), n_L.getError()),"");
-    leg->AddEntry((TObject*)0,Form("#it{n}_{R} = %.2f #pm %.2f", n_R.getVal(), n_R.getError()),"");
-    leg->SetTextSize(0.042);
-    leg->SetBorderSize(0);
-    leg->SetFillStyle(0);
-    leg->Draw();
-
-    TLegend *leg2 = new TLegend(0.10,0.7,0.3,0.935);
-    //leg2->SetHeader("ALICE, PbPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
-    leg2->AddEntry((TObject*)0,Form("ALICE Simulation"),"");
-    leg2->AddEntry((TObject*)0,Form("Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV"),"");
-    leg2->AddEntry((TObject*)0,Form("MC rec: J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
-    leg2->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.2f,%.2f) GeV/#it{c}", fPtCutLow,fPtCutUpp),"");
-    leg2->SetTextSize(0.042);
-    leg2->SetBorderSize(0);
-    leg2->SetFillStyle(0);
-    leg2->Draw();
-
-    // Draw Histogram with log scale
-    TCanvas *cHistLog = new TCanvas("cHistLog","cHistLog",800,600);
-    SetCanvas(cHistLog,kTRUE);
-    frameM->Draw();
-    leg->Draw();
-    leg2->Draw();
-
-    if(save){
-        // Prepare path
-        TString *str = NULL;
-        str = new TString(Form("%sInvMassFitsBinsMC/Binning%i/bin%i", OutputPtFitWithoutBkg.Data(), BinningOpt, bin));
-        // Print the plots
-        cHist->Print((*str + ".png").Data());
-        cHistLog->Print((*str + "_log.png").Data());
-        // Print the values of alpha and n to txt output files
-        ofstream outfile((*str + ".txt").Data());
-        outfile << "alpha_L \t" << alpha_L.getVal() << "\t" << alpha_L.getError() << "\n";
-        outfile << "alpha_R \t" << alpha_R.getVal() << "\t" << alpha_R.getError() << "\n";
-        outfile << "n_L \t" << n_L.getVal() << "\t" << n_L.getError() << "\n";
-        outfile << "n_R \t" << n_R.getVal() << "\t" << n_R.getError() << "\n";
-        outfile.close();
-        Printf("*** Results printed to %s.***", (*str + ".txt").Data());
-    }
-
-    return;
-}
-*/
-
-void DrawCorrelationMatrixModified(TCanvas *cCM, RooFitResult* ResFit){
-
+void DrawCorrelationMatrixModified(TCanvas *cCM, RooFitResult* ResFit, Int_t iCohJShape)
+{
     // Set margins
     cCM->SetTopMargin(0.03);
     cCM->SetBottomMargin(0.11);

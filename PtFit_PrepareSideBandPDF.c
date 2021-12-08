@@ -1,16 +1,16 @@
-// PtFitPrepareSideBandPDF.c
+// PtFit_PrepareSideBandPDF.c
 // David Grund, Sep 29, 2021
 
 // my headers
 #include "AnalysisManager.h"
-#include "PtFitUtilities.h"
+#include "PtFit_Utilities.h"
 
 void PrepareTree();
 void PreparePDF();
 void PlotPDF();
 void CompareWithBkgFromInvMassFits();
 
-void PtFitPrepareSideBandPDF(){
+void PtFit_PrepareSideBandPDF(){
 
     //PrepareTree();
 

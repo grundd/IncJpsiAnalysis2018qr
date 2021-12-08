@@ -10,20 +10,20 @@ void STARlight_PrepareOutputTrees(){
     //PrepareOutputTrees_ChooseDataset(1);
 
     // To find the optimal value of R_A
-    TString str = "";
+    //TString str = "";
     /*
     str = "Trees/STARlight/OptimalRA/coh_modRA_0_6.624/";
     ConvertStarlightAsciiToTree(6e6, str);
     */
-    ///*
+    /*
     Double_t R_A = 0.;
-    for(Int_t i = 11; i < 13; i++){
+    for(Int_t i = 13; i < 13; i++){
         R_A = 6.60 + i * 0.10;
         str = Form("Trees/STARlight/OptimalRA/coh_modRA_%i_%.3f/",i+1,R_A);
         ConvertStarlightAsciiToTree(6e6, str);
         //CompareTrees(str);        
     }
-    //*/
+    */
 
 }
 

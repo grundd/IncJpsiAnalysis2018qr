@@ -1,4 +1,4 @@
-// PtFitPrepareTrees.c
+// PtFit_PrepareTrees.c
 // David Grund, Sep 23, 2021
 // Applied selections to MC events (defined in AnalysisManager.h):
 // 3.0 < m < 3.2 GeV
@@ -18,7 +18,7 @@ void PrepareTreeMC(Int_t iMC, TTree *t);
 // iMC == 3 => kIncohPsi2sToMuPi
 // iMC == 4 => kTwoGammaToMuMedium
 
-void PtFitPrepareTrees(){
+void PtFit_PrepareTrees(){
 
     // ***************************************************************
     // 1) Go over real data

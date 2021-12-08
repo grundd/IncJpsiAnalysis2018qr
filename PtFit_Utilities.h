@@ -1,4 +1,4 @@
-// PtFitUtilities.h
+// PtFit_Utilities.h
 // David Grund, Sep 29, 2021
 
 // cpp headers
@@ -220,52 +220,105 @@ void PreparePDF_modRA(){
         return;
     }
 
+    TH1D *hRec = new TH1D("hRec","hRec",nBins,ptEdges);
+    // Fill the histogram with reconstructed events
+    FillHistogramsMC(0, hRec);
+
     // ***************************************************************
     // Go over MC data
     // Define output histograms with predefined binning to create PDFs
     TList *l = new TList();
-    TH1D *hCohJ_modRA = new TH1D("hCohJ_modRA", "hCohJ_modRA", nBins, ptEdges); 
-
-    // Fill the histogram
-    FillHistogramsMC(0, hCohJ_modRA);
-
-    // Correct the shape => calculate the ratios
-    TH1D *hGenOld2 = new TH1D("hGenOld2", "hGenOld2", nBins, ptEdges);
-    TH1D *hGenNew2 = new TH1D("hGenNew2", "hGenNew2", nBins, ptEdges);
-    TH1D *hRatios = NULL;    
-
-    TFile *fRatios = TFile::Open("Trees/STARlight/CoherentShape/trees_CoherentShape.root","read");
-    if(!fRatios){
-        Printf("File not found! Terminating...");
-        return;
+    TString str_modRA[14] = {""};
+    str_modRA[0] = "hCohJ_modRA_7.53";
+    Double_t R_A = 6.60;
+    for(Int_t i = 0; i < 13; i++){
+        str_modRA[i+1] = Form("hCohJ_modRA_%.2f", R_A);
+        R_A += 0.10;
     }
+    TH1D *hCohJ_modRA[14] = { NULL };
+    TH1D *hGenOld[14] = { NULL };
+    TH1D *hGenNew[14] = { NULL };
+    TH1D *hRatios[14] = { NULL };
 
-    TList *list = (TList*) fRatios->Get("OutputList");
-    if(list) Printf("List %s loaded.", list->GetName()); 
+    for(Int_t i = 0; i < 14; i++){
 
-    TTree *tGenOld2 = (TTree*)list->FindObject("tGenOld2");
-    if(tGenOld2) Printf("Tree %s loaded.", tGenOld2->GetName());
-    tGenOld2->SetBranchAddress("fPtGen", &fPtGenerated);
+        if(i == 0) Printf("Now calculating the histogram with R_A = 7.53 fm.");
+        else Printf("Now calculating the histogram with R_A = %.2f fm.", 6.6+(i-1)*0.1);
 
-    TTree *tGenNew2 = (TTree*)list->FindObject("tGenNew2");
-    if(tGenNew2) Printf("Tree %s loaded.", tGenNew2->GetName());
-    tGenNew2->SetBranchAddress("fPtGen", &fPtGenerated);
+        hCohJ_modRA[i] = (TH1D*)hRec->Clone(str_modRA[i].Data());
+        hCohJ_modRA[i]->SetTitle(str_modRA[i].Data());
+        
+        // Correct the shape => calculate the ratios
+        hGenOld[i] = new TH1D(Form("hGenOld%i",i), Form("hGenOld%i",i), nBins, ptEdges);
+        hGenNew[i] = new TH1D(Form("hGenNew%i",i), Form("hGenNew%i",i), nBins, ptEdges); 
 
-    for(Int_t iEntry = 0; iEntry < tGenOld2->GetEntries(); iEntry++){
-        tGenOld2->GetEntry(iEntry);
-        hGenOld2->Fill(fPtGenerated);
-        tGenNew2->GetEntry(iEntry);
-        hGenNew2->Fill(fPtGenerated);
+        TString str_fGenOld = "";
+        TString str_fGenNew = "";
+        if(i == 0){
+            str_fGenOld = "Trees/STARlight/CoherentShape/tGenOld_6000k.root";
+            str_fGenNew = "Trees/STARlight/CoherentShape/tGenNew_6000k_7.530.root";
+        } else {
+            str_fGenOld = Form("Trees/STARlight/OptimalRA/tGenOld_6000k.root");
+            str_fGenNew = Form("Trees/STARlight/OptimalRA/tGenNew_6000k_%.3f.root", 6.6+(i-1)*0.1);
+        }
+
+        // Open fGenOld file and get the tree
+        TFile *fGenOld = TFile::Open(str_fGenOld.Data(),"read");
+        if(!fGenOld){
+            Printf("File fGenOld not found! Terminating...");
+            return;
+        }
+
+        TTree *tGenOld = (TTree*)fGenOld->Get("tGenOld");
+        if(tGenOld) Printf("Tree %s loaded.", tGenOld->GetName());
+        tGenOld->SetBranchAddress("fPtGen", &fPtGenerated);
+
+        // Open fGenNew file and get the tree
+        TFile *fGenNew = TFile::Open(str_fGenNew.Data(),"read");
+        if(!fGenNew){
+            Printf("File fGenNew not found! Terminating...");
+            return;
+        }
+
+        TTree *tGenNew = (TTree*)fGenNew->Get("tGenNew");
+        if(tGenNew) Printf("Tree %s loaded.", tGenNew->GetName());
+        tGenNew->SetBranchAddress("fPtGen", &fPtGenerated);
+
+        // Loop over tGenOld entries
+        for(Int_t iEntry = 0; iEntry < tGenOld->GetEntries(); iEntry++){
+            tGenOld->GetEntry(iEntry);
+            hGenOld[i]->Fill(fPtGenerated);
+        }
+        // Loop over tGenNew entries
+        for(Int_t iEntry = 0; iEntry < tGenNew->GetEntries(); iEntry++){
+            tGenNew->GetEntry(iEntry);
+            hGenNew[i]->Fill(fPtGenerated);
+        }
+        // Calculate the ratios
+        hRatios[i] = (TH1D*)hGenNew[i]->Clone(Form("hRatios%i",i));
+        hRatios[i]->SetTitle(Form("hRatios%i",i));
+        hRatios[i]->Sumw2();
+        hRatios[i]->Divide(hGenOld[i]);
+
+        // Print the results to console
+        Printf("\n");
+        Printf("*****");
+        Printf("Output:");
+        Printf("pT_low\tpT_upp\tnEvOld\tnEvNew\tRatio");
+        for(Int_t iBin = 1; iBin <= nBins; iBin++){
+            Printf("%.3f\t%.3f\t%.0f\t%.0f\t%.3f",
+                hRatios[i]->GetBinLowEdge(iBin), hRatios[i]->GetBinLowEdge(iBin+1), 
+                hGenOld[i]->GetBinContent(iBin), hGenNew[i]->GetBinContent(iBin), hRatios[i]->GetBinContent(iBin));
+        }
+        Printf("*****");
+        Printf("\n");  
+
+        // Correct the shape of reconstructed events by the ratios
+        hCohJ_modRA[i]->Multiply(hRatios[i]);
+
+        l->Add(hCohJ_modRA[i]);
+
     }
-    // Calculate the ratios
-    hRatios = (TH1D*)hGenNew2->Clone("hRatios");
-    hRatios->SetTitle("hRatios");
-    hRatios->Sumw2();
-    hRatios->Divide(hGenOld2);
-    // Correct the shape of reconstructed events by the ratios
-    hCohJ_modRA->Multiply(hRatios);
-
-    l->Add(hCohJ_modRA);
     // ***************************************************************
     // Save results to the output file
     // Create the output file
