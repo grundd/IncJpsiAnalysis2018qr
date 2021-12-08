@@ -24,6 +24,10 @@ using namespace std;
 //###############################################################################
 void PrepareTreesPtGammaVMPom(Int_t nGenEv, TString str_folder){
 
+    Printf("*****");
+    Printf("Creating tPtGammaVMPom tree in %s.", str_folder.Data());
+    Printf("*****");
+
     TTree *tPtGammaVMPom = new TTree("tPtGammaVMPom", "tPtGammaVMPom");
     tPtGammaVMPom->Branch("fPtGm", &fPtGm, "fPtGm/D");
     tPtGammaVMPom->Branch("fPtVM", &fPtVM, "fPtVM/D");
@@ -60,6 +64,9 @@ void PrepareTreesPtGammaVMPom(Int_t nGenEv, TString str_folder){
     f->ls();
     f->Close();
 
+    Printf("*****");
+    Printf("Done.");
+    Printf("*****");
     Printf("\n\n");
 
     return;
@@ -139,6 +146,10 @@ double IDtoMass(int particleCode){
 }
 
 void ConvertStarlightAsciiToTree(Int_t nGenEv, TString str_folder){
+
+    Printf("*****");
+    Printf("Creating STARlight tree in %s.", str_folder.Data());
+    Printf("*****");
 
 	// create output tree
 	TFile* outFile = new TFile((str_folder + "trees_starlight.root").Data(), "RECREATE");
@@ -224,5 +235,10 @@ void ConvertStarlightAsciiToTree(Int_t nGenEv, TString str_folder){
 		outFile->Close();
 		delete outFile;
 	}
+
+    Printf("*****");
+    Printf("Done.");
+    Printf("*****");
+    Printf("\n\n");
 }
 //###############################################################################

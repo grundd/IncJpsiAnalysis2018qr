@@ -11,19 +11,19 @@ void STARlight_PrepareOutputTrees(){
 
     // To find the optimal value of R_A
     TString str = "";
-    str = "Trees/STARlight/OptimalRA/coh_modRA_0_6.624/";
-    PrepareTreesPtGammaVMPom(6e6, str);
-    ConvertStarlightAsciiToTree(6e6, str);
     /*
+    str = "Trees/STARlight/OptimalRA/coh_modRA_0_6.624/";
+    ConvertStarlightAsciiToTree(6e6, str);
+    */
+    ///*
     Double_t R_A = 0.;
-    for(Int_t i = 0; i < 13; i++){
+    for(Int_t i = 11; i < 13; i++){
         R_A = 6.60 + i * 0.10;
-        str = Form("Trees/STARlight/OptimalRA/coh_modRA_%i_%.2f/",i+1,R_A);
-        PrepareTreesPtGammaVMPom(6e6, str);
+        str = Form("Trees/STARlight/OptimalRA/coh_modRA_%i_%.3f/",i+1,R_A);
         ConvertStarlightAsciiToTree(6e6, str);
         //CompareTrees(str);        
     }
-    */
+    //*/
 
 }
 

@@ -14,241 +14,297 @@
 #include "STARlight_Utilities.h"
 
 Double_t fPtGenerated;
-
 Double_t pT_low = 0.0; // GeV/c
 Double_t pT_upp = 0.4; // GeV/c
+Int_t nBins = 80;
 
-// NGen = 4.880.000
-Int_t nBins1 = 40;
-Double_t nEv_old1 = 0;
-Double_t nEv_new1 = 0;
-TH1D *hGenOld1 = new TH1D("hGenOld1","hGenOld1",nBins1,pT_low,pT_upp);
-TH1D *hGenNew1 = new TH1D("hGenNew1","hGenNew1",nBins1,pT_low,pT_upp);
-TH1D *hRatios1 = NULL;
-TH1D *hRecOld1 = new TH1D("hRecOld","hRecOld",nBins1,pT_low,pT_upp);
-TH1D *hRecNew1 = NULL;
-// NGen == 6.000.000
-Int_t nBins2 = 40;
-Double_t nEv_old2 = 0;
-Double_t nEv_new2 = 0;
-TH1D *hGenOld2 = new TH1D("hGenOld2","hGenOld2",nBins2,pT_low,pT_upp);
-TH1D *hGenNew2 = new TH1D("hGenNew2","hGenNew2",nBins2,pT_low,pT_upp);
-TH1D *hRatios2 = NULL;
-TH1D *hRecOld2 = new TH1D("hRecOld","hRecOld",nBins2,pT_low,pT_upp);
-TH1D *hRecNew2 = NULL;
+TH1D *hRecOld = new TH1D("hRecOld","hRecOld",nBins,pT_low,pT_upp);
+TH1D *hRatios = NULL;
+TH1D *hRecNew = NULL;
 
-void CalculateShapes(TString str_in, TString str_out_tr, TString str_out_im, Bool_t bCompareWith1);
+void FillHistRec();
+void FillTreeGen(Bool_t b6000k, TString sIn, TString sOut_subfolder, Double_t R_A);
+void CalculateAndPlotRatios(Bool_t b6000k, TString sOut_subfolder, Double_t R_A);
 
-    TString str_in = "";
-    TString str_out_tr = "";
-    TString str_out_im = "";
+TString sIn = "";
+TString sOut_subfolder = "";
 
-void STARlight_CoherentShape(){
+void STARlight_CoherentShape()
+{
+    Bool_t b4800k = kFALSE;
+    if(b4800k){
+        sIn = "";
+        sOut_subfolder = "CoherentShape";
+        FillHistRec();
+        FillTreeGen(kFALSE,sIn,sOut_subfolder,7.530);
+        CalculateAndPlotRatios(kFALSE,sOut_subfolder,7.530);
+    }
 
-    /*
-    str_in = "coh_6000000_modRA";
-    str_out_tr = "CoherentShape/trees_CohShape_7.53.root";
-    str_out_im = "CoherentShape/coh_modRA_7.53";
-    CalculateShapes(str_in, str_out_tr, str_out_im, kTRUE);
-    */
+    Bool_t bOptimalRA = kTRUE;
+    if(bOptimalRA){
+        FillHistRec();
 
-    str_in = "OptimalRA/coh_modRA_0_6.624";
-    str_out_tr = "OptimalRA/trees_CohShape_6.624.root";
-    str_out_im = "OptimalRA/coh_modRA_6.624";
-    CalculateShapes(str_in, str_out_tr, str_out_im, kTRUE);
+        sIn = "OptimalRA/coh_modRA_0_6.624";
+        sOut_subfolder = "OptimalRA";
+        FillTreeGen(kTRUE,sIn,sOut_subfolder,6.624);
+        CalculateAndPlotRatios(kTRUE,sOut_subfolder,6.624);
 
-    Int_t iUpTo = 0;
-    Double_t R_A = 0.;
-    for(Int_t i = 0; i < iUpTo; i++){
-        R_A = 6.60 + i * 0.10;
-        str_in = Form("OptimalRA/coh_modRA_%i_%.2f", i+1, R_A);
-        str_out_tr = Form("OptimalRA/trees_CohShape_%i_%.2f.root", i+1, R_A);
-        str_out_im = Form("OptimalRA/coh_modRA_%i_%.2f", i+1, R_A);
-        CalculateShapes(str_in, str_out_tr, str_out_im, kFALSE);
+        Int_t iUpTo = 11;
+        Double_t R_A = 0.;
+        for(Int_t i = 0; i < iUpTo; i++){
+            R_A = 6.60 + i * 0.10;  
+            sIn = Form("OptimalRA/coh_modRA_%i_%.3f", i+1, R_A);
+            sOut_subfolder = "OptimalRA";
+            FillTreeGen(kTRUE,sIn,sOut_subfolder,R_A);
+            CalculateAndPlotRatios(kTRUE,sOut_subfolder,R_A);
+        }
     }
 
     return;
 }
 
-void CalculateShapes(TString str_in, TString str_out_tr, TString str_out_im, Bool_t bCompareWith1){
+void FillTreeGen(Bool_t b6000k, TString sIn, TString sOut_subfolder, Double_t R_A)
+{
 
-    // 1) ##########################################################################################
-    // NGen = 4.880.000
-    // 1a) Load official root file: kCohJpsiToMu
-    TFile *fSL_old1 = NULL;
-    fSL_old1 = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohJpsiToMu.root", "read");
-    if(fSL_old1) Printf("File %s loaded.", fSL_old1->GetName());
+    Printf("*****");
+    if(b6000k)  Printf("Filling trees with nGen = 6.000.000.");
+    else        Printf("Filling trees with nGen = 4.880.000.");
+    Printf("*****");
 
-    // Get the MCGen tree
-    TTree *tGen = dynamic_cast<TTree*> (fSL_old1->Get("AnalysisOutput/fTreeJPsiMCGen"));
-    if(tGen) Printf("Tree %s loaded.", tGen->GetName());
-    ConnectTreeVariablesMCGen(tGen);
-
-    // Get the MCRec tree
-    TTree *tRec = dynamic_cast<TTree*> (fSL_old1->Get("AnalysisOutput/fTreeJPsiMCRec"));
-    if(tRec) Printf("Tree %s loaded.", tRec->GetName());
-    ConnectTreeVariablesMCRec(tRec);
-
-    // 1b) Load generated coherent MC events (with R_A = 7.53 fm)
-    TFile *fSL_new1 = TFile::Open("Trees/STARlight/coh_4880000_modRA/trees_starlight.root", "read");
-    if(fSL_new1) Printf("File %s loaded.", fSL_new1->GetName());
-
-    // Get the SL tree
-    TTree *tSL_new1 = dynamic_cast<TTree*> (fSL_new1->Get("starlightTree"));
-    if(tSL_new1) Printf("Tree %s loaded.", tSL_new1->GetName());
-    ConnectTreeVariables_tSL(tSL_new1);
-
-    // 2) ##########################################################################################
-    // NGen = 6.000.000
-    // 2a) Load generated coherent MC events (with R_A = 6.62 fm)
-    TFile *fSL_old2 = TFile::Open("Trees/STARlight/coh_6000000_stdRA/trees_starlight.root", "read");
-    if(fSL_old2) Printf("File %s loaded.", fSL_old2->GetName());
-
-    // Get the SL tree
-    TTree *tSL_old2 = dynamic_cast<TTree*> (fSL_old2->Get("starlightTree"));
-    if(tSL_old2) Printf("Tree %s loaded.", tSL_old2->GetName());
-    ConnectTreeVariables_tSL(tSL_old2);  
-
-    // 2b) Load generated coherent MC events (with different R_A)
-    TFile *fSL_new2 = TFile::Open(Form("Trees/STARlight/%s/trees_starlight.root", str_in.Data()), "read");
-    if(fSL_new2) Printf("File %s loaded.", fSL_new2->GetName());
-
-    // Get the SL tree
-    TTree *tSL_new2 = dynamic_cast<TTree*> (fSL_new2->Get("starlightTree"));
-    if(tSL_new2) Printf("Tree %s loaded.", tSL_new2->GetName());
-    ConnectTreeVariables_tSL(tSL_new2);      
+    Double_t nEvOld = 0;
+    Double_t nEvNew = 0;
+    TH1D *hGenOld = new TH1D("hGenOld","hGenOld",nBins,pT_low,pT_upp);
+    TH1D *hGenNew = new TH1D("hGenNew","hGenNew",nBins,pT_low,pT_upp);
 
     // #############################################################################################
-    // Define the output
-    TFile *f = new TFile(Form("Trees/STARlight/%s", str_out_tr.Data()),"RECREATE");
-    TList *l = new TList();
-
-    TTree *tGenOld1 = new TTree("tGenOld1","tGenOld1");
-    tGenOld1->Branch("fPtGen",&fPtGenerated,"fPtGen/D");
-    if(bCompareWith1) l->Add(tGenOld1);
-    if(bCompareWith1) l->Add(hGenOld1);
-    TTree *tGenOld2 = new TTree("tGenOld2","tGenOld2");
-    tGenOld2->Branch("fPtGen",&fPtGenerated,"fPtGen/D");
-    l->Add(tGenOld2);
-    l->Add(hGenOld2);
-    TTree *tGenNew1 = new TTree("tGenNew1","tGenNew1");
-    tGenNew1->Branch("fPtGen",&fPtGenerated,"fPtGen/D");
-    if(bCompareWith1) l->Add(tGenNew1);
-    if(bCompareWith1) l->Add(hGenNew1);
-    TTree *tGenNew2 = new TTree("tGenNew2","tGenNew2");
-    tGenNew2->Branch("fPtGen",&fPtGenerated,"fPtGen/D");
-    l->Add(tGenNew2);
-    l->Add(hGenNew2);
+    
+    
+    TFile *fSLOld = NULL;
+    TTree *tSLOld = NULL;
+    if(b6000k){
+        // NGen = 6.000.000
+        // Load generated coherent MC events with R_A = 6.624 fm
+        TFile *fSLOld = TFile::Open("Trees/STARlight/coh_6000000_stdRA/trees_starlight.root", "read");
+        if(fSLOld) Printf("File %s loaded.", fSLOld->GetName());
+        tSLOld = dynamic_cast<TTree*> (fSLOld->Get("starlightTree"));
+        if(tSLOld) Printf("Tree %s loaded.", tSLOld->GetName());
+        ConnectTreeVariables_tSL(tSLOld);
+    } else {
+        // NGen = 4.880.000
+        // Load official root file: kCohJpsiToMu (R_A = 6.624 fm)
+        fSLOld = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohJpsiToMu.root", "read");
+        if(fSLOld) Printf("File %s loaded.", fSLOld->GetName());
+        // Get the MCGen tree
+        tSLOld = dynamic_cast<TTree*> (fSLOld->Get("AnalysisOutput/fTreeJPsiMCGen"));
+        if(tSLOld) Printf("Tree %s loaded.", tSLOld->GetName());
+        ConnectTreeVariablesMCGen(tSLOld);
+    }
+    TFile *fSLNew = NULL;
+    TTree *tSLNew = NULL;
+    if(b6000k){
+        // NGen = 6.000.000
+        // Load generated coherent MC events with new R_A
+        fSLNew = TFile::Open(Form("Trees/STARlight/%s/trees_starlight.root", sIn.Data()), "read");
+        if(fSLNew) Printf("File %s loaded.", fSLNew->GetName());
+    } else {
+        // NGen = 4.880.000
+        // Load generated coherent MC events (with R_A = 7.53 fm)
+        fSLNew = TFile::Open("Trees/STARlight/coh_4880000_modRA/trees_starlight.root", "read");
+        if(fSLNew) Printf("File %s loaded.", fSLNew->GetName());
+    }
+    // Get the SL tree
+    tSLNew = dynamic_cast<TTree*> (fSLNew->Get("starlightTree"));
+    if(tSLNew) Printf("Tree %s loaded.", tSLNew->GetName());
+    ConnectTreeVariables_tSL(tSLNew);
 
     // #############################################################################################
-    if(bCompareWith1){
-        Printf("\n***");
-        Printf("Analysis 1: nGen = 4.880.000");
-        Printf("kCohJpsiToMu MCGen tree contains %lli entries.", tGen->GetEntries());
-        for(Int_t iEntry = 0; iEntry < tGen->GetEntries(); iEntry++){
-            tGen->GetEntry(iEntry);
+    // Check if output already created, if not, create it
+
+    TString str_fGenOld = "";
+    if(b6000k)  str_fGenOld = Form("Trees/STARlight/%s/tGenOld_6000k.root", sOut_subfolder.Data());
+    else        str_fGenOld = Form("Trees/STARlight/%s/tGenOld_4880k.root", sOut_subfolder.Data());
+    TFile *fGenOld = TFile::Open(str_fGenOld.Data(),"read");
+
+    if(fGenOld){
+
+        Printf("%s already created.", str_fGenOld.Data());
+
+    } else {
+
+        fGenOld = new TFile(str_fGenOld.Data(),"RECREATE");
+        TList *lGenOld = new TList();
+
+        TTree *tGenOld = new TTree("tGenOld","tGenOld");
+        tGenOld->Branch("fPtGen",&fPtGenerated,"fPtGen/D");
+
+        lGenOld->Add(tGenOld);
+        lGenOld->Add(hGenOld);
+        Printf("Filling tGenOld and hGenOld.");
+        Printf("Old tree contains %lli entries.", tSLOld->GetEntries());
+
+        // Loop over entries in tGen
+        Int_t nEntriesAnalysed = 0;
+        Int_t nEntriesProgress = (Double_t)tSLOld->GetEntries() / 20.;
+        Int_t nPercent = 0;
+
+        for(Int_t iEntry = 0; iEntry < tSLOld->GetEntries(); iEntry++){
+            tSLOld->GetEntry(iEntry);
             if(TMath::Abs(fYGen) < 1.0){
-                nEv_old1++;
-                fPtGenerated = fPtGen;
-                hGenOld1->Fill(fPtGenerated);
-                tGenOld1->Fill();
+                nEvOld++;
+                if(b6000k)  fPtGenerated = parent->Pt();
+                else        fPtGenerated = fPtGen;
+                hGenOld->Fill(fPtGenerated);
+                tGenOld->Fill();
+            }
+            // Update progress bar
+            if((iEntry+1) % nEntriesProgress == 0){
+                nPercent += 5;
+                nEntriesAnalysed += nEntriesProgress;
+                Printf("[%i%%] %i entries analysed.", nPercent, nEntriesAnalysed);
             }
         }
-        Printf("No. of events with |y| < 1.0: %.0f", nEv_old1);
-        Printf("STARlight tree (new R_A) contains %lli entries.", tSL_new1->GetEntries());
-        for(Int_t iEntry = 0; iEntry < tSL_new1->GetEntries(); iEntry++){
-            tSL_new1->GetEntry(iEntry);
+        Printf("No. of events with |y| < 1.0: %.0f", nEvOld);
+
+        lGenOld->Write("OutputList", TObject::kSingleKey);
+        fGenOld->ls();
+    }
+
+    TString str_fGenNew = "";
+    if(b6000k)  str_fGenNew = Form("Trees/STARlight/%s/tGenNew_6000k_%.3f.root", sOut_subfolder.Data(), R_A);
+    else        str_fGenNew = Form("Trees/STARlight/%s/tGenNew_4880k_%.3f.root", sOut_subfolder.Data(), R_A);
+    TFile *fGenNew = TFile::Open(str_fGenNew.Data(),"read");
+
+    if(fGenNew){
+
+        Printf("%s already created.", str_fGenNew.Data());
+
+    } else {
+
+        fGenNew = new TFile(str_fGenNew.Data(),"RECREATE");
+        TList *lGenNew = new TList();
+
+        TTree *tGenNew = new TTree("tGenNew","tGenNew");
+        tGenNew->Branch("fPtGen",&fPtGenerated,"fPtGen/D");
+
+        lGenNew->Add(tGenNew);
+        lGenNew->Add(hGenNew); 
+        Printf("Filling tGenNew and hGenNew.");
+        Printf("New tree contains %lli entries.", tSLNew->GetEntries());
+
+        // Loop over entries in new SL tree
+        Int_t nEntriesAnalysed = 0;
+        Int_t nEntriesProgress = (Double_t)tSLNew->GetEntries() / 20.;
+        Int_t nPercent = 0;
+
+
+        for(Int_t iEntry = 0; iEntry < tSLNew->GetEntries(); iEntry++){
+            tSLNew->GetEntry(iEntry);
             if(TMath::Abs(parent->Rapidity()) < 1.0){
-                nEv_new1++;
+                nEvNew++;
                 fPtGenerated = parent->Pt();
-                hGenNew1->Fill(fPtGenerated);
-                tGenNew1->Fill();
+                hGenNew->Fill(fPtGenerated);
+                tGenNew->Fill();
+            }
+            // Update progress bar
+            if((iEntry+1) % nEntriesProgress == 0){
+                nPercent += 5;
+                nEntriesAnalysed += nEntriesProgress;
+                Printf("[%i%%] %i entries analysed.", nPercent, nEntriesAnalysed);
             }
         }
-        Printf("No. of events with |y| < 1.0: %.0f", nEv_new1);
+        Printf("No. of events with |y| < 1.0: %.0f", nEvNew);
+
+        lGenNew->Write("OutputList", TObject::kSingleKey);
+        fGenNew->ls();
     }
-    // #############################################################################################
-    Printf("\n***");
-    Printf("Analysis 2: nGen = 6.000.000");
-    Printf("STARlight tree (6.624 fm) contains %lli entries.", tSL_old2->GetEntries());
-    for(Int_t iEntry = 0; iEntry < tSL_old2->GetEntries(); iEntry++){
-        tSL_old2->GetEntry(iEntry);
-        if(TMath::Abs(parent->Rapidity()) < 1.0){
-            nEv_old2++;
-            fPtGenerated = parent->Pt();
-            hGenOld2->Fill(fPtGenerated);
-            tGenOld2->Fill();
-        }
-    }
-    Printf("No. of events with |y| < 1.0: %.0f", nEv_old2);
-    Printf("STARlight tree (new R_A) contains %lli entries.", tSL_new2->GetEntries());
-    for(Int_t iEntry = 0; iEntry < tSL_new2->GetEntries(); iEntry++){
-        tSL_new2->GetEntry(iEntry);
-        if(TMath::Abs(parent->Rapidity()) < 1.0){
-            nEv_new2++;
-            fPtGenerated = parent->Pt();
-            hGenNew2->Fill(fPtGenerated);
-            tGenNew2->Fill();
-        }
-    }
-    Printf("No. of events with |y| < 1.0: %.0f", nEv_new2);
+
     // #############################################################################################
 
-    // Prepare reconstructed events
-    for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
-        tRec->GetEntry(iEntry);
-        if(EventPassedMCRec(1, 2)){
-            if(bCompareWith1) hRecOld1->Fill(fPt);
-            hRecOld2->Fill(fPt);
-        } 
+    delete hGenOld;
+    delete hGenNew;
+
+    Printf("*****");
+    Printf("Done.");
+    Printf("*****");
+    Printf("\n");
+
+    return;
+}
+
+void CalculateAndPlotRatios(Bool_t b6000k, TString sOut_subfolder, Double_t R_A)
+{
+    Printf("*****");
+    if(b6000k)  Printf("Calculating ratios nGen = 6.000.000.");
+    else        Printf("Calculating ratios nGen = 4.880.000.");
+    Printf("*****");
+
+    // Load tGenOld
+    TString str_fGenOld = "";
+    if(b6000k)  str_fGenOld = Form("Trees/STARlight/%s/tGenOld_6000k.root", sOut_subfolder.Data());
+    else        str_fGenOld = Form("Trees/STARlight/%s/tGenOld_4880k.root", sOut_subfolder.Data());
+    TFile *fGenOld = fGenOld = TFile::Open(str_fGenOld.Data(), "read");
+    if(fGenOld) Printf("File %s loaded.", fGenOld->GetName());
+
+    TList *lGenOld = (TList*) fGenOld->Get("OutputList");
+    if(lGenOld) Printf("List %s loaded.", lGenOld->GetName()); 
+
+    TTree *tGenOld = (TTree*)lGenOld->FindObject("tGenOld");
+    if(tGenOld) Printf("Tree %s loaded.", tGenOld->GetName());
+    tGenOld->SetBranchAddress("fPtGen", &fPtGenerated);
+
+    // Load tGenNew
+    TString str_fGenNew = "";
+    if(b6000k)  str_fGenNew = Form("Trees/STARlight/%s/tGenNew_6000k_%.3f.root", sOut_subfolder.Data(), R_A);
+    else        str_fGenNew = Form("Trees/STARlight/%s/tGenNew_4880k_%.3f.root", sOut_subfolder.Data(), R_A);
+    TFile *fGenNew = TFile::Open(str_fGenNew.Data(),"read");
+    if(fGenNew) Printf("File %s loaded.", fGenNew->GetName());
+
+    TList *lGenNew = (TList*) fGenNew->Get("OutputList");
+    if(lGenNew) Printf("List %s loaded.", lGenNew->GetName()); 
+
+    TTree *tGenNew = (TTree*)lGenNew->FindObject("tGenNew");
+    if(tGenNew) Printf("Tree %s loaded.", tGenNew->GetName());
+    tGenNew->SetBranchAddress("fPtGen", &fPtGenerated);
+
+    // Load histograms with generated events
+    TH1D *hGenOld = (TH1D*)lGenOld->FindObject("hGenOld");
+    TH1D *hGenNew = (TH1D*)lGenNew->FindObject("hGenNew");
+
+    hRatios = (TH1D*)hGenNew->Clone("hRatios");
+    hRatios->SetTitle("hRatios");
+    hRatios->Sumw2();
+    hRatios->Divide(hGenOld);
+
+    // Stop weighting at 0.26 GeV
+    Int_t iStopWeight = (Int_t)(nBins * 0.26/pT_upp + 1);
+    Printf("\n");
+    Printf("*****");
+    Printf("iStopWeight = %i", iStopWeight);
+    Printf("*****");
+    Printf("\n");
+    for(Int_t iBin = iStopWeight; iBin <= nBins; iBin++){
+        hRatios->SetBinContent(iBin, 1.0);
+        hRatios->SetBinError(iBin, 0.0);
     }
 
-    if(bCompareWith1){
-        hRatios1 = (TH1D*)hGenNew1->Clone("hRatios1");
-        hRatios1->SetTitle("hRatios1");
-        hRatios1->Sumw2();
-        hRatios1->Divide(hGenOld1);
-
-        hRecNew1 = (TH1D*)hRecOld1->Clone("hRecNew1");
-        hRecNew1->SetTitle("hRecNew1");
-        hRecNew1->Multiply(hRatios1);
-    }
-
-    hRatios2 = (TH1D*)hGenNew2->Clone("hRatios2");
-    hRatios2->SetTitle("hRatios2");
-    hRatios2->Sumw2();
-    hRatios2->Divide(hGenOld2);
-
-    hRecNew2 = (TH1D*)hRecOld2->Clone("hRecNew2");
-    hRecNew2->SetTitle("hRecNew2");
-    hRecNew2->Multiply(hRatios2);
-
-    if(bCompareWith1) l->Add(hRatios1);
-    l->Add(hRatios2);
+    hRecNew = (TH1D*)hRecOld->Clone("hRecNew");
+    hRecNew->SetTitle("hRecNew");
+    hRecNew->Multiply(hRatios);
 
     // Print the results to console
-    if(bCompareWith1){
-        Printf("\n***");
-        Printf("*** Analysis 1: nGen = 4.880.000");    
-        Printf("pT_low\tpT_upp\tnEv_old\tnEv_new\tratio\n");
-        for(Int_t iBin = 1; iBin <= nBins1; iBin++){
-            Printf("%.3f\t%.3f\t%.0f\t%.0f\t%.3f",
-                hRatios1->GetBinLowEdge(iBin), hRatios1->GetBinLowEdge(iBin+1), 
-                hGenOld1->GetBinContent(iBin), hGenNew1->GetBinContent(iBin), hRatios1->GetBinContent(iBin));
-        }
-    }
-    Printf("\n***");
-    Printf("Analysis 2: nGen = 6.000.000");    
-    Printf("pT_low\tpT_upp\tnEv_old\tnEv_new\tratio\n");
-    for(Int_t iBin = 1; iBin <= nBins2; iBin++){
+    Printf("\n");
+    Printf("*****");
+
+    Printf("Output:");
+    Printf("pT_low\tpT_upp\tnEvOld\tnEvNew\tRatio\n");
+    for(Int_t iBin = 1; iBin <= nBins; iBin++){
         Printf("%.3f\t%.3f\t%.0f\t%.0f\t%.3f",
-            hRatios2->GetBinLowEdge(iBin), hRatios2->GetBinLowEdge(iBin+1), 
-            hGenOld2->GetBinContent(iBin), hGenNew2->GetBinContent(iBin), hRatios2->GetBinContent(iBin));
+            hRatios->GetBinLowEdge(iBin), hRatios->GetBinLowEdge(iBin+1), 
+            hGenOld->GetBinContent(iBin), hGenNew->GetBinContent(iBin), hRatios->GetBinContent(iBin));
     }
 
-    // Save the results to the root file
-    l->Write("OutputList", TObject::kSingleKey);
-    f->ls();
+    Printf("*****");
+    Printf("\n");  
 
     gStyle->SetOptTitle(0);
     gStyle->SetOptStat(0);
@@ -263,24 +319,20 @@ void CalculateShapes(TString str_in, TString str_out_tr, TString str_out_im, Boo
     cRatios->SetRightMargin(0.04);
     cRatios->SetLeftMargin(0.1);
     // Vertical axis
-    hRatios2->GetYaxis()->SetTitle("#it{N}_{gen}(#it{R}_{A} = 7.53 fm) / #it{N}_{gen}(#it{R}_{A} = 6.62 fm)");
-    hRatios2->GetYaxis()->SetTitleSize(0.05);
-    hRatios2->GetYaxis()->SetTitleOffset(0.9);
-    hRatios2->GetYaxis()->SetLabelSize(0.05);
-    hRatios2->GetYaxis()->SetDecimals(1);
-    hRatios2->GetYaxis()->SetRangeUser(0.0,5.0);
+    hRatios->GetYaxis()->SetTitle(Form("#it{N}_{gen}(#it{R}_{A} = %.3f fm) / #it{N}_{gen}(#it{R}_{A} = 6.624 fm)", R_A));
+    hRatios->GetYaxis()->SetTitleSize(0.05);
+    hRatios->GetYaxis()->SetTitleOffset(0.9);
+    hRatios->GetYaxis()->SetLabelSize(0.05);
+    hRatios->GetYaxis()->SetDecimals(1);
+    hRatios->GetYaxis()->SetRangeUser(0.0,5.0);
     // Horizontal axis
-    hRatios2->GetXaxis()->SetTitle("#it{p}_{T}^{gen} (GeV/#it{c})");
-    hRatios2->GetXaxis()->SetTitleSize(0.05);
-    hRatios2->GetXaxis()->SetTitleOffset(1.2);
-    hRatios2->GetXaxis()->SetLabelSize(0.05);
+    hRatios->GetXaxis()->SetTitle("#it{p}_{T}^{gen} (GeV/#it{c})");
+    hRatios->GetXaxis()->SetTitleSize(0.05);
+    hRatios->GetXaxis()->SetTitleOffset(1.2);
+    hRatios->GetXaxis()->SetLabelSize(0.05);
     // Draw
-    hRatios2->SetLineColor(215);
-    hRatios2->Draw("E1");
-    if(bCompareWith1){
-        hRatios1->SetLineColor(kRed);
-        hRatios1->Draw("E1 SAME");
-    }
+    hRatios->SetLineColor(215);
+    hRatios->Draw("E1");
 
     TCanvas *cRec = new TCanvas("cRec", "cRec", 900, 600);
     cRec->SetTopMargin(0.04);
@@ -289,31 +341,71 @@ void CalculateShapes(TString str_in, TString str_out_tr, TString str_out_im, Boo
     cRec->SetLeftMargin(0.1);
     cRec->SetLogy();
     // Vertical axis
-    hRecOld2->GetYaxis()->SetTitle("#it{N}_{rec} (after selections)");
-    hRecOld2->GetYaxis()->SetTitleSize(0.05);
-    hRecOld2->GetYaxis()->SetTitleOffset(0.9);
-    hRecOld2->GetYaxis()->SetLabelSize(0.05);
-    hRecOld2->GetYaxis()->SetRangeUser(0.1,1e5);
+    hRecOld->GetYaxis()->SetTitle("#it{N}_{rec} (after selections)");
+    hRecOld->GetYaxis()->SetTitleSize(0.05);
+    hRecOld->GetYaxis()->SetTitleOffset(0.9);
+    hRecOld->GetYaxis()->SetLabelSize(0.05);
+    hRecOld->GetYaxis()->SetRangeUser(0.1,1e5);
     // Horizontal axis
-    hRecOld2->GetXaxis()->SetTitle("#it{p}_{T}^{gen} (GeV/#it{c})");
-    hRecOld2->GetXaxis()->SetTitleSize(0.05);
-    hRecOld2->GetXaxis()->SetTitleOffset(1.2);
-    hRecOld2->GetXaxis()->SetLabelSize(0.05);
+    hRecOld->GetXaxis()->SetTitle("#it{p}_{T}^{gen} (GeV/#it{c})");
+    hRecOld->GetXaxis()->SetTitleSize(0.05);
+    hRecOld->GetXaxis()->SetTitleOffset(1.2);
+    hRecOld->GetXaxis()->SetLabelSize(0.05);
     // Draw
-    hRecOld2->SetLineColor(210);
-    hRecOld2->Draw("E1");
-    hRecNew2->SetLineColor(215);
-    hRecNew2->Draw("E1 SAME");
-    if(bCompareWith1){
-        hRecNew1->SetLineColor(kRed);
-        hRecNew1->Draw("E1 SAME");
-    }
+    hRecOld->SetLineColor(210);
+    hRecOld->Draw("E1");
+    hRecNew->SetLineColor(215);
+    hRecNew->Draw("E1 SAME");
 
     // Print plots
-    cRatios->Print(Form("Results/STARlight/%s_Ratios.pdf", str_out_im.Data()));
-    cRatios->Print(Form("Results/STARlight/%s_Ratios.png", str_out_im.Data()));
-    cRec->Print(Form("Results/STARlight/%s_RecSpectra.pdf", str_out_im.Data()));
-    cRec->Print(Form("Results/STARlight/%s_RecSpectra.png", str_out_im.Data()));
+    cRatios->Print(Form("Results/STARlight/%s/Ratios/coh_modRA_%.3f.pdf", sOut_subfolder.Data(), R_A));
+    cRatios->Print(Form("Results/STARlight/%s/Ratios/coh_modRA_%.3f.png", sOut_subfolder.Data(), R_A));
+    cRec->Print(Form("Results/STARlight/%s/RecSpectra/coh_modRA_%.3f.pdf", sOut_subfolder.Data(), R_A));
+    cRec->Print(Form("Results/STARlight/%s/RecSpectra/coh_modRA_%.3f.png", sOut_subfolder.Data(), R_A));
+
+    delete hGenOld;
+    delete hGenNew;
+
+    return;
+}
+
+void FillHistRec()
+{
+    Printf("*****");
+    Printf("Calculating histogram of original reconstructed events.");
+    Printf("*****");
+
+    TFile *fSL = NULL;
+    fSL = TFile::Open("Trees/AnalysisDataMC/AnalysisResults_MC_kCohJpsiToMu.root", "read");
+    if(fSL) Printf("File %s loaded.", fSL->GetName());
+
+    // Get the MCRec tree
+    TTree *tRec = dynamic_cast<TTree*> (fSL->Get("AnalysisOutput/fTreeJPsiMCRec"));
+    if(tRec) Printf("Tree %s loaded.", tRec->GetName());
+    ConnectTreeVariablesMCRec(tRec);
+
+    Int_t nEntriesAnalysed = 0;
+    Int_t nEntriesProgress = (Double_t)tRec->GetEntries() / 20.;
+    Int_t nPercent = 0;
+
+    // Prepare reconstructed events
+    for(Int_t iEntry = 0; iEntry < tRec->GetEntries(); iEntry++){
+        tRec->GetEntry(iEntry);
+        if(EventPassedMCRec(1, 2)){
+            hRecOld->Fill(fPt);
+        } 
+
+        if((iEntry+1) % nEntriesProgress == 0){
+            nPercent += 5;
+            nEntriesAnalysed += nEntriesProgress;
+            Printf("[%i%%] %i entries analysed.", nPercent, nEntriesAnalysed);
+        }
+    }
+
+    Printf("*****");
+    Printf("Done.");
+    Printf("*****");
+    Printf("\n");
 
     return;
 }
