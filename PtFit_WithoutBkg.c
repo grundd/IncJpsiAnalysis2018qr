@@ -757,6 +757,14 @@ void DoPtFitNoBkg(Int_t iCohJShape)
     cPt->Print((*str + ".png").Data());
     cPtLog->Print((*str + "_log.pdf").Data());
     cPtLog->Print((*str + "_log.png").Data());
+    // Print chi2 vs. R_A to text file
+    if(iCohJShape > 1000){
+        outfile.open((*str + "_chi2.txt").Data());
+        outfile << std::fixed << std::setprecision(3);
+        Double_t R_A = 6.6 + (Double_t)(iCohJShape-1001) * 0.1;
+        outfile << R_A << "\t" << chi2;
+        outfile.close();
+    }
 
     return;
 }
