@@ -38,6 +38,8 @@ Double_t fPtGenerated;
 Double_t fPtLow = 0.0;
 Double_t fPtUpp = 2.0;
 Int_t nBins;
+Bool_t bStopWeight = kFALSE;
+Double_t StopWeight = 0.2;
 
 Int_t BinningOpt;
 // == 0 => uniform binning with step of 10 MeV
@@ -214,7 +216,11 @@ void PreparePDFs_MC(){
 
 void PreparePDF_modRA(){
 
-    TFile *file = TFile::Open(Form("%sPDFs_MC_modRA_Binning%i.root", OutputPDFs.Data(), BinningOpt),"read");
+    TString str_name = "";
+    if(bStopWeight) str_name = Form("%sPDFs_MC_modRA_Binning%i_StopWeight.root", OutputPDFs.Data(), BinningOpt);
+    else            str_name = Form("%sPDFs_MC_modRA_Binning%i.root", OutputPDFs.Data(), BinningOpt);
+
+    TFile *file = TFile::Open(str_name.Data(),"read");
     if(file){
         Printf("MC PDFs for modRA with this binning already created.");
         return;
@@ -300,6 +306,11 @@ void PreparePDF_modRA(){
         hRatios[i]->Sumw2();
         hRatios[i]->Divide(hGenOld[i]);
 
+        // Stop weighting at: Double_t StopWeight    
+        for(Int_t iBin = 1; iBin <= nBins; iBin++){
+            if(hRatios[i]->GetBinCenter(iBin) > StopWeight) hRatios[i]->SetBinContent(iBin, 1.0);
+        }    
+
         // Print the results to console
         Printf("\n");
         Printf("*****");
@@ -322,7 +333,7 @@ void PreparePDF_modRA(){
     // ***************************************************************
     // Save results to the output file
     // Create the output file
-    TFile *f = new TFile(Form("%sPDFs_MC_modRA_Binning%i.root", OutputPDFs.Data(), BinningOpt),"RECREATE");
+    TFile *f = new TFile(str_name.Data(),"RECREATE");
     l->Write("HistList", TObject::kSingleKey);
     f->ls();
 

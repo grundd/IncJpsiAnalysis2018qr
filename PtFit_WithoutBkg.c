@@ -167,7 +167,11 @@ void DoPtFitNoBkg(Int_t iCohJShape)
 
     } else if(iCohJShape == 1 || iCohJShape > 1000){
 
-        TFile *f_modRA = TFile::Open(Form("%sPDFs_MC_modRA_Binning%i.root", OutputPDFs.Data(), BinningOpt),"read");
+        TString str_name = "";
+        if(bStopWeight) str_name = Form("%sPDFs_MC_modRA_Binning%i_StopWeight.root", OutputPDFs.Data(), BinningOpt);
+        else            str_name = Form("%sPDFs_MC_modRA_Binning%i.root", OutputPDFs.Data(), BinningOpt);
+
+        TFile *f_modRA = TFile::Open(str_name.Data(),"read");
         if(f_modRA) Printf("Input file %s loaded.", f_modRA->GetName()); 
 
         TList *l_modRA = (TList*) f_modRA->Get("HistList");
@@ -335,7 +339,16 @@ void DoPtFitNoBkg(Int_t iCohJShape)
     // ###############################################################################################################
     // ###############################################################################################################
     // 10) Output to text file
-    TString *str = new TString(Form("%s%ibins_Binn%i_CohSh%i", OutputPtFitWithoutBkg.Data(), nPtBins, BinningOpt, iCohJShape));
+    TString *str = NULL;
+    str = new TString(Form("%s%ibins_Binn%i_CohSh%i", OutputPtFitWithoutBkg.Data(), nPtBins, BinningOpt, iCohJShape));
+    if(iCohJShape > 1000 && !bStopWeight){
+        Double_t R_A = 6.6 + (Double_t)(iCohJShape-1001) * 0.1;        
+        str = new TString(Form("%sOptimalRA/WeightOverAll/%ibins_coh_modRA_%.2f", OutputPtFitWithoutBkg.Data(), nPtBins, R_A));
+    } 
+    if(iCohJShape > 1000 && bStopWeight){
+        Double_t R_A = 6.6 + (Double_t)(iCohJShape-1001) * 0.1;        
+        str = new TString(Form("%sOptimalRA/StopWeight/%ibins_coh_modRA_%.2f", OutputPtFitWithoutBkg.Data(), nPtBins, R_A));
+    } 
     // Integrals of the PDFs in the whole pt range 
     fPt.setRange("fPtAll",0.0,2.0);
     RooAbsReal *fN_CohJ_all = NULL;
@@ -747,9 +760,13 @@ void DoPtFitNoBkg(Int_t iCohJShape)
 
     // 13) Print the results to pdf and png
     str = new TString(Form("%sBinn%i_CohSh%i", OutputPtFitWithoutBkg.Data(), BinningOpt, iCohJShape));
-    if(iCohJShape > 1000){
+    if(iCohJShape > 1000 && !bStopWeight){
         Double_t R_A = 6.6 + (Double_t)(iCohJShape-1001) * 0.1;        
-        str = new TString(Form("%sOptimalRA/coh_modRA_%.2f", OutputPtFitWithoutBkg.Data(), R_A));
+        str = new TString(Form("%sOptimalRA/WeightOverAll/coh_modRA_%.2f", OutputPtFitWithoutBkg.Data(), R_A));
+    } 
+    if(iCohJShape > 1000 && bStopWeight){
+        Double_t R_A = 6.6 + (Double_t)(iCohJShape-1001) * 0.1;        
+        str = new TString(Form("%sOptimalRA/StopWeight/coh_modRA_%.2f", OutputPtFitWithoutBkg.Data(), R_A));
     } 
     cCM->Print((*str + "_CM.pdf").Data());
     cCM->Print((*str + "_CM.png").Data());
