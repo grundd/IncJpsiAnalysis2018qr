@@ -210,8 +210,8 @@ void PlotWithRatios()
     cCSont->Modified();
     cCSont->Update();
 
-    cCSont->Print(Form("PhotoCrossSec/.PlotWithRatios/Plot_FeedDown%i_%ibins.pdf", iFeedDown, nPtBins));
-    cCSont->Print(Form("PhotoCrossSec/.PlotWithRatios/Plot_FeedDown%i_%ibins.png", iFeedDown, nPtBins));
+    cCSont->Print(Form("PhotoCrossSec/img_PlotWithRatios/Plot_FeedDown%i_%ibins.pdf", iFeedDown, nPtBins));
+    cCSont->Print(Form("PhotoCrossSec/img_PlotWithRatios/Plot_FeedDown%i_%ibins.png", iFeedDown, nPtBins));
 
     // *****************************************************************************
     // Calculate and plot ratios
@@ -321,8 +321,8 @@ void PlotWithRatios()
     line->SetLineStyle(2);
     line->Draw("SAME");
 
-    cDataModel->Print(Form("PhotoCrossSec/.PlotWithRatios/Ratios_FeedDown%i_%ibins.pdf", iFeedDown, nPtBins));
-    cDataModel->Print(Form("PhotoCrossSec/.PlotWithRatios/Ratios_FeedDown%i_%ibins.png", iFeedDown, nPtBins));
+    cDataModel->Print(Form("PhotoCrossSec/img_PlotWithRatios/Ratios_FeedDown%i_%ibins.pdf", iFeedDown, nPtBins));
+    cDataModel->Print(Form("PhotoCrossSec/img_PlotWithRatios/Ratios_FeedDown%i_%ibins.png", iFeedDown, nPtBins));
 
     // *****************************************************************************
     // Draw both
@@ -398,8 +398,8 @@ void PlotWithRatios()
     leg4->SetTextSize(0.105);
     leg4->Draw();
 
-    cBoth->Print(Form("PhotoCrossSec/.PlotWithRatios/RatiosPlot_FeedDown%i_%ibins.pdf", iFeedDown, nPtBins));
-    cBoth->Print(Form("PhotoCrossSec/.PlotWithRatios/RatiosPlot_FeedDown%i_%ibins.png", iFeedDown, nPtBins));
+    cBoth->Print(Form("PhotoCrossSec/img_PlotWithRatios/RatiosPlot_FeedDown%i_%ibins.pdf", iFeedDown, nPtBins));
+    cBoth->Print(Form("PhotoCrossSec/img_PlotWithRatios/RatiosPlot_FeedDown%i_%ibins.png", iFeedDown, nPtBins));
 
     return;
 }
