@@ -128,19 +128,19 @@ void GraphIntegralAll(Double_t t_min, Double_t t_max)
     // HS model
     ReadInputHSModel();
     // GG-hs
-    TString str_HS_hs = "CCK: GG-hs";
+    TString str_HS_hs = "CCK GG-hs";
     integral_HS_hs = GraphIntegral(str_HS_hs,nData_HS,abs_t_HS,sig_HS_inc_hs, t_min, t_max);
     // GG-n
-    TString str_HS_n = "CCK: GG-n";
+    TString str_HS_n = "CCK GG-n";
     integral_HS_n = GraphIntegral(str_HS_n,nData_HS,abs_t_HS,sig_HS_inc_n, t_min, t_max);
 
     // Heikki's model
     ReadInputHeikki();
     // IPsat fluctuations
-    TString str_MS_fl = "MS: IPsat flu";
+    TString str_MS_fl = "MS IPsat flu";
     integral_MS_fl = GraphIntegral(str_MS_fl,nData_HM,abs_t_HM,sig_HM_fluct, t_min, t_max);
     // IPsat no fluctuations
-    TString str_MS_nf = "MS: IPsat no flu";
+    TString str_MS_nf = "MS IPsat no flu";
     integral_MS_nf = GraphIntegral(str_MS_nf,nData_HM,abs_t_HM,sig_HM_noflu, t_min, t_max);
 
     // Guzey's model
@@ -150,10 +150,10 @@ void GraphIntegralAll(Double_t t_min, Double_t t_max)
         sig_GZ_tot_max[i] = sig_GZ_tot_max[i] / 1e6;
     }
     // Upper error
-    TString str_GZ_up = "GSZ: upp";
+    TString str_GZ_up = "GSZ upp";
     integral_GZ_up = GraphIntegral(str_GZ_up,nData_GZ,abs_t_GZ,sig_GZ_tot_max, t_min, t_max);
     // Lower error
-    TString str_GZ_lo = "GSZ: low";
+    TString str_GZ_lo = "GSZ low";
     integral_GZ_lo = GraphIntegral(str_GZ_lo,nData_GZ,abs_t_GZ,sig_GZ_tot_min, t_min, t_max);
 
     return;
