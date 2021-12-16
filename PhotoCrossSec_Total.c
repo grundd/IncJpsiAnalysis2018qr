@@ -106,8 +106,8 @@ Double_t GraphIntegral(TString str_name, Int_t n_data, Double_t *abs_t_val, Doub
 
     Int_t oldLevel = gErrorIgnoreLevel; 
     gErrorIgnoreLevel = kWarning; 
-    c->Print(Form("PhotoCrossSec/.Total/%.2f-%.2f/%s.pdf", t_min, t_max, str_name.Data()));
-    c->Print(Form("PhotoCrossSec/.Total/%.2f-%.2f/%s.png", t_min, t_max, str_name.Data()));
+    c->Print(Form("PhotoCrossSec/img_Total/%.2f-%.2f/%s.pdf", t_min, t_max, str_name.Data()));
+    c->Print(Form("PhotoCrossSec/img_Total/%.2f-%.2f/%s.png", t_min, t_max, str_name.Data()));
     gErrorIgnoreLevel = oldLevel; 
 
     Printf("%s: %.3f micro barns.", str_name.Data(), integral_graph * 1e3);
@@ -289,8 +289,8 @@ void PlotTotal()
         else latex[i]->DrawLatex(14.5,8.0-i,Form("#bf{%s}", names[i].Data()));
     }    
 
-    c->Print("PhotoCrossSec/.Total/TotalCrossSection.pdf");
-    c->Print("PhotoCrossSec/.Total/TotalCrossSection.png");
+    c->Print("PhotoCrossSec/img_Total/TotalCrossSection.pdf");
+    c->Print("PhotoCrossSec/img_Total/TotalCrossSection.png");
 
     return;
 }
@@ -322,7 +322,7 @@ void ModelsRatios(Double_t t_low_1, Double_t t_upp_1, Double_t t_low_2, Double_t
     Printf("Ratio GZ up: %.3f", int_GZ_up_1/int_GZ_up_2);
     Printf("Ratio GZ lo: %.3f", int_GZ_lo_1/int_GZ_lo_2);
 
-    ofstream fout_ratios("PhotoCrossSec/.Total/ratios.txt");
+    ofstream fout_ratios("PhotoCrossSec/img_Total/ratios.txt");
     fout_ratios << std::fixed << std::setprecision(3);
     fout_ratios << Form("Ratio STARlight: %.3f\n", int_SL_1/int_SL_2);
     fout_ratios << Form("Ratio HS GG-hs:\t %.3f\n", int_HS_hs_1/int_HS_hs_2);

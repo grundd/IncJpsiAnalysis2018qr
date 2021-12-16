@@ -180,8 +180,8 @@ void Plot()
     l->SetFillStyle(0);  // legend is transparent
     l->Draw();
 
-    c->Print(Form("PhotoCrossSec/.Plot/Plot_FeedDown%i_%ibins.pdf", iFeedDown, nPtBins));
-    c->Print(Form("PhotoCrossSec/.Plot/Plot_FeedDown%i_%ibins.png", iFeedDown, nPtBins));
+    c->Print(Form("PhotoCrossSec/img_Plot/Plot_FeedDown%i_%ibins.pdf", iFeedDown, nPtBins));
+    c->Print(Form("PhotoCrossSec/img_Plot/Plot_FeedDown%i_%ibins.png", iFeedDown, nPtBins));
 
     return;
 }
