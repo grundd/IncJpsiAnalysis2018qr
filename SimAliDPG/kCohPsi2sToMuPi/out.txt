@@ -1,0 +1,104 @@
+++++ EVENT no. 1 ++++
+ i = 0	mother = -1	status = 11	pdg = 100443	name = psi'	daughter = 1	eta = 3.60000	p_x = 0.02749	p_y = -0.02733	p_z = 0.70873	m = 3.686
+ i = 1	mother = 0	status = 11	pdg = 443	name = J/psi	daughter = -1	eta = 2.50270	p_x = 0.02969	p_y = 0.10788	p_z = 0.67882	m = 3.097
+ i = 2	mother = 0	status = 1	pdg = 211	name = pi+	daughter = -1	eta = 0.90806	p_x = -0.04844	p_y = 0.13596	p_z = 0.14983	m = 0.140
+ i = 3	mother = 0	status = 1	pdg = -211	name = pi-	daughter = -1	eta = -0.42322	p_x = 0.04624	p_y = -0.27117	p_z = -0.11993	m = 0.140
+ i = 4	mother = 0	status = 1	pdg = -13	name = mu+	daughter = -1	eta = 0.31530	p_x = 0.84624	p_y = 1.34778	p_z = 0.51013	m = 0.106
+ i = 5	mother = 0	status = 1	pdg = 13	name = mu-	daughter = -1	eta = 0.11336	p_x = -0.81653	p_y = -1.23981	p_z = 0.16865	m = 0.106
+ i = 6	mother = 0	status = 1	pdg = 22	name = gamma	daughter = -1	eta = 0.45588	p_x = -0.00003	p_y = -0.00009	p_z = 0.00004	m = 0.000
+J/psi (orig): p_T = 0.11189
+J/psi (muon): p_T = 0.11198
+diff = 0.00009
+++++ EVENT no. 2 ++++
+ i = 0	mother = -1	status = 11	pdg = 100443	name = psi'	daughter = 1	eta = -4.65555	p_x = -0.04330	p_y = -0.01172	p_z = -2.35884	m = 3.686
+ i = 1	mother = 0	status = 11	pdg = 443	name = J/psi	daughter = -1	eta = -2.92918	p_x = -0.22342	p_y = -0.05748	p_z = -2.15222	m = 3.097
+ i = 2	mother = 0	status = 1	pdg = 211	name = pi+	daughter = -1	eta = -0.77786	p_x = 0.25657	p_y = -0.09215	p_z = -0.23410	m = 0.140
+ i = 3	mother = 0	status = 1	pdg = -211	name = pi-	daughter = -1	eta = 0.17339	p_x = -0.07646	p_y = 0.13792	p_z = 0.02748	m = 0.140
+ i = 4	mother = 0	status = 1	pdg = -13	name = mu+	daughter = -1	eta = -1.30845	p_x = -1.31843	p_y = -0.22336	p_z = -2.29347	m = 0.106
+ i = 5	mother = 0	status = 1	pdg = 13	name = mu-	daughter = -1	eta = 0.12720	p_x = 1.09502	p_y = 0.16588	p_z = 0.14126	m = 0.106
+J/psi (orig): p_T = 0.23069
+J/psi (muon): p_T = 0.23069
+diff = 0.00000
+++++ EVENT no. 3 ++++
+ i = 0	mother = -1	status = 11	pdg = 100443	name = psi'	daughter = 1	eta = 4.12113	p_x = -0.07457	p_y = -0.05018	p_z = 2.76880	m = 3.686
+ i = 1	mother = 0	status = 11	pdg = 443	name = J/psi	daughter = -1	eta = 3.43410	p_x = -0.09975	p_y = -0.11977	p_z = 2.41376	m = 3.097
+ i = 2	mother = 0	status = 1	pdg = 211	name = pi+	daughter = -1	eta = 0.66190	p_x = 0.23851	p_y = -0.07752	p_z = 0.17839	m = 0.140
+ i = 3	mother = 0	status = 1	pdg = -211	name = pi-	daughter = -1	eta = 0.63760	p_x = -0.21333	p_y = 0.14712	p_z = 0.17665	m = 0.140
+ i = 4	mother = 0	status = 1	pdg = -13	name = mu+	daughter = -1	eta = 0.63260	p_x = -0.39203	p_y = -1.56197	p_z = 1.08806	m = 0.106
+ i = 5	mother = 0	status = 1	pdg = 13	name = mu-	daughter = -1	eta = 0.80954	p_x = 0.29228	p_y = 1.44219	p_z = 1.32570	m = 0.106
+J/psi (orig): p_T = 0.15587
+J/psi (muon): p_T = 0.15587
+diff = 0.00000
+++++ EVENT no. 4 ++++
+ i = 0	mother = -1	status = 11	pdg = 100443	name = psi'	daughter = 1	eta = -3.75609	p_x = -0.01155	p_y = -0.08430	p_z = -1.81907	m = 3.686
+ i = 1	mother = 0	status = 11	pdg = 443	name = J/psi	daughter = -1	eta = -2.83560	p_x = 0.08778	p_y = -0.15986	p_z = -1.54857	m = 3.097
+ i = 2	mother = 0	status = 1	pdg = 211	name = pi+	daughter = -1	eta = -0.08204	p_x = -0.13724	p_y = 0.24212	p_z = -0.02286	m = 0.140
+ i = 3	mother = 0	status = 1	pdg = -211	name = pi-	daughter = -1	eta = -1.16657	p_x = 0.03792	p_y = -0.16656	p_z = -0.24765	m = 0.140
+ i = 4	mother = 0	status = 1	pdg = -13	name = mu+	daughter = -1	eta = 0.56827	p_x = 0.97453	p_y = -0.12605	p_z = 0.58896	m = 0.106
+ i = 5	mother = 0	status = 1	pdg = 13	name = mu-	daughter = -1	eta = -1.61280	p_x = -0.88676	p_y = -0.03381	p_z = -2.13753	m = 0.106
+J/psi (orig): p_T = 0.18238
+J/psi (muon): p_T = 0.18238
+diff = 0.00000
+++++ EVENT no. 5 ++++
+ i = 0	mother = -1	status = 11	pdg = 100443	name = psi'	daughter = 1	eta = -5.41101	p_x = 0.00967	p_y = -0.02865	p_z = -3.38388	m = 3.686
+ i = 1	mother = 0	status = 11	pdg = 443	name = J/psi	daughter = -1	eta = -4.13436	p_x = 0.07847	p_y = -0.06227	p_z = -3.12720	m = 3.097
+ i = 2	mother = 0	status = 1	pdg = 211	name = pi+	daughter = -1	eta = -1.38059	p_x = 0.09857	p_y = 0.12387	p_z = -0.29490	m = 0.140
+ i = 3	mother = 0	status = 1	pdg = -211	name = pi-	daughter = -1	eta = 0.19969	p_x = -0.16737	p_y = -0.09025	p_z = 0.03823	m = 0.140
+ i = 4	mother = 0	status = 1	pdg = -13	name = mu+	daughter = -1	eta = -0.29913	p_x = -0.39053	p_y = 1.21798	p_z = -0.38833	m = 0.106
+ i = 5	mother = 0	status = 1	pdg = 13	name = mu-	daughter = -1	eta = -1.44739	p_x = 0.46897	p_y = -1.28008	p_z = -2.73803	m = 0.106
+ i = 6	mother = 0	status = 1	pdg = 22	name = gamma	daughter = -1	eta = -1.59565	p_x = 0.00014	p_y = -0.00026	p_z = -0.00069	m = 0.000
+ i = 7	mother = 0	status = 1	pdg = 22	name = gamma	daughter = -1	eta = -0.99117	p_x = -0.00010	p_y = 0.00009	p_z = -0.00016	m = 0.000
+J/psi (orig): p_T = 0.10018
+J/psi (muon): p_T = 0.10004
+diff = 0.00014
+++++ EVENT no. 6 ++++
+ i = 0	mother = -1	status = 11	pdg = 100443	name = psi'	daughter = 1	eta = -4.38259	p_x = -0.04641	p_y = -0.06288	p_z = -3.12760	m = 3.686
+ i = 1	mother = 0	status = 11	pdg = 443	name = J/psi	daughter = -1	eta = -3.07427	p_x = -0.17195	p_y = -0.19398	p_z = -2.79801	m = 3.097
+ i = 2	mother = 0	status = 1	pdg = 211	name = pi+	daughter = -1	eta = 0.07571	p_x = 0.21332	p_y = 0.03235	p_z = 0.01635	m = 0.140
+ i = 3	mother = 0	status = 1	pdg = -211	name = pi-	daughter = -1	eta = -1.69034	p_x = -0.08778	p_y = 0.09874	p_z = -0.34594	m = 0.140
+ i = 4	mother = 0	status = 1	pdg = -13	name = mu+	daughter = -1	eta = 0.69324	p_x = -0.66626	p_y = 0.00458	p_z = 0.49978	m = 0.106
+ i = 5	mother = 0	status = 1	pdg = 13	name = mu-	daughter = -1	eta = -2.52267	p_x = 0.49430	p_y = -0.19856	p_z = -3.29778	m = 0.106
+ i = 6	mother = 0	status = 1	pdg = 22	name = gamma	daughter = -1	eta = -2.55624	p_x = 0.00000	p_y = 0.00000	p_z = -0.00000	m = 0.000
+J/psi (orig): p_T = 0.25922
+J/psi (muon): p_T = 0.25922
+diff = 0.00000
+++++ EVENT no. 7 ++++
+ i = 0	mother = -1	status = 11	pdg = 100443	name = psi'	daughter = 1	eta = 4.60954	p_x = 0.01947	p_y = -0.06497	p_z = 3.40584	m = 3.686
+ i = 1	mother = 0	status = 11	pdg = 443	name = J/psi	daughter = -1	eta = 3.52512	p_x = 0.10379	p_y = 0.15086	p_z = 3.10651	m = 3.097
+ i = 2	mother = 0	status = 1	pdg = 211	name = pi+	daughter = -1	eta = 1.75695	p_x = -0.11747	p_y = -0.04270	p_z = 0.35135	m = 0.140
+ i = 3	mother = 0	status = 1	pdg = -211	name = pi-	daughter = -1	eta = -0.29096	p_x = 0.03314	p_y = -0.17314	p_z = -0.05202	m = 0.140
+ i = 4	mother = 0	status = 1	pdg = -13	name = mu+	daughter = -1	eta = 1.56012	p_x = -0.54444	p_y = 1.15465	p_z = 2.90372	m = 0.106
+ i = 5	mother = 0	status = 1	pdg = 13	name = mu-	daughter = -1	eta = 0.16891	p_x = 0.64824	p_y = -1.00378	p_z = 0.20279	m = 0.106
+J/psi (orig): p_T = 0.18312
+J/psi (muon): p_T = 0.18312
+diff = 0.00000
+++++ EVENT no. 8 ++++
+ i = 0	mother = -1	status = 11	pdg = 100443	name = psi'	daughter = 1	eta = -4.72065	p_x = 0.02712	p_y = 0.02936	p_z = -2.24289	m = 3.686
+ i = 1	mother = 0	status = 11	pdg = 443	name = J/psi	daughter = -1	eta = -2.89188	p_x = 0.04634	p_y = 0.23290	p_z = -2.13380	m = 3.097
+ i = 2	mother = 0	status = 1	pdg = 211	name = pi+	daughter = -1	eta = -1.10288	p_x = -0.10192	p_y = 0.05473	p_z = -0.15507	m = 0.140
+ i = 3	mother = 0	status = 1	pdg = -211	name = pi-	daughter = -1	eta = 0.16875	p_x = 0.08270	p_y = -0.25827	p_z = 0.04598	m = 0.140
+ i = 4	mother = 0	status = 1	pdg = -13	name = mu+	daughter = -1	eta = -0.98109	p_x = -0.65271	p_y = -1.19564	p_z = -1.56139	m = 0.106
+ i = 5	mother = 0	status = 1	pdg = 13	name = mu-	daughter = -1	eta = -0.35256	p_x = 0.69905	p_y = 1.42854	p_z = -0.57241	m = 0.106
+J/psi (orig): p_T = 0.23746
+J/psi (muon): p_T = 0.23746
+diff = 0.00000
+++++ EVENT no. 9 ++++
+ i = 0	mother = -1	status = 11	pdg = 100443	name = psi'	daughter = 1	eta = 4.63695	p_x = 0.00405	p_y = 0.01581	p_z = 0.84221	m = 3.686
+ i = 1	mother = 0	status = 11	pdg = 443	name = J/psi	daughter = -1	eta = 1.52830	p_x = -0.26521	p_y = 0.02992	p_z = 0.58630	m = 3.097
+ i = 2	mother = 0	status = 1	pdg = 211	name = pi+	daughter = -1	eta = 0.26042	p_x = 0.22377	p_y = -0.18408	p_z = 0.07631	m = 0.140
+ i = 3	mother = 0	status = 1	pdg = -211	name = pi-	daughter = -1	eta = 0.89600	p_x = 0.04549	p_y = 0.16996	p_z = 0.17960	m = 0.140
+ i = 4	mother = 0	status = 1	pdg = -13	name = mu+	daughter = -1	eta = 1.70002	p_x = -0.40236	p_y = 0.52783	p_z = 1.75594	m = 0.106
+ i = 5	mother = 0	status = 1	pdg = 13	name = mu-	daughter = -1	eta = -1.55615	p_x = 0.13715	p_y = -0.49790	p_z = -1.16965	m = 0.106
+J/psi (orig): p_T = 0.26690
+J/psi (muon): p_T = 0.26690
+diff = 0.00000
+++++ EVENT no. 10 ++++
+ i = 0	mother = -1	status = 11	pdg = 100443	name = psi'	daughter = 1	eta = -4.88258	p_x = 0.04052	p_y = 0.04847	p_z = -4.16854	m = 3.686
+ i = 1	mother = 0	status = 11	pdg = 443	name = J/psi	daughter = -1	eta = -3.13005	p_x = -0.26415	p_y = 0.11615	p_z = -3.29414	m = 3.097
+ i = 2	mother = 0	status = 1	pdg = 211	name = pi+	daughter = -1	eta = -1.50271	p_x = 0.00508	p_y = 0.03319	p_z = -0.07172	m = 0.140
+ i = 3	mother = 0	status = 1	pdg = -211	name = pi-	daughter = -1	eta = -1.66169	p_x = 0.29959	p_y = -0.10087	p_z = -0.80268	m = 0.140
+ i = 4	mother = 0	status = 1	pdg = -13	name = mu+	daughter = -1	eta = -0.65593	p_x = -0.77235	p_y = -1.28729	p_z = -1.05684	m = 0.106
+ i = 5	mother = 0	status = 1	pdg = 13	name = mu-	daughter = -1	eta = -1.19416	p_x = 0.50820	p_y = 1.40344	p_z = -2.23730	m = 0.106
+J/psi (orig): p_T = 0.28856
+J/psi (muon): p_T = 0.28856
+diff = 0.00000

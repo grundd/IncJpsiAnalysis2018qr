@@ -1,0 +1,11 @@
+Change the _Radius parameter inside nucleus.cpp in:
+cd ~/alice/AliRoot/STARLIGHT/starlight/src/
+
+Then "make install" (must be inside "ali5" shell):
+cd ~/alice/
+ali5
+cd ~/alice/sw/BUILD/AliRoot-latest-aliroot5/AliRoot/STARLIGHT/
+make install
+cd ~/alice/IncJpsiAnalysis2018qr/SimAliDPG/
+export ALIDPG_ROOT=/home/david/alice/AliDPG-master/
+aliroot simStarlight_writeToTreeInstantly.C

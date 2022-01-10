@@ -214,7 +214,7 @@ void PreparePDFs_MC(){
     return;
 }
 
-void PreparePDF_modRA(){
+void PreparePDFs_modRA_CohJ(){
 
     TString str_name = "";
     if(bStopWeight) str_name = Form("%sPDFs_MC_modRA_Binning%i_StopWeight.root", OutputPDFs.Data(), BinningOpt);
@@ -336,6 +336,11 @@ void PreparePDF_modRA(){
     TFile *f = new TFile(str_name.Data(),"RECREATE");
     l->Write("HistList", TObject::kSingleKey);
     f->ls();
+
+    return;
+}
+
+void PreparePDFs_modRA_all(){
 
     return;
 }

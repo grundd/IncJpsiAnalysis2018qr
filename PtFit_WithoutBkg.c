@@ -88,7 +88,7 @@ void PtFit_WithoutBkg()
 
     PreparePDFs_MC();
 
-    PreparePDF_modRA();
+    PreparePDFs_modRA_CohJ();
 
     DoPtFitNoBkg(0);
     DoPtFitNoBkg(1);

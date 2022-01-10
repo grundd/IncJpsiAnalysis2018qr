@@ -7,7 +7,7 @@ void PrepareOutputTrees_ChooseDataset(Int_t iDS);
 
 void STARlight_PrepareOutputTrees(){
 
-    //PrepareOutputTrees_ChooseDataset(1);
+    //PrepareOutputTrees_ChooseDataset(7);
 
     // To find the optimal value of R_A
     //TString str = "";
@@ -54,6 +54,14 @@ void PrepareOutputTrees_ChooseDataset(Int_t iDS){
         // (R_A set to 6.62 in src/nucleus.cpp)
         nGenEv = 20000;
         str = "Trees/STARlight/bkg_sudakov/";
+    } else if(iDS == 6){
+        // (R_A set to 6.624 in src/nucleus.cpp)
+        nGenEv = 2000000;
+        str = "Trees/STARlight/inc_2000000_stdRA/";
+    } else if(iDS == 7){
+        // (R_A set to 7.350 in src/nucleus.cpp)
+        nGenEv = 2000000;
+        str = "Trees/STARlight/inc_2000000_modRA/";
     } 
 
     PrepareTreesPtGammaVMPom(nGenEv, str);
