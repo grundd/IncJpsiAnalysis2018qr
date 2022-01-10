@@ -18,7 +18,7 @@
 
 // ***************
 // Options to set:
-Int_t opt = 2;
+Int_t opt = 0;
 // = 0 => kCohPsi2sToMuPi, 12-30-2021 (1000 events, std RA = 6.602 fm)
 // = 1 => kCohPsi2sToMuPi, 01-03-2022 (1e4 events, std RA = 6.602 fm)
 Bool_t write_to_txt_file = kTRUE;
@@ -44,6 +44,7 @@ void ReadKinematicsTree()
 
     TLorentzVector vGen;
     TLorentzVector vJpsiMuons;// J/psi reconstructed from mu and antimu 
+    TLorentzVector vJpsiMuPho;// J/psi reconstructed from muons and photons (with indices larger than those of muons)
     TLorentzVector vPsi2s;    // Psi(2s) reconstructed from all decay products
     Double_t pT_Jpsi = 0;
     // Create output text file
@@ -60,6 +61,7 @@ void ReadKinematicsTree()
 
     for(Int_t iEvent = 0; iEvent < nEvents; iEvent++){
         vJpsiMuons.SetXYZM(0.,0.,0.,0.);
+        vJpsiMuPho.SetXYZM(0.,0.,0.,0.);
         vPsi2s.SetXYZM(0.,0.,0.,0.);
 
         if(write_to_txt_file) outfile << "++++ EVENT no. " << iEvent+1 << " ++++" << endl;
@@ -70,6 +72,8 @@ void ReadKinematicsTree()
         AliStack* stack = runLoader->Stack();
         Int_t nParticles = stack->GetNtrack();
 
+        Int_t iMuons = 0;
+
         // loop over particles in the event
         for(Int_t iPart = 0; iPart < nParticles; iPart++){
             TParticle *part = stack->Particle(iPart);
@@ -77,10 +81,15 @@ void ReadKinematicsTree()
             // muons
             if(TMath::Abs(part->GetPdgCode()) == 13){
                 vJpsiMuons += vGen;
+                vJpsiMuPho += vGen;
                 vPsi2s += vGen;
+                iMuons++;
             }
             // photons
-            if(part->GetPdgCode() == 22) vPsi2s += vGen;
+            if(part->GetPdgCode() == 22){
+                vPsi2s += vGen;
+                if(iMuons == 2) vJpsiMuPho += vGen;
+            } 
             // pions
             if(TMath::Abs(part->GetPdgCode()) == 211) vPsi2s += vGen;
             // print to text file
@@ -107,7 +116,7 @@ void ReadKinematicsTree()
         tPtGen->Fill();
         // print info to text files
         if(write_to_txt_file){
-            /*
+            ///*
             outfile << "J/psi (muons):" << std::fixed << std::setprecision(5)
                     << "\teta = " << vJpsiMuons.Eta() 
                     << "\tp_x = " << vJpsiMuons.Px()
@@ -115,6 +124,13 @@ void ReadKinematicsTree()
                     << "\tp_z = " << vJpsiMuons.Pz()
                     << std::fixed << std::setprecision(3)
                     << "\tm = " << vJpsiMuons.M() << endl;
+            outfile << "J/psi (mu+ph):" << std::fixed << std::setprecision(5)
+                    << "\teta = " << vJpsiMuPho.Eta() 
+                    << "\tp_x = " << vJpsiMuPho.Px()
+                    << "\tp_y = " << vJpsiMuPho.Py() 
+                    << "\tp_z = " << vJpsiMuPho.Pz()
+                    << std::fixed << std::setprecision(3)
+                    << "\tm = " << vJpsiMuPho.M() << endl;
             outfile << "Psi(2s) (all):" << std::fixed << std::setprecision(5)
                     << "\teta = " << vPsi2s.Eta() 
                     << "\tp_x = " << vPsi2s.Px()
@@ -122,7 +138,7 @@ void ReadKinematicsTree()
                     << "\tp_z = " << vPsi2s.Pz()
                     << std::fixed << std::setprecision(3)
                     << "\tm = " << vPsi2s.M() << endl;
-            */
+            //*/
             outfile << std::fixed << std::setprecision(5)
                     << "J/psi (orig): p_T = " << pT_Jpsi << endl
                     << "J/psi (muon): p_T = " << vJpsiMuons.Pt() << endl
