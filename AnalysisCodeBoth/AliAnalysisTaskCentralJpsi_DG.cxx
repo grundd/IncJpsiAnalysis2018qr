@@ -59,32 +59,40 @@
 #include "AliAnalysisTask.h"
 #include "AliAnalysisManager.h"
 #include "AliInputEventHandler.h"
+#include "AliMCEventHandler.h"
 #include "AliPIDResponse.h"
 #include "AliTimeRangeCut.h"
 #include "AliDataFile.h"
 #include "AliOADBContainer.h"
+#include "AliVVertex.h"
+#include "AliVVZERO.h"
+#include "AliVAD.h"
+#include "AliESDZDC.h"
+#include "AliTOFTriggerMask.h"
 
+// Other AliRoot headers
 #include "AliESDEvent.h" 
 #include "AliESDtrack.h" 
 #include "AliESDtrackCuts.h"
+#include "AliMCEvent.h"
 
 // My headers:
 #include "AliAnalysisTaskCentralJpsi_DG.h"
 
 class AliAnalysisTaskCentralJpsi_DG; // your analysis class
 
-//using namespace std; // std namespace: so you can do things like 'cout'
-
 ClassImp(AliAnalysisTaskCentralJpsi_DG) // classimp: necessary for root
 
 AliAnalysisTaskCentralJpsi_DG::AliAnalysisTaskCentralJpsi_DG() : // initializer list
     AliAnalysisTaskSE(),
     fPIDResponse(0),
+    fTimeRangeCut(),
     fTrackCutsBit4(0),
+    isMC(kFALSE),
     fEvent(0),
     fOutputList(0),
-    fTreeJPsi(0),
-    fTreeJPsiMCGen(0),
+    fTreeJpsi(0),
+    fTreeJpsiMCGen(0),
     fRunNumber(0),
     fTriggerName(0),
     // Histograms:
@@ -115,6 +123,7 @@ AliAnalysisTaskCentralJpsi_DG::AliAnalysisTaskCentralJpsi_DG() : // initializer 
     fADA_dec(0), fADC_dec(0), fADA_time(0), fADC_time(0),
     // Matching SPD clusters with FOhits
     fMatchingSPD(0),
+    fFOCrossFiredChips(),
     // Trigger inputs for MC data
     fSPDfile(0), fTOFfile(0), fLoadedRun(-1), hTOFeff(0), hSPDeff(0), fTOFmask(0),
     // MC kinematics on generated level
@@ -126,11 +135,13 @@ AliAnalysisTaskCentralJpsi_DG::AliAnalysisTaskCentralJpsi_DG() : // initializer 
 AliAnalysisTaskCentralJpsi_DG::AliAnalysisTaskCentralJpsi_DG(const char* name) : // initializer list
     AliAnalysisTaskSE(name),
     fPIDResponse(0),
+    fTimeRangeCut(),
     fTrackCutsBit4(0),
+    isMC(kFALSE),
     fEvent(0),
     fOutputList(0),
-    fTreeJPsi(0),
-    fTreeJPsiMCGen(0),
+    fTreeJpsi(0),
+    fTreeJpsiMCGen(0),
     fRunNumber(0),
     fTriggerName(0),
     // Histograms:
@@ -161,6 +172,7 @@ AliAnalysisTaskCentralJpsi_DG::AliAnalysisTaskCentralJpsi_DG(const char* name) :
     fADA_dec(0), fADC_dec(0), fADA_time(0), fADC_time(0),
     // Matching SPD clusters with FOhits
     fMatchingSPD(0),
+    fFOCrossFiredChips(),
     // Trigger inputs for MC data
     fSPDfile(0), fTOFfile(0), fLoadedRun(-1), hTOFeff(0), hSPDeff(0), fTOFmask(0),
     // MC kinematics on generated level
@@ -201,77 +213,77 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
     // ##########################################################
     // OUTPUT TREE:
 
-    fTreeJPsi = new TTree("fTreeJPsi", "fTreeJPsi");
+    fTreeJpsi = new TTree("fTreeJpsi", "fTreeJpsi");
     // Basic things:
-    fTreeJPsi->Branch("fRunNumber", &fRunNumber, "fRunNumber/I");
-    fTreeJPsi->Branch("fTriggerName", &fTriggerName);
+    fTreeJpsi->Branch("fRunNumber", &fRunNumber, "fRunNumber/I");
+    fTreeJpsi->Branch("fTriggerName", &fTriggerName);
     // PID, sigmas:
-    fTreeJPsi->Branch("fTrk1SigIfMu", &fTrk1SigIfMu, "fTrk1SigIfMu/D");
-    fTreeJPsi->Branch("fTrk1SigIfEl", &fTrk1SigIfEl, "fTrk1SigIfEl/D");
-    fTreeJPsi->Branch("fTrk2SigIfMu", &fTrk2SigIfMu, "fTrk2SigIfMu/D");
-    fTreeJPsi->Branch("fTrk2SigIfEl", &fTrk2SigIfEl, "fTrk2SigIfEl/D");
+    fTreeJpsi->Branch("fTrk1SigIfMu", &fTrk1SigIfMu, "fTrk1SigIfMu/D");
+    fTreeJpsi->Branch("fTrk1SigIfEl", &fTrk1SigIfEl, "fTrk1SigIfEl/D");
+    fTreeJpsi->Branch("fTrk2SigIfMu", &fTrk2SigIfMu, "fTrk2SigIfMu/D");
+    fTreeJpsi->Branch("fTrk2SigIfEl", &fTrk2SigIfEl, "fTrk2SigIfEl/D");
     // Kinematics:
-    fTreeJPsi->Branch("fPt", &fPt, "fPt/D");
-    fTreeJPsi->Branch("fPhi", &fPhi, "fPhi/D");
-    fTreeJPsi->Branch("fY", &fY, "fY/D");
-    fTreeJPsi->Branch("fM", &fM, "fM/D");
+    fTreeJpsi->Branch("fPt", &fPt, "fPt/D");
+    fTreeJpsi->Branch("fPhi", &fPhi, "fPhi/D");
+    fTreeJpsi->Branch("fY", &fY, "fY/D");
+    fTreeJpsi->Branch("fM", &fM, "fM/D");
     // Two tracks:
-    fTreeJPsi->Branch("fPt1", &fPt1, "fPt1/D");
-    fTreeJPsi->Branch("fPt2", &fPt2, "fPt2/D");
-    fTreeJPsi->Branch("fEta1", &fEta1, "fEta1/D");
-    fTreeJPsi->Branch("fEta2", &fEta2, "fEta2/D");
-    fTreeJPsi->Branch("fPhi1", &fPhi1, "fPhi1/D");
-    fTreeJPsi->Branch("fPhi2", &fPhi2, "fPhi2/D");
-    fTreeJPsi->Branch("fQ1", &fQ1, "fQ1/D");
-    fTreeJPsi->Branch("fQ2", &fQ2, "fQ2/D");
+    fTreeJpsi->Branch("fPt1", &fPt1, "fPt1/D");
+    fTreeJpsi->Branch("fPt2", &fPt2, "fPt2/D");
+    fTreeJpsi->Branch("fEta1", &fEta1, "fEta1/D");
+    fTreeJpsi->Branch("fEta2", &fEta2, "fEta2/D");
+    fTreeJpsi->Branch("fPhi1", &fPhi1, "fPhi1/D");
+    fTreeJpsi->Branch("fPhi2", &fPhi2, "fPhi2/D");
+    fTreeJpsi->Branch("fQ1", &fQ1, "fQ1/D");
+    fTreeJpsi->Branch("fQ2", &fQ2, "fQ2/D");
     // Vertex info:
-    fTreeJPsi->Branch("fVertexZ", &fVertexZ, "fVertexZ/D");
-    fTreeJPsi->Branch("fVertexContrib", &fVertexContrib, "fVertexContrib/I");    
+    fTreeJpsi->Branch("fVertexZ", &fVertexZ, "fVertexZ/D");
+    fTreeJpsi->Branch("fVertexContrib", &fVertexContrib, "fVertexContrib/I");    
     // Info from the detectors:
     // ZDC:
-    fTreeJPsi->Branch("fZNA_energy", &fZNA_energy, "fZNA_energy/D");
-    fTreeJPsi->Branch("fZNC_energy", &fZNC_energy, "fZNC_energy/D");
-    fTreeJPsi->Branch("fZNA_time", &fZNA_time[0], "fZNA_time[4]/D");
-    fTreeJPsi->Branch("fZNC_time", &fZNC_time[0], "fZNC_time[4]/D");
+    fTreeJpsi->Branch("fZNA_energy", &fZNA_energy, "fZNA_energy/D");
+    fTreeJpsi->Branch("fZNC_energy", &fZNC_energy, "fZNC_energy/D");
+    fTreeJpsi->Branch("fZNA_time", &fZNA_time[0], "fZNA_time[4]/D");
+    fTreeJpsi->Branch("fZNC_time", &fZNC_time[0], "fZNC_time[4]/D");
     // V0:
-    fTreeJPsi->Branch("fV0A_dec", &fV0A_dec, "fV0A_dec/I");
-    fTreeJPsi->Branch("fV0C_dec", &fV0C_dec, "fV0C_dec/I");
-    fTreeJPsi->Branch("fV0A_time", &fV0A_time, "fV0A_time/D");
-    fTreeJPsi->Branch("fV0C_time", &fV0C_time, "fV0C_time/D");
+    fTreeJpsi->Branch("fV0A_dec", &fV0A_dec, "fV0A_dec/I");
+    fTreeJpsi->Branch("fV0C_dec", &fV0C_dec, "fV0C_dec/I");
+    fTreeJpsi->Branch("fV0A_time", &fV0A_time, "fV0A_time/D");
+    fTreeJpsi->Branch("fV0C_time", &fV0C_time, "fV0C_time/D");
     // AD:
-    fTreeJPsi->Branch("fADA_dec", &fADA_dec, "fADA_dec/I");
-    fTreeJPsi->Branch("fADC_dec", &fADC_dec, "fADC_dec/I");
-    fTreeJPsi->Branch("fADA_time", &fADA_time, "fADA_time/D");
-    fTreeJPsi->Branch("fADC_time", &fADC_time, "fADC_time/D");
+    fTreeJpsi->Branch("fADA_dec", &fADA_dec, "fADA_dec/I");
+    fTreeJpsi->Branch("fADC_dec", &fADC_dec, "fADC_dec/I");
+    fTreeJpsi->Branch("fADA_time", &fADA_time, "fADA_time/D");
+    fTreeJpsi->Branch("fADC_time", &fADC_time, "fADC_time/D");
     // Matching SPD clusters with FOhits:
-    fTreeJPsi->Branch("fMatchingSPD", &fMatchingSPD, "fMatchingSPD/O");
+    fTreeJpsi->Branch("fMatchingSPD", &fMatchingSPD, "fMatchingSPD/O");
     if(isMC){
         // Replayed trigger inputs:
-        fTreeJPsiMCRec->Branch("fTriggerInputsMC", &fTriggerInputsMC[0], "fTriggerInputsMC[11]/O"); 
+        fTreeJpsi->Branch("fTriggerInputsMC", &fTriggerInputsMC[0], "fTriggerInputsMC[11]/O"); 
         // Kinematics, MC gen:
-        fTreeJPsiMCRec->Branch("fPtGen", &fPtGen, "fPtGen/D");
-        fTreeJPsiMCRec->Branch("fMGen", &fMGen, "fMGen/D");
-        fTreeJPsiMCRec->Branch("fYGen", &fYGen, "fYGen/D");
-        fTreeJPsiMCRec->Branch("fPhiGen", &fPhiGen, "fPhiGen/D");
+        fTreeJpsi->Branch("fPtGen", &fPtGen, "fPtGen/D");
+        fTreeJpsi->Branch("fMGen", &fMGen, "fMGen/D");
+        fTreeJpsi->Branch("fYGen", &fYGen, "fYGen/D");
+        fTreeJpsi->Branch("fPhiGen", &fPhiGen, "fPhiGen/D");
     }    
     
-    PostData(1, fTreeJPsi);
+    PostData(1, fTreeJpsi);
 
     // ##########################################################
     // OUTPUT TREE MC GEN:
 
-    fTreeJPsiMCGen = new TTree("fTreeJPsiMCGen", "fTreeJPsiMCGen");
+    fTreeJpsiMCGen = new TTree("fTreeJpsiMCGen", "fTreeJpsiMCGen");
     if(isMC){
         // Run number:
-        fTreeJPsiMCGen->Branch("fRunNumber", &fRunNumber, "fRunNumber/I");
+        fTreeJpsiMCGen->Branch("fRunNumber", &fRunNumber, "fRunNumber/I");
         // Kinematics:
-        fTreeJPsiMCGen->Branch("fPtGen", &fPtGen, "fPtGen/D");
-        fTreeJPsiMCGen->Branch("fMGen", &fMGen, "fMGen/D");
-        fTreeJPsiMCGen->Branch("fYGen", &fYGen, "fYGen/D");
-        fTreeJPsiMCGen->Branch("fPhiGen", &fPhiGen, "fPhiGen/D");
+        fTreeJpsiMCGen->Branch("fPtGen", &fPtGen, "fPtGen/D");
+        fTreeJpsiMCGen->Branch("fMGen", &fMGen, "fMGen/D");
+        fTreeJpsiMCGen->Branch("fYGen", &fYGen, "fYGen/D");
+        fTreeJpsiMCGen->Branch("fPhiGen", &fPhiGen, "fPhiGen/D");
     }
 
-    PostData(2, fTreeJPsiMCGen);
+    PostData(2, fTreeJpsiMCGen);
 
     // ##########################################################
     // OUTPUT LIST:
@@ -280,12 +292,12 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
     fOutputList->SetOwner(kTRUE); 
 
     // Counter for events passing each cut
-    hCounterCuts = new TH1F("hCounterCuts", "# of events passing each cut", 10, -0.5, 9.5);
+    hCounterCuts = new TH1F("hCounterCuts", "# of events passing each cut", 5, -0.5, 4.5);
     hCounterCuts->GetXaxis()->SetBinLabel(1,"0: non-empty ev");
-    hCounterCuts->GetXaxis()->SetBinLabel(2,"1: vrtx contrib");
-    hCounterCuts->GetXaxis()->SetBinLabel(3,"2: vrtx Z dist");
-    hCounterCuts->GetXaxis()->SetBinLabel(4,"3: two good trks");
-    hCounterCuts->GetXaxis()->SetBinLabel(5,"4: CCUP31 trigg");
+    //hCounterCuts->GetXaxis()->SetBinLabel(2,"1: vrtx contrib");
+    //hCounterCuts->GetXaxis()->SetBinLabel(3,"2: vrtx Z dist");
+    hCounterCuts->GetXaxis()->SetBinLabel(2,"1: two good trks");
+    if(!isMC) hCounterCuts->GetXaxis()->SetBinLabel(3,"2: CCUP31 trigg");
 
     fOutputList->Add(hCounterCuts);
 
@@ -312,10 +324,12 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
     hV0decision = new TH2I("hV0decision","hV0decision",7,-2,5,7,-2,5);
     fOutputList->Add(hV0decision);
 
-    Int_t n_bins = 2000;
-    // x axis = pt generated, y axis = pt reconstructed
-    hPtRecGen = new TH2F("hPtRecGen", "pt rec vs pt gen", n_bins, 0., 2., n_bins, 0., 2.);
-    fOutputList->Add(hPtRecGen);
+    if(isMC){
+        Int_t n_bins = 2000;
+        // x axis = pt generated, y axis = pt reconstructed
+        hPtRecGen = new TH2F("hPtRecGen", "pt rec vs pt gen", n_bins, 0., 2., n_bins, 0., 2.);
+        fOutputList->Add(hPtRecGen);
+    }
 
     PostData(3, fOutputList); 
 
@@ -365,7 +379,7 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
         // If the event is empty, it is skipped
         if(!fEvent)
         {                                          
-            PostData(1, fTreeJPsi);
+            PostData(1, fTreeJpsi);
             PostData(2, fOutputList);
             return;
         }                               
@@ -452,37 +466,18 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
   		fZNC_time[i] = fZDCdata->GetZDCTDCCorrected(detChZNC,i);
 	}
     
+    // Get info about primary vertex
+    const AliVVertex *fVertex = fEvent->GetPrimaryVertex();
+    // Fill the trees and histograms
+    fVertexZ = fVertex->GetZ();
+    hVertexZ->Fill(fVertexZ);
+    fVertexContrib = fVertex->GetNContributors();
+    hVertexContrib->Fill(fVertexContrib);
+    // Cuts on fVertexZ (must be lower than 15 cm) and fVertexContrib (at least two tracks associated with the vertex)
+    // => will be done offline
+
     // ##########################################################
-        // CUT 1 & 2
-        // Check if each event has at maximum 1 vertex within 15 cm from the IP in beam direction
-        const AliVVertex *fVertex = fEvent->GetPrimaryVertex();
-        // Fill the trees and histograms
-        fVertexZ = fVertex->GetZ();
-        hVertexZ->Fill(fVertexZ);
-        fVertexContrib = fVertex->GetNContributors();
-        hVertexContrib->Fill(fVertexContrib);
-        // At least two tracks associated with the vertex
-        if(fVertexContrib < 2)
-        {                                          
-            PostData(1, fTreeJPsi);
-            PostData(2, fTreeJPsiMCGen);
-            PostData(3, fOutputList);
-            return;
-        }
-        hCounterCuts->Fill(iSelectionCounter);
-        iSelectionCounter++;
-        // Distance from the IP must be lower than 15 cm
-        if(TMath::Abs(fVertexZ) > 15)
-        {                                          
-            PostData(1, fTreeJPsi);
-            PostData(2, fTreeJPsiMCGen);
-            PostData(3, fOutputList);
-            return;
-        }
-        hCounterCuts->Fill(iSelectionCounter);
-        iSelectionCounter++;
-    // ##########################################################
-        // CUT 3 
+        // CUT 1
         // Select events with two good central tracks
         Int_t nTrks = fEvent->GetNumberOfTracks();
         Int_t nGoodTracksTPC = 0;
@@ -508,8 +503,8 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
         }
         // Continue only if two good central tracks are found
         if(!(nGoodTracksSPD == 2 && nGoodTracksTPC == 2)){                                          
-            PostData(1, fTreeJPsi);
-            PostData(2, fTreeJPsiMCGen);
+            PostData(1, fTreeJpsi);
+            PostData(2, fTreeJpsiMCGen);
             PostData(3, fOutputList);
             delete [] fIndicesOfGoodTracks; 
             return;
@@ -517,13 +512,13 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
         hCounterCuts->Fill(iSelectionCounter);
         iSelectionCounter++;
     // ##########################################################
-        // CUT 4
+        // CUT 2
         // Central UPC trigger CCUP31
         if(!isMC){ // skipped for MC
             if(!triggered)
             {
-                PostData(1, fTreeJPsi);
-                PostData(2, fTreeJPsiMCGen);
+                PostData(1, fTreeJpsi);
+                PostData(2, fTreeJpsiMCGen);
                 PostData(3, fOutputList);
                 delete [] fIndicesOfGoodTracks; 
                 return;        
@@ -554,7 +549,7 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
     else TrkTrkKinematics(fIndicesOfGoodTracks, massElectron);
 
     // Fill the 2D histogram of pt gen and pt rec
-    hPtRecGen->Fill(fPtGen,fPt);
+    if(isMC) hPtRecGen->Fill(fPtGen,fPt);
 
     // Check if SPD cluster matches FOhits (according to MB's macro)
     Int_t crossedFO[4];
@@ -582,15 +577,15 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
     // ##########################################################
 
     // Fill the analysis tree
-    fTreeJPsi->Fill();
+    fTreeJpsi->Fill();
 
     // Finally post the data
-    PostData(1, fTreeJPsi);
-    PostData(2, fTreeJPsiMCGen);
+    PostData(1, fTreeJpsi);
+    PostData(2, fTreeJpsiMCGen);
     PostData(3, fOutputList);
 }
 //_____________________________________________________________________________
-void AliAnalysisTaskJPsiMC_DG::ReplayTriggersMC(AliVEvent *fEvent)
+void AliAnalysisTaskCentralJpsi_DG::ReplayTriggersMC(AliVEvent *fEvent)
 {
     // First set all triggers to kFALSE state, then we check them
     for(Int_t i = 0; i < 11; i++) fTriggerInputsMC[i] = kFALSE;
@@ -695,7 +690,7 @@ void AliAnalysisTaskJPsiMC_DG::ReplayTriggersMC(AliVEvent *fEvent)
     if (firedSTG) fTriggerInputsMC[10] = kTRUE;
 }
 //_____________________________________________________________________________
-void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
+void AliAnalysisTaskCentralJpsi_DG::RunMCGenerated()
 {
     TLorentzVector vGenerated, vDecayProduct;
     TDatabasePDG *pdgdat = TDatabasePDG::Instance();
@@ -738,7 +733,7 @@ void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
     FillMCGenTree(vGenerated);
 }
 //_____________________________________________________________________________
-void AliAnalysisTaskJPsiMC_DG::FillMCGenTree(TLorentzVector v)
+void AliAnalysisTaskCentralJpsi_DG::FillMCGenTree(TLorentzVector v)
 {
     fPtGen      = v.Pt();
     if(v.E() != v.Pz()) fYGen = v.Rapidity();
@@ -746,7 +741,7 @@ void AliAnalysisTaskJPsiMC_DG::FillMCGenTree(TLorentzVector v)
     fMGen       = v.M();
     fPhiGen     = v.Phi();
 
-    fTreeJPsiMCGen->Fill();
+    fTreeJpsiMCGen->Fill();
 }
 //_____________________________________________________________________________
 void AliAnalysisTaskCentralJpsi_DG::SetCrossed(Int_t spd[4], TBits &crossed){ 

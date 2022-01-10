@@ -45,8 +45,8 @@ class AliAnalysisTaskCentralJpsi_DG : public AliAnalysisTaskSE
 
         AliVEvent   *fEvent;
         TList       *fOutputList;   //! output list
-        TTree       *fTreeJPsi;     //! analysis tree (if MC, then this tree corresponds to MC rec level)
-        TTree       *fTreeJPsiMCGen;//! analysis tree on MC gen level
+        TTree       *fTreeJpsi;     //! analysis tree (if MC, then this tree corresponds to MC rec level)
+        TTree       *fTreeJpsiMCGen;//! analysis tree on MC gen level
         Int_t       fRunNumber;
         TString     fTriggerName;
         // Histograms:
@@ -108,10 +108,10 @@ class AliAnalysisTaskCentralJpsi_DG : public AliAnalysisTaskSE
         TH1D    *hSPDeff;
         AliTOFTriggerMask *fTOFmask;
         // MC kinematics on generated level
-        Double_t    fPtGen;
-        Double_t    fYGen;
-        Double_t    fMGen;
-        Double_t    fPhiGen;
+        Double_t fPtGen;
+        Double_t fYGen;
+        Double_t fMGen;
+        Double_t fPhiGen;
 
         AliAnalysisTaskCentralJpsi_DG(const AliAnalysisTaskCentralJpsi_DG&); // not implemented
         AliAnalysisTaskCentralJpsi_DG& operator=(const AliAnalysisTaskCentralJpsi_DG&); // not implemented
