@@ -106,8 +106,8 @@ Double_t GraphIntegral(TString str_name, Int_t n_data, Double_t *abs_t_val, Doub
 
     Int_t oldLevel = gErrorIgnoreLevel; 
     gErrorIgnoreLevel = kWarning; 
-    c->Print(Form("PhotoCrossSec/.Total/%.2f-%.2f/%s.pdf", t_min, t_max, str_name.Data()));
-    c->Print(Form("PhotoCrossSec/.Total/%.2f-%.2f/%s.png", t_min, t_max, str_name.Data()));
+    c->Print(Form("PhotoCrossSec/img_Total/%.2f-%.2f/%s.pdf", t_min, t_max, str_name.Data()));
+    c->Print(Form("PhotoCrossSec/img_Total/%.2f-%.2f/%s.png", t_min, t_max, str_name.Data()));
     gErrorIgnoreLevel = oldLevel; 
 
     Printf("%s: %.3f micro barns.", str_name.Data(), integral_graph * 1e3);
@@ -128,19 +128,19 @@ void GraphIntegralAll(Double_t t_min, Double_t t_max)
     // HS model
     ReadInputHSModel();
     // GG-hs
-    TString str_HS_hs = "CCK: GG-hs";
+    TString str_HS_hs = "CCK GG-hs";
     integral_HS_hs = GraphIntegral(str_HS_hs,nData_HS,abs_t_HS,sig_HS_inc_hs, t_min, t_max);
     // GG-n
-    TString str_HS_n = "CCK: GG-n";
+    TString str_HS_n = "CCK GG-n";
     integral_HS_n = GraphIntegral(str_HS_n,nData_HS,abs_t_HS,sig_HS_inc_n, t_min, t_max);
 
     // Heikki's model
     ReadInputHeikki();
     // IPsat fluctuations
-    TString str_MS_fl = "MS: IPsat flu";
+    TString str_MS_fl = "MS IPsat flu";
     integral_MS_fl = GraphIntegral(str_MS_fl,nData_HM,abs_t_HM,sig_HM_fluct, t_min, t_max);
     // IPsat no fluctuations
-    TString str_MS_nf = "MS: IPsat no flu";
+    TString str_MS_nf = "MS IPsat no flu";
     integral_MS_nf = GraphIntegral(str_MS_nf,nData_HM,abs_t_HM,sig_HM_noflu, t_min, t_max);
 
     // Guzey's model
@@ -150,10 +150,10 @@ void GraphIntegralAll(Double_t t_min, Double_t t_max)
         sig_GZ_tot_max[i] = sig_GZ_tot_max[i] / 1e6;
     }
     // Upper error
-    TString str_GZ_up = "GSZ: upp";
+    TString str_GZ_up = "GSZ upp";
     integral_GZ_up = GraphIntegral(str_GZ_up,nData_GZ,abs_t_GZ,sig_GZ_tot_max, t_min, t_max);
     // Lower error
-    TString str_GZ_lo = "GSZ: low";
+    TString str_GZ_lo = "GSZ low";
     integral_GZ_lo = GraphIntegral(str_GZ_lo,nData_GZ,abs_t_GZ,sig_GZ_tot_min, t_min, t_max);
 
     return;
@@ -289,8 +289,8 @@ void PlotTotal()
         else latex[i]->DrawLatex(14.5,8.0-i,Form("#bf{%s}", names[i].Data()));
     }    
 
-    c->Print("PhotoCrossSec/.Total/TotalCrossSection.pdf");
-    c->Print("PhotoCrossSec/.Total/TotalCrossSection.png");
+    c->Print("PhotoCrossSec/img_Total/TotalCrossSection.pdf");
+    c->Print("PhotoCrossSec/img_Total/TotalCrossSection.png");
 
     return;
 }
@@ -322,7 +322,7 @@ void ModelsRatios(Double_t t_low_1, Double_t t_upp_1, Double_t t_low_2, Double_t
     Printf("Ratio GZ up: %.3f", int_GZ_up_1/int_GZ_up_2);
     Printf("Ratio GZ lo: %.3f", int_GZ_lo_1/int_GZ_lo_2);
 
-    ofstream fout_ratios("PhotoCrossSec/.Total/ratios.txt");
+    ofstream fout_ratios("PhotoCrossSec/img_Total/ratios.txt");
     fout_ratios << std::fixed << std::setprecision(3);
     fout_ratios << Form("Ratio STARlight: %.3f\n", int_SL_1/int_SL_2);
     fout_ratios << Form("Ratio HS GG-hs:\t %.3f\n", int_HS_hs_1/int_HS_hs_2);
