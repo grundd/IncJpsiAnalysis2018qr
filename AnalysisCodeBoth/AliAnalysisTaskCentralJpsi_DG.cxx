@@ -102,8 +102,13 @@ AliAnalysisTaskCentralJpsi_DG::AliAnalysisTaskCentralJpsi_DG() : // initializer 
     hVertexZ(0),
     hADdecision(0),
     hV0decision(0),
+    hTPCdEdx(0),
+    hTPCdEdxMuon(0),
+    hTPCdEdxElectron(0),
     hPtRecGen(0),
     // PID, sigmas:
+    fTrk1dEdx(0),
+    fTrk2dEdx(0),
     fTrk1SigIfMu(0),
     fTrk1SigIfEl(0),
     fTrk2SigIfMu(0),
@@ -151,8 +156,13 @@ AliAnalysisTaskCentralJpsi_DG::AliAnalysisTaskCentralJpsi_DG(const char* name) :
     hVertexZ(0),
     hADdecision(0),
     hV0decision(0),
+    hTPCdEdx(0),
+    hTPCdEdxMuon(0),
+    hTPCdEdxElectron(0),
     hPtRecGen(0),
     // PID, sigmas:
+    fTrk1dEdx(0),
+    fTrk2dEdx(0),
     fTrk1SigIfMu(0),
     fTrk1SigIfEl(0),
     fTrk2SigIfMu(0),
@@ -218,6 +228,8 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
     fTreeJpsi->Branch("fRunNumber", &fRunNumber, "fRunNumber/I");
     fTreeJpsi->Branch("fTriggerName", &fTriggerName);
     // PID, sigmas:
+    fTreeJpsi->Branch("fTrk1dEdx", &fTrk1dEdx, "fTrk1dEdx/D");
+    fTreeJpsi->Branch("fTrk2dEdx", &fTrk2dEdx, "fTrk2dEdx/D");
     fTreeJpsi->Branch("fTrk1SigIfMu", &fTrk1SigIfMu, "fTrk1SigIfMu/D");
     fTreeJpsi->Branch("fTrk1SigIfEl", &fTrk1SigIfEl, "fTrk1SigIfEl/D");
     fTreeJpsi->Branch("fTrk2SigIfMu", &fTrk2SigIfMu, "fTrk2SigIfMu/D");
@@ -324,45 +336,37 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
     hV0decision = new TH2I("hV0decision","hV0decision",7,-2,5,7,-2,5);
     fOutputList->Add(hV0decision);
 
+    hTPCdEdx = new TH2D("hTPCdEdx"," ",200,0,200.,200,0,200.);
+    // lepton with a negative charge on a horizontal axis
+    hTPCdEdx->GetXaxis()->SetTitle("dE/dx^{TPC}(l^{-}) (a.u.)");
+    hTPCdEdx->GetYaxis()->SetTitle("dE/dx^{TPC}(l^{+}) (a.u.)");
+    fOutputList->Add(hTPCdEdx);
+
+    hTPCdEdxMuon = new TH2D("hTPCdEdxMuon"," ",200,0,200.,200,0,200.);
+    // muon with a negative charge on a horizontal axis
+    hTPCdEdxMuon->GetXaxis()->SetTitle("dE/dx^{TPC}(#mu^{-}) (a.u.)");
+    hTPCdEdxMuon->GetYaxis()->SetTitle("dE/dx^{TPC}(#mu^{+}) (a.u.)");
+    fOutputList->Add(hTPCdEdxMuon);
+
+    hTPCdEdxElectron = new TH2D("hTPCdEdxElectron"," ",200,0,200.,200,0,200.);
+    // electron with a negative charge on a horizontal axis
+    hTPCdEdxElectron->GetXaxis()->SetTitle("dE/dx^{TPC}(e^{-}) (a.u.)");
+    hTPCdEdxElectron->GetYaxis()->SetTitle("dE/dx^{TPC}(e^{+}) (a.u.)");
+    fOutputList->Add(hTPCdEdxElectron);
+
     if(isMC){
         Int_t n_bins = 2000;
         // x axis = pt generated, y axis = pt reconstructed
-        hPtRecGen = new TH2F("hPtRecGen", "pt rec vs pt gen", n_bins, 0., 2., n_bins, 0., 2.);
+        hPtRecGen = new TH2D("hPtRecGen", "pt rec vs pt gen", n_bins, 0., 2., n_bins, 0., 2.);
         fOutputList->Add(hPtRecGen);
     }
 
+    // https://github.com/alisw/AliPhysics/blob/6015b235c21bc8b9d00af9a764be1fb58f7bb32d/PWGCF/Correlations/DPhi/AliPhiCorrelationsQATask.cxx
+    fTrackCutsBit4->DefineHistograms(kBlue);
+    fOutputList->Add(fTrackCutsBit4);
+
     PostData(3, fOutputList); 
 
-}
-//_____________________________________________________________________________
-void AliAnalysisTaskCentralJpsi_DG::TrkTrkKinematics(Int_t *fIndicesOfGoodTrks, Double_t fTrkMass)
-{
-  // Get the first track
-  TLorentzVector fTrk1LorVec;
-  AliESDtrack *trk1 = dynamic_cast<AliESDtrack*>(fEvent->GetTrack(fIndicesOfGoodTrks[0]));
-  // Fill its 4-vector in the form: pt, eta, phi, mass
-  fTrk1LorVec.SetPtEtaPhiM(trk1->Pt(), trk1->Eta(), trk1->Phi(), fTrkMass);
-  // Get the second track
-  TLorentzVector fTrk2LorVec;
-  AliESDtrack *trk2 = dynamic_cast<AliESDtrack*>(fEvent->GetTrack(fIndicesOfGoodTrks[1]));
-  // Fill its 4-vector
-  fTrk2LorVec.SetPtEtaPhiM(trk2->Pt(), trk2->Eta(), trk2->Phi(), fTrkMass);
-  // Vector of Trk+Trk: we add up the two
-  TLorentzVector TrkTrk = fTrk1LorVec + fTrk2LorVec;
-
-  // Set tree variables
-  fPt = TrkTrk.Pt(); 
-  fPhi = TrkTrk.Phi();
-  fY = TrkTrk.Rapidity(); 
-  fM = TrkTrk.M();
-  fPt1 = trk1->Pt(); 
-  fPt2 = trk2->Pt();
-  fEta1 = trk1->Eta(); 
-  fEta2 = trk2->Eta();
-  fPhi1 = trk1->Phi();
-  fPhi2 = trk2->Phi();
-  fQ1 = trk1->Charge(); 
-  fQ2 = trk2->Charge();
 }
 //_____________________________________________________________________________
 void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
@@ -490,12 +494,11 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
             if(!trk) continue;
 
             // Count good TPC tracks:
-            if(fTrackCutsBit4->AcceptTrack(trk)){
-                nGoodTracksTPC++;
-            }
+            Bool_t goodTrackTPC = fTrackCutsBit4->AcceptTrack(trk);
+            if(goodTrackTPC) nGoodTracksTPC++;
             
             // Count good SPD tracks:
-            if(fTrackCutsBit4->AcceptTrack(trk) && trk->HasPointOnITSLayer(0) && trk->HasPointOnITSLayer(1)){
+            if(goodTrackTPC && trk->HasPointOnITSLayer(0) && trk->HasPointOnITSLayer(1)){
                 // If the track satisfies both the SPD and TPC criterion, add it to the list:
                 fIndicesOfGoodTracks[nGoodTracksSPD] = iTrk;
                 nGoodTracksSPD++;  
@@ -545,8 +548,53 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
     Double_t isMuonPair = fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu;
     Double_t isElectronPair = fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl;
 
-    if(isMuonPair < isElectronPair) TrkTrkKinematics(fIndicesOfGoodTracks, massMuon);
-    else TrkTrkKinematics(fIndicesOfGoodTracks, massElectron);
+    // Decide what are the tracks, then assign a proper mass
+    Double_t massTracks = -1;
+    if(isMuonPair < isElectronPair) massTracks = massMuon;
+    else massTracks = massElectron;
+
+    // Track-track kinematics
+    // Fill the 4-vector of the first track
+    TLorentzVector vTrk1;
+    vTrk1.SetPtEtaPhiM(trk1->Pt(), trk1->Eta(), trk1->Phi(), massTracks);
+    // Fill the 4-vector of the second track
+    TLorentzVector vTrk2;
+    vTrk2.SetPtEtaPhiM(trk2->Pt(), trk2->Eta(), trk2->Phi(), massTracks);
+    // Vector of Trk+Trk: add up the two
+    TLorentzVector vTrkTrk = vTrk1 + vTrk2;
+
+    // Set tree variables
+    fPt = vTrkTrk.Pt(); 
+    fPhi = vTrkTrk.Phi();
+    fY = vTrkTrk.Rapidity(); 
+    fM = vTrkTrk.M();
+    fPt1 = trk1->Pt(); 
+    fPt2 = trk2->Pt();
+    fEta1 = trk1->Eta(); 
+    fEta2 = trk2->Eta();
+    fPhi1 = trk1->Phi();
+    fPhi2 = trk2->Phi();
+    fQ1 = trk1->Charge(); 
+    fQ2 = trk2->Charge();
+
+    // Get dE/dx TPC for both tracks
+    fTrk1dEdx = trk1->GetTPCsignal();
+    fTrk2dEdx = trk2->GetTPCsignal();
+
+    // If opposite sign tracks and mass of a J/psi candidate within 2.2, 5.0 GeV
+    // => fill the histogram with dE/dx
+    if(vTrkTrk.M() > 2.2 && vTrkTrk.M() < 5.0 && (fQ1 * fQ2 < 0)){
+        if(fQ1 < 0) hTPCdEdx->Fill(fTrk1dEdx, fTrk2dEdx);
+        else        hTPCdEdx->Fill(fTrk2dEdx, fTrk1dEdx);
+        
+        if(isMuonPair < isElectronPair){ // if considered muons
+            if(fQ1 < 0) hTPCdEdxMuon->Fill(fTrk1dEdx, fTrk2dEdx);
+            else        hTPCdEdxMuon->Fill(fTrk2dEdx, fTrk1dEdx);
+        } else { // if considered electrons
+            if(fQ1 < 0) hTPCdEdxElectron->Fill(fTrk1dEdx, fTrk2dEdx);
+            else        hTPCdEdxElectron->Fill(fTrk2dEdx, fTrk1dEdx);
+        }
+    }
 
     // Fill the 2D histogram of pt gen and pt rec
     if(isMC) hPtRecGen->Fill(fPtGen,fPt);
@@ -571,6 +619,65 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
 
     fFOCrossFiredChips = fFOCrossedChips & fFOFiredChips;
     fMatchingSPD = IsSTGFired(fFOCrossFiredChips,fRunNumber >= 295753 ? 9 : 3);
+
+    // Save information entering AliESDtrackCuts::GetStandardITSTPCTrackCuts2011(kFALSE,1) to histograms
+    // for both tracks
+    for(Int_t iTrack = 0; iTrack < 2; iTrack++){
+        AliESDtrack *trk = dynamic_cast<AliESDtrack*>(fEvent->GetTrack(fIndicesOfGoodTracks[iTrack]));
+
+        // http://alidoc.cern.ch/AliRoot/master/_ali_e_s_dtrack_cuts_8cxx_source.html#l02351 
+
+        // 1. minimum number of TPC crossed rows is 70:
+        //      L1288: 
+        //      Float_t nCrossedRowsTPC = esdTrack->GetTPCCrossedRows(); 
+        // 2. minimum ratio of TPC crossed rows to findable clusters is 0.8
+        //      L1289:
+        //      Float_t  ratioCrossedRowsOverFindableClustersTPC = 1.0;
+        //      if (esdTrack->GetTPCNclsF()>0) {
+        //          ratioCrossedRowsOverFindableClustersTPC = nCrossedRowsTPC / esdTrack->GetTPCNclsF();
+        //      }
+        // 3. maximum TPC fit chi2 per TPC cluster is 4
+        //      In AliESDtrackCuts::GetStandardITSTPCTrackCuts2011, fCutRequireTPCStandAlone is set to default value (kFALSE)
+        //      As opposed e.g. to L796, where: SetRequireTPCStandAlone(kTRUE)
+        //      L2155: fhChi2PerClusterTPC[id]->Fill(chi2PerClusterTPC);
+        //      L1298: Float_t chi2PerClusterTPC = -1;
+        //      L1301 and below:
+        //      if (nClustersTPC!=0) {
+        //          if(fCutRequireTPCStandAlone) {
+        //              chi2PerClusterTPC = esdTrack->GetTPCchi2Iter1()/Float_t(nClustersTPC);
+        //          } else {
+        //              chi2PerClusterTPC = esdTrack->GetTPCchi2()/Float_t(nClustersTPC);
+        //          }
+        //          fracClustersTPCShared = Float_t(nClustersTPCShared)/Float_t(nClustersTPC);
+        //      }
+        // 4. kink daughters rejected
+        //
+        // 5. TPC refit required
+        //      (nothing to plot)
+        // 6. ITS refit required
+        //      (nothing to plot)
+        // 7. SetClusterRequirementITS(AliESDtrackCuts::kSPD, AliESDtrackCuts::kAny), which means at least one hit in SPD
+        //
+        // 8. maximum distance of closest approach (DCA) to vertex in XY plane according to (...)
+        //
+        // 9. maximum DCA to vertex in Z is 2 cm
+        //
+        // 10. if sigma from track-to-vertex could not be calculated, track is not rejected
+        //      (nothing to plot)
+        // 11. maximum chi2 of TPC track constrained with vertex versus global track is 36
+        //      L1531: Double_t chi2TPCConstrainedVsGlobal = -2;
+        //      L1561 and below:
+        //      const AliESDVertex* vertex = 0;
+        //      if (vertex->GetStatus())
+        //          chi2TPCConstrainedVsGlobal = esdTrack->GetChi2TPCConstrainedVsGlobal(vertex);
+        // 12. maximum ITS fit chi2 per ITS cluster is 36
+        //      L1271:
+        //      Int_t nClustersITS = esdTrack->GetITSclusters(0);
+        //      L1297:
+        //      Float_t chi2PerClusterITS = -1;
+        //      if (nClustersITS!=0)
+        //          chi2PerClusterITS = esdTrack->GetITSchi2()/Float_t(nClustersITS);     
+    } 
 
     // Clean up
     delete [] fIndicesOfGoodTracks;
@@ -707,22 +814,20 @@ void AliAnalysisTaskCentralJpsi_DG::RunMCGenerated()
         AliMCParticle *mcPart = (AliMCParticle*) mc->GetTrack(imc);
         if(!mcPart) continue;
     
-        if(TMath::Abs(mcPart->PdgCode()) == 13){ 
-            // if mu+ or mu-
-
-            if(mcPart->GetMother() == -1){
-                // without mother particle
-                TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
-                vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
-                vGenerated += vDecayProduct;
-            } else { // this branch not needed for kTwoGammaToMuMedium
-                // with J/psi mother particle
-                AliMCParticle *mcMother = (AliMCParticle*) mc->GetTrack(mcPart->GetMother());
-                // Original code (manually selected):
-                    // if(TMath::Abs(mcMother->PdgCode()) != 443) continue;     // for kCohJpsiToMu and kIncohJpsiToMu
-                    // if(TMath::Abs(mcMother->PdgCode()) != 100443) continue;  // for kCohPsi2sToMuPi and kIncohPsi2sToMuPi
-                // Previous two conditions merged (they cannot happen at the same time):
-                    if(TMath::Abs(mcMother->PdgCode()) != 443 && TMath::Abs(mcMother->PdgCode()) != 100443) continue;
+        // if mu+ or mu- from kCohJpsiToMu, kIncohJpsiToMu or kTwoGammaToMuMedium
+        if(TMath::Abs(mcPart->PdgCode()) == 13 && mcPart->GetMother() == -1){
+            // add its 4-vector to vGenerated
+            TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
+            vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
+            vGenerated += vDecayProduct;
+        }
+        // if J/psi
+        if(TMath::Abs(mcPart->PdgCode()) == 443){
+            // get its mother
+            AliMCParticle *mcMother = (AliMCParticle*) mc->GetTrack(mcPart->GetMother());
+            // if its mother is psi(2s)
+            if(TMath::Abs(mcMother->PdgCode()) == 100443){
+                // add its 4-vector to vGenerated
                 TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
                 vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
                 vGenerated += vDecayProduct;
@@ -818,5 +923,9 @@ Bool_t AliAnalysisTaskCentralJpsi_DG::IsSTGFired(TBits bits, Int_t dphiMin, Int_
 void AliAnalysisTaskCentralJpsi_DG::Terminate(Option_t *)
 {
     // the end
+
+    TFile* file = TFile::Open("track_cuts.root", "RECREATE");
+    fTrackCutsBit4->SaveHistograms();
+    file->Close();
 }
 //_____________________________________________________________________________

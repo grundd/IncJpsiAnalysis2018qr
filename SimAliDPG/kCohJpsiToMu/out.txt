@@ -1,60 +1,90 @@
 ++++ EVENT no. 1 ++++
  i = 0	mother = -1	status = 0	pdg = 13	name = mu-	daughter = -1	eta = 0.89465	p_x = 0.41083	p_y = -1.16940	p_z = 1.26286	m = 0.106
  i = 1	mother = -1	status = 0	pdg = -13	name = mu+	daughter = -1	eta = -0.52899	p_x = -0.38335	p_y = 1.14207	p_z = -0.66741	m = 0.106
+J/psi (muons):	eta = 3.42616	p_x = 0.02749	p_y = -0.02733	p_z = 0.59545	m = 3.097
+J/psi (mu+ph):	eta = 3.42616	p_x = 0.02749	p_y = -0.02733	p_z = 0.59545	m = 3.097
+Psi(2s) (all):	eta = 3.42616	p_x = 0.02749	p_y = -0.02733	p_z = 0.59545	m = 3.097
 J/psi (orig): p_T = 0.00000
 J/psi (muon): p_T = 0.03876
 diff = 0.03876
 ++++ EVENT no. 2 ++++
  i = 0	mother = -1	status = 0	pdg = 13	name = mu-	daughter = -1	eta = 0.27046	p_x = -0.63101	p_y = -0.90799	p_z = 0.30271	m = 0.106
  i = 1	mother = -1	status = 0	pdg = -13	name = mu+	daughter = -1	eta = -1.50101	p_x = 0.58771	p_y = 0.89627	p_z = -2.28465	m = 0.106
+J/psi (muons):	eta = -4.48149	p_x = -0.04330	p_y = -0.01172	p_z = -1.98194	m = 3.097
+J/psi (mu+ph):	eta = -4.48149	p_x = -0.04330	p_y = -0.01172	p_z = -1.98194	m = 3.097
+Psi(2s) (all):	eta = -4.48149	p_x = -0.04330	p_y = -0.01172	p_z = -1.98194	m = 3.097
 J/psi (orig): p_T = 0.00000
 J/psi (muon): p_T = 0.04486
 diff = 0.04486
 ++++ EVENT no. 3 ++++
  i = 0	mother = -1	status = 0	pdg = 13	name = mu-	daughter = -1	eta = 0.33116	p_x = 0.44061	p_y = -1.39004	p_z = 0.49177	m = 0.106
  i = 1	mother = -1	status = 0	pdg = -13	name = mu+	daughter = -1	eta = 1.06505	p_x = -0.51518	p_y = 1.33986	p_z = 1.83475	m = 0.106
+J/psi (muons):	eta = 3.94720	p_x = -0.07457	p_y = -0.05018	p_z = 2.32652	m = 3.097
+J/psi (mu+ph):	eta = 3.94720	p_x = -0.07457	p_y = -0.05018	p_z = 2.32652	m = 3.097
+Psi(2s) (all):	eta = 3.94720	p_x = -0.07457	p_y = -0.05018	p_z = 2.32652	m = 3.097
 J/psi (orig): p_T = 0.00000
 J/psi (muon): p_T = 0.08988
 diff = 0.08988
 ++++ EVENT no. 4 ++++
  i = 0	mother = -1	status = 0	pdg = -13	name = mu+	daughter = -1	eta = -0.37825	p_x = 0.08780	p_y = 1.50195	p_z = -0.58275	m = 0.106
  i = 1	mother = -1	status = 0	pdg = 13	name = mu-	daughter = -1	eta = -0.57025	p_x = -0.10549	p_y = -1.56810	p_z = -0.94561	m = 0.106
+J/psi (muons):	eta = -3.79908	p_x = -0.01769	p_y = -0.06615	p_z = -1.52835	m = 3.097
+J/psi (mu+ph):	eta = -3.79908	p_x = -0.01769	p_y = -0.06615	p_z = -1.52835	m = 3.097
+Psi(2s) (all):	eta = -3.79908	p_x = -0.01769	p_y = -0.06615	p_z = -1.52835	m = 3.097
 J/psi (orig): p_T = 0.00000
 J/psi (muon): p_T = 0.06848
 diff = 0.06848
 ++++ EVENT no. 5 ++++
  i = 0	mother = -1	status = 0	pdg = -13	name = mu+	daughter = -1	eta = -0.42862	p_x = 1.23754	p_y = 0.71396	p_z = -0.63131	m = 0.106
  i = 1	mother = -1	status = 0	pdg = 13	name = mu-	daughter = -1	eta = -1.21746	p_x = -1.22788	p_y = -0.74261	p_z = -2.21172	m = 0.106
+J/psi (muons):	eta = -5.23687	p_x = 0.00967	p_y = -0.02865	p_z = -2.84303	m = 3.097
+J/psi (mu+ph):	eta = -5.23687	p_x = 0.00967	p_y = -0.02865	p_z = -2.84303	m = 3.097
+Psi(2s) (all):	eta = -5.23687	p_x = 0.00967	p_y = -0.02865	p_z = -2.84303	m = 3.097
 J/psi (orig): p_T = 0.00000
 J/psi (muon): p_T = 0.03023
 diff = 0.03023
 ++++ EVENT no. 6 ++++
  i = 0	mother = -1	status = 0	pdg = 13	name = mu-	daughter = -1	eta = -3.01166	p_x = -0.14965	p_y = 0.28751	p_z = -3.28525	m = 0.106
  i = 1	mother = -1	status = 0	pdg = -13	name = mu+	daughter = -1	eta = 1.35034	p_x = 0.10323	p_y = -0.35039	p_z = 0.65743	m = 0.106
+J/psi (muons):	eta = -4.20854	p_x = -0.04641	p_y = -0.06288	p_z = -2.62782	m = 3.097
+J/psi (mu+ph):	eta = -4.20854	p_x = -0.04641	p_y = -0.06288	p_z = -2.62782	m = 3.097
+Psi(2s) (all):	eta = -4.20854	p_x = -0.04641	p_y = -0.06288	p_z = -2.62782	m = 3.097
 J/psi (orig): p_T = 0.00000
 J/psi (muon): p_T = 0.07816
 diff = 0.07816
 ++++ EVENT no. 7 ++++
  i = 0	mother = -1	status = 0	pdg = 13	name = mu-	daughter = -1	eta = -0.01479	p_x = -0.31815	p_y = 1.05631	p_z = -0.01632	m = 0.106
  i = 1	mother = -1	status = 0	pdg = -13	name = mu+	daughter = -1	eta = 1.63138	p_x = 0.33762	p_y = -1.12128	p_z = 2.87789	m = 0.106
+J/psi (muons):	eta = 4.43546	p_x = 0.01947	p_y = -0.06497	p_z = 2.86157	m = 3.097
+J/psi (mu+ph):	eta = 4.43546	p_x = 0.01947	p_y = -0.06497	p_z = 2.86157	m = 3.097
+Psi(2s) (all):	eta = 4.43546	p_x = 0.01947	p_y = -0.06497	p_z = 2.86157	m = 3.097
 J/psi (orig): p_T = 0.00000
 J/psi (muon): p_T = 0.06783
 diff = 0.06783
 ++++ EVENT no. 8 ++++
  i = 0	mother = -1	status = 0	pdg = 13	name = mu-	daughter = -1	eta = -0.19097	p_x = 1.29616	p_y = 0.65563	p_z = -0.27908	m = 0.106
  i = 1	mother = -1	status = 0	pdg = -13	name = mu+	daughter = -1	eta = -0.97323	p_x = -1.26903	p_y = -0.62627	p_z = -1.60523	m = 0.106
+J/psi (muons):	eta = -4.54648	p_x = 0.02712	p_y = 0.02936	p_z = -1.88431	m = 3.097
+J/psi (mu+ph):	eta = -4.54648	p_x = 0.02712	p_y = 0.02936	p_z = -1.88431	m = 3.097
+Psi(2s) (all):	eta = -4.54648	p_x = 0.02712	p_y = 0.02936	p_z = -1.88431	m = 3.097
 J/psi (orig): p_T = 0.00000
 J/psi (muon): p_T = 0.03997
 diff = 0.03997
 ++++ EVENT no. 9 ++++
  i = 0	mother = -1	status = 0	pdg = -13	name = mu+	daughter = -1	eta = 0.15154	p_x = 0.86540	p_y = -1.26793	p_z = 0.23352	m = 0.106
  i = 1	mother = -1	status = 0	pdg = 13	name = mu-	daughter = -1	eta = 0.30204	p_x = -0.86134	p_y = 1.28374	p_z = 0.47407	m = 0.106
+J/psi (muons):	eta = 4.46282	p_x = 0.00405	p_y = 0.01581	p_z = 0.70758	m = 3.097
+J/psi (mu+ph):	eta = 4.46282	p_x = 0.00405	p_y = 0.01581	p_z = 0.70758	m = 3.097
+Psi(2s) (all):	eta = 4.46282	p_x = 0.00405	p_y = 0.01581	p_z = 0.70758	m = 3.097
 J/psi (orig): p_T = 0.00000
 J/psi (muon): p_T = 0.01632
 diff = 0.01632
 ++++ EVENT no. 10 ++++
  i = 0	mother = -1	status = 0	pdg = -13	name = mu+	daughter = -1	eta = -1.60662	p_x = 0.28083	p_y = -1.23389	p_z = -3.02783	m = 0.106
  i = 1	mother = -1	status = 0	pdg = 13	name = mu-	daughter = -1	eta = -0.35620	p_x = -0.24031	p_y = 1.28237	p_z = -0.47462	m = 0.106
+J/psi (muons):	eta = -4.70851	p_x = 0.04052	p_y = 0.04847	p_z = -3.50245	m = 3.097
+J/psi (mu+ph):	eta = -4.70851	p_x = 0.04052	p_y = 0.04847	p_z = -3.50245	m = 3.097
+Psi(2s) (all):	eta = -4.70851	p_x = 0.04052	p_y = 0.04847	p_z = -3.50245	m = 3.097
 J/psi (orig): p_T = 0.00000
 J/psi (muon): p_T = 0.06318
 diff = 0.06318

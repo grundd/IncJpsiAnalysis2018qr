@@ -29,7 +29,6 @@ class AliAnalysisTaskCentralJpsi_DG : public AliAnalysisTaskSE
         virtual void    Terminate(Option_t* option); // usually empty, called at the end
 
         void    SetIsMC(Bool_t MC){isMC = MC;}
-        void    TrkTrkKinematics(Int_t *fIndicesOfGoodTrks, Double_t fTrkMass);
         void    ReplayTriggersMC(AliVEvent *fEvent);
         void    RunMCGenerated();  
         void    FillMCGenTree(TLorentzVector v);
@@ -56,8 +55,13 @@ class AliAnalysisTaskCentralJpsi_DG : public AliAnalysisTaskSE
         TH1F    *hVertexZ;
         TH2I    *hADdecision;
         TH2I    *hV0decision;
-        TH2F    *hPtRecGen;
+        TH2D    *hTPCdEdx;
+        TH2D    *hTPCdEdxMuon;
+        TH2D    *hTPCdEdxElectron;
+        TH2D    *hPtRecGen;
         // PID, sigmas:
+        Double_t fTrk1dEdx;
+        Double_t fTrk2dEdx;
         Double_t fTrk1SigIfMu;
         Double_t fTrk1SigIfEl;
         Double_t fTrk2SigIfMu;
