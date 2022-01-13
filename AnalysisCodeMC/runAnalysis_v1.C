@@ -1,7 +1,7 @@
 // include the header of your analysis task here
 #include "AliAnalysisTaskJPsiMC_DG.h"
 
-void runAnalysis() {
+void runAnalysis_v1() {
     // header location
     gInterpreter->ProcessLine(".include $ROOTSYS/include");
     gInterpreter->ProcessLine(".include $ALICE_ROOT/include");

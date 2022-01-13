@@ -13,11 +13,7 @@
  * provided "as is" without express or implied warranty.                  *
  **************************************************************************/
 
-/* AliAnaysisTaskMyTask
- *
- * empty task which can serve as a starting point for building an analysis
- * as an example, one histogram is filled
- */
+// david.grund(at)cern.ch
 
 // C++ headers:
 #include <iostream>
@@ -79,7 +75,7 @@
 // My headers:
 #include "AliAnalysisTaskCentralJpsi_DG.h"
 
-class AliAnalysisTaskCentralJpsi_DG; // your analysis class
+class AliAnalysisTaskCentralJpsi_DG; // analysis class
 
 ClassImp(AliAnalysisTaskCentralJpsi_DG) // classimp: necessary for root
 
@@ -123,15 +119,15 @@ AliAnalysisTaskCentralJpsi_DG::AliAnalysisTaskCentralJpsi_DG() : // initializer 
     // ZDC
     fZNA_energy(0), fZNC_energy(0),
     // V0
-    fV0A_dec(0), fV0C_dec(0), fV0A_time(0), fV0C_time(0),
+    fV0A_dec(0), fV0C_dec(0),
     // AD
-    fADA_dec(0), fADC_dec(0), fADA_time(0), fADC_time(0),
+    fADA_dec(0), fADC_dec(0),
     // Matching SPD clusters with FOhits
     fMatchingSPD(0),
     fFOCrossFiredChips(),
     // Trigger inputs for MC data
     fSPDfile(0), fTOFfile(0), fLoadedRun(-1), hTOFeff(0), hSPDeff(0), fTOFmask(0),
-    // MC kinematics on generated level
+    // MC kinematics on generator level
     fPtGen(0), fMGen(0), fYGen(0), fPhiGen(0)
 {
     // default constructor
@@ -177,15 +173,15 @@ AliAnalysisTaskCentralJpsi_DG::AliAnalysisTaskCentralJpsi_DG(const char* name) :
     // ZDC
     fZNA_energy(0), fZNC_energy(0),
     // V0
-    fV0A_dec(0), fV0C_dec(0), fV0A_time(0), fV0C_time(0),
+    fV0A_dec(0), fV0C_dec(0),
     // AD
-    fADA_dec(0), fADC_dec(0), fADA_time(0), fADC_time(0),
+    fADA_dec(0), fADC_dec(0),
     // Matching SPD clusters with FOhits
     fMatchingSPD(0),
     fFOCrossFiredChips(),
     // Trigger inputs for MC data
     fSPDfile(0), fTOFfile(0), fLoadedRun(-1), hTOFeff(0), hSPDeff(0), fTOFmask(0),
-    // MC kinematics on generated level
+    // MC kinematics on generator level
     fPtGen(0), fMGen(0), fYGen(0), fPhiGen(0)
 {
     // constructor
@@ -208,14 +204,18 @@ AliAnalysisTaskCentralJpsi_DG::~AliAnalysisTaskCentralJpsi_DG()
 
     if (AliAnalysisManager::GetAnalysisManager()->GetAnalysisType() != AliAnalysisManager::kProofAnalysis){
         delete fOutputList;
-        fOutputList = 0x0;
+        fOutputList = 0;
+        delete fTreeJpsi;
+        fTreeJpsi = 0;
+        delete fTreeJpsiMCGen;
+        fTreeJpsiMCGen = 0;
     }
 }
 //_____________________________________________________________________________
 void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
 {
-    AliAnalysisManager *man = AliAnalysisManager::GetAnalysisManager();
-    AliInputEventHandler *inputHandler = (AliInputEventHandler*) (man->GetInputEventHandler());
+    AliAnalysisManager *mgr = AliAnalysisManager::GetAnalysisManager();
+    AliInputEventHandler *inputHandler = (AliInputEventHandler*) (mgr->GetInputEventHandler());
     fPIDResponse = inputHandler->GetPIDResponse();
 
     fTrackCutsBit4 = AliESDtrackCuts::GetStandardITSTPCTrackCuts2011(kFALSE,1);
@@ -260,13 +260,9 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
     // V0:
     fTreeJpsi->Branch("fV0A_dec", &fV0A_dec, "fV0A_dec/I");
     fTreeJpsi->Branch("fV0C_dec", &fV0C_dec, "fV0C_dec/I");
-    fTreeJpsi->Branch("fV0A_time", &fV0A_time, "fV0A_time/D");
-    fTreeJpsi->Branch("fV0C_time", &fV0C_time, "fV0C_time/D");
     // AD:
     fTreeJpsi->Branch("fADA_dec", &fADA_dec, "fADA_dec/I");
     fTreeJpsi->Branch("fADC_dec", &fADC_dec, "fADC_dec/I");
-    fTreeJpsi->Branch("fADA_time", &fADA_time, "fADA_time/D");
-    fTreeJpsi->Branch("fADC_time", &fADC_time, "fADC_time/D");
     // Matching SPD clusters with FOhits:
     fTreeJpsi->Branch("fMatchingSPD", &fMatchingSPD, "fMatchingSPD/O");
     if(isMC){
@@ -336,19 +332,19 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
     hV0decision = new TH2I("hV0decision","hV0decision",7,-2,5,7,-2,5);
     fOutputList->Add(hV0decision);
 
-    hTPCdEdx = new TH2D("hTPCdEdx"," ",200,0,200.,200,0,200.);
+    hTPCdEdx = new TH2D("hTPCdEdx"," ",140,0,140.,140,0,140.);
     // lepton with a negative charge on a horizontal axis
     hTPCdEdx->GetXaxis()->SetTitle("dE/dx^{TPC}(l^{-}) (a.u.)");
     hTPCdEdx->GetYaxis()->SetTitle("dE/dx^{TPC}(l^{+}) (a.u.)");
     fOutputList->Add(hTPCdEdx);
 
-    hTPCdEdxMuon = new TH2D("hTPCdEdxMuon"," ",200,0,200.,200,0,200.);
+    hTPCdEdxMuon = new TH2D("hTPCdEdxMuon"," ",140,0,140.,140,0,140.);
     // muon with a negative charge on a horizontal axis
     hTPCdEdxMuon->GetXaxis()->SetTitle("dE/dx^{TPC}(#mu^{-}) (a.u.)");
     hTPCdEdxMuon->GetYaxis()->SetTitle("dE/dx^{TPC}(#mu^{+}) (a.u.)");
     fOutputList->Add(hTPCdEdxMuon);
 
-    hTPCdEdxElectron = new TH2D("hTPCdEdxElectron"," ",200,0,200.,200,0,200.);
+    hTPCdEdxElectron = new TH2D("hTPCdEdxElectron"," ",140,0,140.,140,0,140.);
     // electron with a negative charge on a horizontal axis
     hTPCdEdxElectron->GetXaxis()->SetTitle("dE/dx^{TPC}(e^{-}) (a.u.)");
     hTPCdEdxElectron->GetYaxis()->SetTitle("dE/dx^{TPC}(e^{+}) (a.u.)");
@@ -356,8 +352,8 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
 
     if(isMC){
         Int_t n_bins = 2000;
-        // x axis = pt generated, y axis = pt reconstructed
-        hPtRecGen = new TH2D("hPtRecGen", "pt rec vs pt gen", n_bins, 0., 2., n_bins, 0., 2.);
+        // x axis = pT from the generator, y axis = pT reconstructed
+        hPtRecGen = new TH2D("hPtRecGen", "pT rec vs pT gen", n_bins, 0., 2., n_bins, 0., 2.);
         fOutputList->Add(hPtRecGen);
     }
 
@@ -434,42 +430,26 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
             fLoadedRun = fRunNumber;
         }
         ReplayTriggersMC(fEvent);   
-        // Run analysis on the generated level
-        RunMCGenerated();     
+        // Run analysis on the generator level
+        RunMCGenLevel();     
     }
 
     // Forward detectors
-    // Store info from these detectors to the analysis tree
+    // Save info from these detectors to the analysis tree
     // and fill the 2D histograms with V0 and AD responses
     
     // AD
     AliVAD *fADdata = fEvent->GetADData();
     fADA_dec = fADdata->GetADADecision();
     fADC_dec = fADdata->GetADCDecision();
-    fADA_time = fADdata->GetADATime();
-    fADC_time = fADdata->GetADCTime();
     hADdecision->Fill(fADA_dec,fADC_dec);
 
     // V0
     AliVVZERO *fV0data = fEvent->GetVZEROData();
     fV0A_dec = fV0data->GetV0ADecision();
     fV0C_dec = fV0data->GetV0CDecision();
-    fV0A_time = fV0data->GetV0ATime();
-    fV0C_time = fV0data->GetV0CTime();
     hV0decision->Fill(fV0A_dec,fV0C_dec);
 
-    // ZDC
-  	AliESDZDC *fZDCdata = (AliESDZDC*)fEvent->GetZDCData();
-  	fZNA_energy = fZDCdata->GetZNATowerEnergy()[0];
-  	fZNC_energy = fZDCdata->GetZNCTowerEnergy()[0];
-	Int_t detChZNA  = fZDCdata->GetZNATDCChannel();
-    Int_t detChZNC  = fZDCdata->GetZNCTDCChannel();
-	if(fEvent->GetRunNumber() >= 245726 && fEvent->GetRunNumber() <= 245793) detChZNA = 10;
-  	for(Int_t i = 0; i < 4; i++){ 
-  		fZNA_time[i] = fZDCdata->GetZDCTDCCorrected(detChZNA,i);
-  		fZNC_time[i] = fZDCdata->GetZDCTDCCorrected(detChZNC,i);
-	}
-    
     // Get info about primary vertex
     const AliVVertex *fVertex = fEvent->GetPrimaryVertex();
     // Fill the trees and histograms
@@ -548,7 +528,7 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
     Double_t isMuonPair = fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu;
     Double_t isElectronPair = fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl;
 
-    // Decide what are the tracks, then assign a proper mass
+    // Decide if muons/electrons, then assign a proper mass
     Double_t massTracks = -1;
     if(isMuonPair < isElectronPair) massTracks = massMuon;
     else massTracks = massElectron;
@@ -560,7 +540,7 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
     // Fill the 4-vector of the second track
     TLorentzVector vTrk2;
     vTrk2.SetPtEtaPhiM(trk2->Pt(), trk2->Eta(), trk2->Phi(), massTracks);
-    // Vector of Trk+Trk: add up the two
+    // Vector of trk+trk: add up the two
     TLorentzVector vTrkTrk = vTrk1 + vTrk2;
 
     // Set tree variables
@@ -581,25 +561,26 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
     fTrk1dEdx = trk1->GetTPCsignal();
     fTrk2dEdx = trk2->GetTPCsignal();
 
-    // If opposite sign tracks and mass of a J/psi candidate within 2.2, 5.0 GeV
-    // => fill the histogram with dE/dx
+    // If opposite sign tracks and mass of a J/psi candidate within (2.2, 5.0) GeV
+    // => fill the histograms with dE/dx
     if(vTrkTrk.M() > 2.2 && vTrkTrk.M() < 5.0 && (fQ1 * fQ2 < 0)){
         if(fQ1 < 0) hTPCdEdx->Fill(fTrk1dEdx, fTrk2dEdx);
         else        hTPCdEdx->Fill(fTrk2dEdx, fTrk1dEdx);
-        
-        if(isMuonPair < isElectronPair){ // if considered muons
+        // if considered muons
+        if(isMuonPair < isElectronPair){ 
             if(fQ1 < 0) hTPCdEdxMuon->Fill(fTrk1dEdx, fTrk2dEdx);
             else        hTPCdEdxMuon->Fill(fTrk2dEdx, fTrk1dEdx);
-        } else { // if considered electrons
+        // if considered electrons
+        } else {
             if(fQ1 < 0) hTPCdEdxElectron->Fill(fTrk1dEdx, fTrk2dEdx);
             else        hTPCdEdxElectron->Fill(fTrk2dEdx, fTrk1dEdx);
         }
     }
 
-    // Fill the 2D histogram of pt gen and pt rec
+    // Fill the 2D histogram of pT gen and pT rec
     if(isMC) hPtRecGen->Fill(fPtGen,fPt);
 
-    // Check if SPD cluster matches FOhits (according to MB's macro)
+    // Check if SPD clusters match FOhits (according to macro by MB)
     Int_t crossedFO[4];
     TBits fFOCrossedChips(1200); 
     const AliVMultiplicity *mult = fEvent->GetMultiplicity();
@@ -620,68 +601,21 @@ void AliAnalysisTaskCentralJpsi_DG::UserExec(Option_t *)
     fFOCrossFiredChips = fFOCrossedChips & fFOFiredChips;
     fMatchingSPD = IsSTGFired(fFOCrossFiredChips,fRunNumber >= 295753 ? 9 : 3);
 
-    // Save information entering AliESDtrackCuts::GetStandardITSTPCTrackCuts2011(kFALSE,1) to histograms
-    // for both tracks
-    for(Int_t iTrack = 0; iTrack < 2; iTrack++){
-        AliESDtrack *trk = dynamic_cast<AliESDtrack*>(fEvent->GetTrack(fIndicesOfGoodTracks[iTrack]));
-
-        // http://alidoc.cern.ch/AliRoot/master/_ali_e_s_dtrack_cuts_8cxx_source.html#l02351 
-
-        // 1. minimum number of TPC crossed rows is 70:
-        //      L1288: 
-        //      Float_t nCrossedRowsTPC = esdTrack->GetTPCCrossedRows(); 
-        // 2. minimum ratio of TPC crossed rows to findable clusters is 0.8
-        //      L1289:
-        //      Float_t  ratioCrossedRowsOverFindableClustersTPC = 1.0;
-        //      if (esdTrack->GetTPCNclsF()>0) {
-        //          ratioCrossedRowsOverFindableClustersTPC = nCrossedRowsTPC / esdTrack->GetTPCNclsF();
-        //      }
-        // 3. maximum TPC fit chi2 per TPC cluster is 4
-        //      In AliESDtrackCuts::GetStandardITSTPCTrackCuts2011, fCutRequireTPCStandAlone is set to default value (kFALSE)
-        //      As opposed e.g. to L796, where: SetRequireTPCStandAlone(kTRUE)
-        //      L2155: fhChi2PerClusterTPC[id]->Fill(chi2PerClusterTPC);
-        //      L1298: Float_t chi2PerClusterTPC = -1;
-        //      L1301 and below:
-        //      if (nClustersTPC!=0) {
-        //          if(fCutRequireTPCStandAlone) {
-        //              chi2PerClusterTPC = esdTrack->GetTPCchi2Iter1()/Float_t(nClustersTPC);
-        //          } else {
-        //              chi2PerClusterTPC = esdTrack->GetTPCchi2()/Float_t(nClustersTPC);
-        //          }
-        //          fracClustersTPCShared = Float_t(nClustersTPCShared)/Float_t(nClustersTPC);
-        //      }
-        // 4. kink daughters rejected
-        //
-        // 5. TPC refit required
-        //      (nothing to plot)
-        // 6. ITS refit required
-        //      (nothing to plot)
-        // 7. SetClusterRequirementITS(AliESDtrackCuts::kSPD, AliESDtrackCuts::kAny), which means at least one hit in SPD
-        //
-        // 8. maximum distance of closest approach (DCA) to vertex in XY plane according to (...)
-        //
-        // 9. maximum DCA to vertex in Z is 2 cm
-        //
-        // 10. if sigma from track-to-vertex could not be calculated, track is not rejected
-        //      (nothing to plot)
-        // 11. maximum chi2 of TPC track constrained with vertex versus global track is 36
-        //      L1531: Double_t chi2TPCConstrainedVsGlobal = -2;
-        //      L1561 and below:
-        //      const AliESDVertex* vertex = 0;
-        //      if (vertex->GetStatus())
-        //          chi2TPCConstrainedVsGlobal = esdTrack->GetChi2TPCConstrainedVsGlobal(vertex);
-        // 12. maximum ITS fit chi2 per ITS cluster is 36
-        //      L1271:
-        //      Int_t nClustersITS = esdTrack->GetITSclusters(0);
-        //      L1297:
-        //      Float_t chi2PerClusterITS = -1;
-        //      if (nClustersITS!=0)
-        //          chi2PerClusterITS = esdTrack->GetITSchi2()/Float_t(nClustersITS);     
-    } 
-
     // Clean up
     delete [] fIndicesOfGoodTracks;
     // ##########################################################
+
+    // Data from the ZDC
+  	AliESDZDC *fZDCdata = (AliESDZDC*)fEvent->GetZDCData();
+  	fZNA_energy = fZDCdata->GetZNATowerEnergy()[0];
+  	fZNC_energy = fZDCdata->GetZNCTowerEnergy()[0];
+	Int_t detChZNA  = fZDCdata->GetZNATDCChannel();
+    Int_t detChZNC  = fZDCdata->GetZNCTDCChannel();
+	if(fEvent->GetRunNumber() >= 245726 && fEvent->GetRunNumber() <= 245793) detChZNA = 10;
+  	for(Int_t i = 0; i < 4; i++){ 
+  		fZNA_time[i] = fZDCdata->GetZDCTDCCorrected(detChZNA,i);
+  		fZNC_time[i] = fZDCdata->GetZDCTDCCorrected(detChZNC,i);
+	}
 
     // Fill the analysis tree
     fTreeJpsi->Fill();
@@ -797,12 +731,12 @@ void AliAnalysisTaskCentralJpsi_DG::ReplayTriggersMC(AliVEvent *fEvent)
     if (firedSTG) fTriggerInputsMC[10] = kTRUE;
 }
 //_____________________________________________________________________________
-void AliAnalysisTaskCentralJpsi_DG::RunMCGenerated()
+void AliAnalysisTaskCentralJpsi_DG::RunMCGenLevel()
 {
-    TLorentzVector vGenerated, vDecayProduct;
+    TLorentzVector vGen, vDecayProduct;
     TDatabasePDG *pdgdat = TDatabasePDG::Instance();
 
-    vGenerated.SetPtEtaPhiM(0.,0.,0.,0.);
+    vGen.SetPtEtaPhiM(0.,0.,0.,0.);
 
     AliMCEvent *mc = MCEvent();
     if(!mc){
@@ -814,28 +748,30 @@ void AliAnalysisTaskCentralJpsi_DG::RunMCGenerated()
         AliMCParticle *mcPart = (AliMCParticle*) mc->GetTrack(imc);
         if(!mcPart) continue;
     
-        // if mu+ or mu- from kCohJpsiToMu, kIncohJpsiToMu or kTwoGammaToMuMedium
+        // kCohJpsiToMu, kIncohJpsiToMu, kTwoGammaToMuMedium:
+        // if mu+ or mu- without a mother assigned (STARlight) 
         if(TMath::Abs(mcPart->PdgCode()) == 13 && mcPart->GetMother() == -1){
-            // add its 4-vector to vGenerated
+            // add its 4-vector to vGen
             TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
             vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
-            vGenerated += vDecayProduct;
+            vGen += vDecayProduct;
         }
-        // if J/psi
+        // kCohPsi2sToMuPi, kIncohPsi2sToMuPi:
+        // if J/psi with a mother Psi(2s) (STARlight + EvtGen)
         if(TMath::Abs(mcPart->PdgCode()) == 443){
             // get its mother
             AliMCParticle *mcMother = (AliMCParticle*) mc->GetTrack(mcPart->GetMother());
-            // if its mother is psi(2s)
+            // if its mother is Psi(2s)
             if(TMath::Abs(mcMother->PdgCode()) == 100443){
-                // add its 4-vector to vGenerated
+                // add its 4-vector to vGen
                 TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
                 vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
-                vGenerated += vDecayProduct;
+                vGen += vDecayProduct;
             }
         }
     } // loop over mc particles
 
-    FillMCGenTree(vGenerated);
+    FillMCGenTree(vGen);
 }
 //_____________________________________________________________________________
 void AliAnalysisTaskCentralJpsi_DG::FillMCGenTree(TLorentzVector v)

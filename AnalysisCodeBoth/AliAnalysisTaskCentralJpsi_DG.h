@@ -30,7 +30,7 @@ class AliAnalysisTaskCentralJpsi_DG : public AliAnalysisTaskSE
 
         void    SetIsMC(Bool_t MC){isMC = MC;}
         void    ReplayTriggersMC(AliVEvent *fEvent);
-        void    RunMCGenerated();  
+        void    RunMCGenLevel();  
         void    FillMCGenTree(TLorentzVector v);
         void    SetCrossed(Int_t spd[4], TBits &crossed);
         Int_t   GetChipId(Int_t index, Int_t &chipId2, Bool_t debug = 0);
@@ -93,13 +93,9 @@ class AliAnalysisTaskCentralJpsi_DG : public AliAnalysisTaskSE
         // V0:
         Int_t fV0A_dec;
         Int_t fV0C_dec;
-        Double_t fV0A_time;
-        Double_t fV0C_time;
         // AD:
         Int_t fADA_dec;
         Int_t fADC_dec;
-        Double_t fADA_time;
-        Double_t fADC_time;
         // Matching SPD clusters with FOhits
         Bool_t fMatchingSPD;
         TBits fFOCrossFiredChips;

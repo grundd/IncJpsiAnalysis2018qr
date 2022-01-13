@@ -4,12 +4,20 @@
 // pcm file, so we need to include it explicitly
 #include "AliAnalysisTaskCentralJpsi_DG.h"
 
+Bool_t MC = kTRUE;
+Int_t iMCDataset = 4;
+// 0 => kIncohJpsiToMu
+// 1 => kIncohPsi2sToMuPi
+// 2 => kCohJpsiToMu
+// 3 => kCohPsi2sToMuPi
+// 4 => kTwoGammaToMuMedium
+
 void runAnalysis()
 {
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
-    Bool_t local = kTRUE;
+    Bool_t local = kFALSE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
-    Bool_t gridTest = kTRUE;
+    Bool_t gridTest = kFALSE;
 
     // since we will compile a class, tell root where to look for headers  
 #if !defined (__CINT__) || defined (__CLING__)
@@ -26,11 +34,12 @@ void runAnalysis()
     AliESDInputHandler *esdH = new AliESDInputHandler();
     mgr->SetInputEventHandler(esdH);
     // MC handler 
-    /*
-    AliMCEventHandler *MCHandler = new AliMCEventHandler();
-    mgr->SetMCtruthEventHandler(MCHandler);
-    if (!MCHandler) Printf("Could not retrieve MC event handler.");
-    */
+    AliMCEventHandler *MCHandler = NULL;
+    if(MC){
+        MCHandler = new AliMCEventHandler();
+        mgr->SetMCtruthEventHandler(MCHandler);
+        if (!MCHandler) Printf("Could not retrieve MC event handler.");
+    }
 
     // compile the class and load the add task macro
     // here we have to differentiate between using the just-in-time compiler
@@ -58,13 +67,14 @@ void runAnalysis()
         // if you want to run locally, we need to define some input
         TChain* chain = new TChain("esdTree"); // !!!
         // add a few files to the chain (change this so that your local files are added)
-        chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/Data_000296623/101_AliESDs.root");
-        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohJpsiToMu_295585_001/AliESDs.root"); 
-        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohPsi2sToMuPi_295585_001/AliESDs.root"); 
-        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohJpsiToMu_295585_001/AliESDs.root"); 
-        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohPsi2sToMuPi_295585_001/AliESDs.root"); 
-        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kTwoGammaToMuMedium_295585_001/AliESDs.root"); 
-
+        if(!MC) chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/Data_000296623/101_AliESDs.root");
+        else{
+            if(iMCDataset == 0) chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohJpsiToMu_295585_001/AliESDs.root"); 
+            if(iMCDataset == 1) chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohPsi2sToMuPi_295585_001/AliESDs.root"); 
+            if(iMCDataset == 2) chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohJpsiToMu_295585_001/AliESDs.root"); 
+            if(iMCDataset == 3) chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohPsi2sToMuPi_295585_001/AliESDs.root"); 
+            if(iMCDataset == 4) chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kTwoGammaToMuMedium_295585_001/AliESDs.root"); 
+        }
         // start the analysis locally, reading the events from the tchain
         mgr->StartAnalysis("local", chain);
 
@@ -86,32 +96,36 @@ void runAnalysis()
         // Guillermo: vAN-20200221_ROOT6-1
         // set the Alien API version
         alienHandler->SetAPIVersion("V1.1x");
-        // select the input data
-
-        ///*
+        
+        // select the input files
         // Data
-        alienHandler->SetGridDataDir("/alice/data/2018/LHC18q");   
-        alienHandler->SetDataPattern("/*pass1/*AliESDs.root");
-        alienHandler->SetRunPrefix("000");
-        //alienHandler->AddRunNumber(295585); 
-        alienHandler->AddRunNumber(295937); 
-        //alienHandler->AddRunNumber(296623); 
-        // working directory
-        alienHandler->SetGridWorkingDir("AnalysisTrial_data");
-        alienHandler->SetExecutable("AnalysisTrial_data.sh");
-        alienHandler->SetJDLName("AnalysisTrial_data.jdl");
-        //*/
-        /*
+        if(!MC){
+            alienHandler->SetGridDataDir("/alice/data/2018/LHC18q");   
+            alienHandler->SetDataPattern("/*pass1/*AliESDs.root");
+            alienHandler->SetRunPrefix("000");
+            //alienHandler->AddRunNumber(295585); 
+            alienHandler->AddRunNumber(295937); 
+            //alienHandler->AddRunNumber(296623); 
+            // working directory
+            alienHandler->SetGridWorkingDir("AnalysisTrial_data");
+            alienHandler->SetExecutable("AnalysisTrial_data.sh");
+            alienHandler->SetJDLName("AnalysisTrial_data.jdl");
+        }
         // MC
-        alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kCohJpsiToMu");   
-        alienHandler->SetDataPattern("/*AliESDs.root");
-        // no run prefix for MC!
-        alienHandler->AddRunNumber(295585); 
-        // working directory
-        alienHandler->SetGridWorkingDir("AnalysisTrial_MC");
-        alienHandler->SetExecutable("AnalysisTrial_MC.sh");
-        alienHandler->SetJDLName("AnalysisTrial_MC.jdl");
-        */
+        if(MC){
+            if(iMCDataset == 0) alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kIncohJpsiToMu");   
+            if(iMCDataset == 1) alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kIncohPsi2sToMuPi");   
+            if(iMCDataset == 2) alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kCohJpsiToMu");   
+            if(iMCDataset == 3) alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kCohPsi2sToMuPi");  
+            if(iMCDataset == 4) alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kTwoGammaToMuMedium");  
+            alienHandler->SetDataPattern("/*AliESDs.root");
+            // no run prefix for MC!
+            alienHandler->AddRunNumber(296062); 
+            // working directory
+            alienHandler->SetGridWorkingDir(Form("trial_MC0%i", iMCDataset));
+            alienHandler->SetExecutable(Form("trial_MC0%i.sh", iMCDataset));
+            alienHandler->SetJDLName(Form("trial_MC0%i.jdl", iMCDataset));
+        }
 
         // number of files per subjob
         alienHandler->SetSplitMaxInputFileNumber(40);
@@ -142,4 +156,16 @@ void runAnalysis()
             mgr->StartAnalysis("grid");
         }
     }
+
+    if(local && !MC){
+        gSystem->Exec("mkdir -p local_data");
+        gSystem->Exec("mv AnalysisResults.root track_cuts.root local_data");
+    }
+    if(local && MC){
+        TString folder = TString::Format("local_MC0%i", iMCDataset);
+        gSystem->Exec("mkdir -p " + folder);
+        gSystem->Exec("mv AnalysisResults.root track_cuts.root " + folder);
+    }
+
+    return;
 }
