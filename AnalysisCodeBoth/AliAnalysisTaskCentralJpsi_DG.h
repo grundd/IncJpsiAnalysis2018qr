@@ -49,10 +49,10 @@ class AliAnalysisTaskCentralJpsi_DG : public AliAnalysisTaskSE
         Int_t       fRunNumber;
         TString     fTriggerName;
         // Histograms:
-        TH1F    *hCounterCuts;      //! to count the number of events passing each of the cuts
-        TH1F    *hCounterTrigger;   //! to count the number of events per run passing trigger conditions
-        TH1F    *hVertexContrib;
-        TH1F    *hVertexZ;
+        TH1D    *hCounterCuts;      //! to count the number of events passing each of the cuts
+        TH1D    *hCounterTrigger;   //! to count the number of events per run passing trigger conditions
+        TH1D    *hVertexContrib;
+        TH1D    *hVertexZ;
         TH2I    *hADdecision;
         TH2I    *hV0decision;
         TH2D    *hTPCdEdx;

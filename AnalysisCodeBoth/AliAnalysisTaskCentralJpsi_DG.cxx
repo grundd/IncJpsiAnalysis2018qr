@@ -17,38 +17,21 @@
 
 // C++ headers:
 #include <iostream>
-#include <fstream>
+#include <string.h>
 
 // Root headers
-#include <TMath.h>
-#include "TH1I.h"
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TH1D.h"
-#include "TH2D.h"
-#include <TFile.h>
-#include <TF2.h>
-#include <TF1.h>
-#include <TRandom.h>
-#include <TGraph.h>
-#include <TLegend.h>
-#include <TGraphErrors.h>
-#include <TPad.h>
-#include <TCanvas.h>
-#include <TStyle.h>
-#include <TTree.h>
-#include <TGraph2D.h>
-#include <TStopwatch.h>
-#include <TMatrixDSym.h>
-#include <TFitResult.h>
-#include <TLatex.h>
-#include "TClonesArray.h"
+#include "TMath.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "TList.h"
+#include "TChain.h"
+#include "TH1.h"
+#include "TH2.h"
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "TParticle.h"
-#include "TObjString.h"
-#include "TList.h"
-#include "TChain.h"
+#include "TClonesArray.h"
+#include "TRandom.h"
 #include "TRandom3.h"
 
 // AliRoot headers:
@@ -300,7 +283,7 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
     fOutputList->SetOwner(kTRUE); 
 
     // Counter for events passing each cut
-    hCounterCuts = new TH1F("hCounterCuts", "# of events passing each cut", 5, -0.5, 4.5);
+    hCounterCuts = new TH1D("hCounterCuts", "# of events passing each cut", 5, -0.5, 4.5);
     hCounterCuts->GetXaxis()->SetBinLabel(1,"0: non-empty ev");
     //hCounterCuts->GetXaxis()->SetBinLabel(2,"1: vrtx contrib");
     //hCounterCuts->GetXaxis()->SetBinLabel(3,"2: vrtx Z dist");
@@ -317,13 +300,13 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
     Int_t nLastRun = 297595;
     Int_t nRuns = nLastRun - nFirstRun + 1;
 
-    hCounterTrigger = new TH1F("hCounterTrigger", "# of events per run passing central triggers", nRuns, nFirstRun-0.5, nLastRun+0.5);
+    hCounterTrigger = new TH1D("hCounterTrigger", "# of events per run passing central triggers", nRuns, nFirstRun-0.5, nLastRun+0.5);
     fOutputList->Add(hCounterTrigger);
 
-    hVertexZ = new TH1F("hVertexZ","hVertexZ",600,-30,30);
+    hVertexZ = new TH1D("hVertexZ","hVertexZ",600,-30,30);
     fOutputList->Add(hVertexZ);
 
-    hVertexContrib = new TH1F("hVertexContrib","hVertexContrib",103,-2,100);
+    hVertexContrib = new TH1D("hVertexContrib","hVertexContrib",103,-2,100);
     fOutputList->Add(hVertexContrib);
 
     hADdecision = new TH2I("hADdecision","hADdecision",7,-2,5,7,-2,5);
@@ -359,6 +342,7 @@ void AliAnalysisTaskCentralJpsi_DG::UserCreateOutputObjects()
 
     // https://github.com/alisw/AliPhysics/blob/6015b235c21bc8b9d00af9a764be1fb58f7bb32d/PWGCF/Correlations/DPhi/AliPhiCorrelationsQATask.cxx
     fTrackCutsBit4->DefineHistograms(kBlue);
+    fTrackCutsBit4->SetName("track_cuts");
     fOutputList->Add(fTrackCutsBit4);
 
     PostData(3, fOutputList); 
@@ -740,7 +724,7 @@ void AliAnalysisTaskCentralJpsi_DG::RunMCGenLevel()
 
     AliMCEvent *mc = MCEvent();
     if(!mc){
-        //Printf("Not found");
+        // Printf("Not found");
         return;
     } 
 
@@ -860,8 +844,23 @@ void AliAnalysisTaskCentralJpsi_DG::Terminate(Option_t *)
 {
     // the end
 
+    fOutputList = dynamic_cast<TList*> (GetOutputData(3));
+    if(!fOutputList)
+    {
+        Printf("ERROR: fOutputList not available");
+        return;
+    }
+
+    fTrackCutsBit4 = dynamic_cast<AliESDtrackCuts*> (fOutputList->FindObject("track_cuts"));
+    if(!fTrackCutsBit4)
+    {
+        Printf("ERROR: fTrackCutsBit4 not available");
+        return;
+    }
+
     TFile* file = TFile::Open("track_cuts.root", "RECREATE");
     fTrackCutsBit4->SaveHistograms();
+    file->Write();
     file->Close();
 }
 //_____________________________________________________________________________

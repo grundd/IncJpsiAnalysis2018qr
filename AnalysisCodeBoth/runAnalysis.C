@@ -4,8 +4,8 @@
 // pcm file, so we need to include it explicitly
 #include "AliAnalysisTaskCentralJpsi_DG.h"
 
-Bool_t MC = kTRUE;
-Int_t iMCDataset = 4;
+Bool_t MC = kFALSE;
+Int_t iMCDataset = 3;
 // 0 => kIncohJpsiToMu
 // 1 => kIncohPsi2sToMuPi
 // 2 => kCohJpsiToMu
@@ -15,9 +15,9 @@ Int_t iMCDataset = 4;
 void runAnalysis()
 {
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
-    Bool_t local = kFALSE;
+    Bool_t local = kTRUE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
-    Bool_t gridTest = kFALSE;
+    Bool_t gridTest = kTRUE;
 
     // since we will compile a class, tell root where to look for headers  
 #if !defined (__CINT__) || defined (__CLING__)
@@ -120,7 +120,8 @@ void runAnalysis()
             if(iMCDataset == 4) alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kTwoGammaToMuMedium");  
             alienHandler->SetDataPattern("/*AliESDs.root");
             // no run prefix for MC!
-            alienHandler->AddRunNumber(296062); 
+            alienHandler->AddRunNumber(295585); 
+            //alienHandler->AddRunNumber(296062);
             // working directory
             alienHandler->SetGridWorkingDir(Form("trial_MC0%i", iMCDataset));
             alienHandler->SetExecutable(Form("trial_MC0%i.sh", iMCDataset));
@@ -138,7 +139,7 @@ void runAnalysis()
         // (see below) mode, set SetMergeViaJDL(kFALSE) 
         // to collect final results
         alienHandler->SetMaxMergeStages(1);
-        alienHandler->SetMergeViaJDL(kTRUE);
+        alienHandler->SetMergeViaJDL(kTRUE); // set to kFALSE to download merged results
         // define the output folders
         alienHandler->SetGridOutputDir("myOutputDir");
         // connect the alien plugin to the manager
@@ -148,7 +149,7 @@ void runAnalysis()
             // speficy on how many files you want to run
             alienHandler->SetNtestFiles(1);
             // and launch the analysis
-            alienHandler->SetRunMode("test"); // "test" or "terminate" ::
+            alienHandler->SetRunMode("test"); // "test" or "terminate"
             mgr->StartAnalysis("grid");
         } else {
             // else launch the full grid analysis
@@ -156,7 +157,7 @@ void runAnalysis()
             mgr->StartAnalysis("grid");
         }
     }
-
+    /*
     if(local && !MC){
         gSystem->Exec("mkdir -p local_data");
         gSystem->Exec("mv AnalysisResults.root track_cuts.root local_data");
@@ -166,6 +167,6 @@ void runAnalysis()
         gSystem->Exec("mkdir -p " + folder);
         gSystem->Exec("mv AnalysisResults.root track_cuts.root " + folder);
     }
-
+    */
     return;
 }
