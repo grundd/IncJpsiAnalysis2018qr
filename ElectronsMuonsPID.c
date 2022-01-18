@@ -63,7 +63,7 @@ void Plot2DHistTPCSigmas(){
 
     gStyle->SetOptTitle(0);
     gStyle->SetOptStat(0);
-    gStyle->SetPalette(1);
+    //gStyle->SetPalette(1);
 
     TCanvas *c = new TCanvas("c","c",900,800);
     c->SetGrid();
