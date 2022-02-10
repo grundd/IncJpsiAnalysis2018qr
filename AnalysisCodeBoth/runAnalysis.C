@@ -4,8 +4,8 @@
 // pcm file, so we need to include it explicitly
 #include "AliAnalysisTaskCentralJpsi_DG.h"
 
-Bool_t MC = kFALSE;
-Int_t iMCDataset = 3;
+Bool_t MC = kTRUE;
+Int_t iMCDataset = 0;
 // 0 => kIncohJpsiToMu
 // 1 => kIncohPsi2sToMuPi
 // 2 => kCohJpsiToMu

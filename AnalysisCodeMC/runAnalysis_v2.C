@@ -9,9 +9,9 @@ void runAnalysis_v2(Bool_t Neutral = kFALSE)
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
     Bool_t local = kFALSE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
-    Bool_t gridTest = kFALSE;
+    Bool_t gridTest = kTRUE;
 
-    Int_t DatasetMC = 5;
+    Int_t DatasetMC = 1;
     // DatasetMC == 1   => kCohJpsiToMu
     // DatasetMC == 2   => kIncohJpsiToMu
     // DatasetMC == 3   => kCohPsi2sToMuPi

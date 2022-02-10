@@ -1,0 +1,2 @@
+Command '/home/david/alice/AliDPG-master//MC/dpgsim.sh --run 253659 --mode sim --simulation GeneratorOnly --uid 1 --nevents 100 --generator Starlight' exited with error code 2
+Command '/home/david/alice/AliDPG-master//MC/dpgsim.sh --run 253659 --mode sim --simulation GeneratorOnly --uid 1 --nevents 100 --generator Starlight' exited with error code 2

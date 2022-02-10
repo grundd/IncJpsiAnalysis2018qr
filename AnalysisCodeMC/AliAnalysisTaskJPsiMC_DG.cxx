@@ -83,8 +83,17 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG() : // initializer list
     fRunNumber(0),
     // Histograms:
     hCounterCuts(0),
+    hVertexContrib(0),
+    hVertexZ(0),
+    hADdecision(0),
+    hV0decision(0),
+    hTPCdEdx(0),
+    hTPCdEdxMuon(0),
+    hTPCdEdxElectron(0),
     hPtRecGen(0),
     // PID, sigmas:
+    fTrk1dEdx(0),
+    fTrk2dEdx(0),
     fTrk1SigIfMu(0),
     fTrk1SigIfEl(0),
     fTrk2SigIfMu(0),
@@ -93,13 +102,15 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG() : // initializer list
     fPt(0), fPhi(0), fY(0), fM(0),
     // Two tracks:
     fPt1(0), fPt2(0), fEta1(0), fEta2(0), fPhi1(0), fPhi2(0), fQ1(0), fQ2(0),
+    // Vertex info:
+    fVertexZ(0), fVertexContrib(0),    
     // Info from the detectors:
     // ZDC
     fZNA_energy(0), fZNC_energy(0),
     // V0
-    fV0A_dec(0), fV0C_dec(0), fV0A_time(0), fV0C_time(0),
+    fV0A_dec(0), fV0C_dec(0),
     // AD
-    fADA_dec(0), fADC_dec(0), fADA_time(0), fADC_time(0),
+    fADA_dec(0), fADC_dec(0),
     // Matching SPD clusters with FOhits
     fMatchingSPD(0),
     // Trigger inputs for MC data
@@ -122,8 +133,17 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG(const char* name) : // initia
     fRunNumber(0),
     // Histograms:
     hCounterCuts(0),
+    hVertexContrib(0),
+    hVertexZ(0),
+    hADdecision(0),
+    hV0decision(0),
+    hTPCdEdx(0),
+    hTPCdEdxMuon(0),
+    hTPCdEdxElectron(0),
     hPtRecGen(0),
     // PID, sigmas:
+    fTrk1dEdx(0),
+    fTrk2dEdx(0),
     fTrk1SigIfMu(0),
     fTrk1SigIfEl(0),
     fTrk2SigIfMu(0),
@@ -132,13 +152,15 @@ AliAnalysisTaskJPsiMC_DG::AliAnalysisTaskJPsiMC_DG(const char* name) : // initia
     fPt(0), fPhi(0), fY(0), fM(0),
     // Two tracks:
     fPt1(0), fPt2(0), fEta1(0), fEta2(0), fPhi1(0), fPhi2(0), fQ1(0), fQ2(0),
+    // Vertex info:
+    fVertexZ(0), fVertexContrib(0),    
     // Info from the detectors:
     // ZDC
     fZNA_energy(0), fZNC_energy(0),
     // V0
-    fV0A_dec(0), fV0C_dec(0), fV0A_time(0), fV0C_time(0),
+    fV0A_dec(0), fV0C_dec(0),
     // AD
-    fADA_dec(0), fADC_dec(0), fADA_time(0), fADC_time(0),
+    fADA_dec(0), fADC_dec(0),
     // Matching SPD clusters with FOhits
     fMatchingSPD(0),
     // Trigger inputs for MC data
@@ -208,6 +230,9 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     fTreeJPsiMCRec->Branch("fPhi2", &fPhi2, "fPhi2/D");
     fTreeJPsiMCRec->Branch("fQ1", &fQ1, "fQ1/D");
     fTreeJPsiMCRec->Branch("fQ2", &fQ2, "fQ2/D");
+    // Vertex info:
+    fTreeJPsiMCRec->Branch("fVertexZ", &fVertexZ, "fVertexZ/D");
+    fTreeJPsiMCRec->Branch("fVertexContrib", &fVertexContrib, "fVertexContrib/I");
     // Info from the detectors:
     // ZDC:
     fTreeJPsiMCRec->Branch("fZNA_energy", &fZNA_energy, "fZNA_energy/D");
@@ -217,13 +242,9 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     // V0:
     fTreeJPsiMCRec->Branch("fV0A_dec", &fV0A_dec, "fV0A_dec/I");
     fTreeJPsiMCRec->Branch("fV0C_dec", &fV0C_dec, "fV0C_dec/I");
-    fTreeJPsiMCRec->Branch("fV0A_time", &fV0A_time, "fV0A_time/D");
-    fTreeJPsiMCRec->Branch("fV0C_time", &fV0C_time, "fV0C_time/D");
     // AD:
     fTreeJPsiMCRec->Branch("fADA_dec", &fADA_dec, "fADA_dec/I");
     fTreeJPsiMCRec->Branch("fADC_dec", &fADC_dec, "fADC_dec/I");
-    fTreeJPsiMCRec->Branch("fADA_time", &fADA_time, "fADA_time/D");
-    fTreeJPsiMCRec->Branch("fADC_time", &fADC_time, "fADC_time/D");
     // Matching SPD clusters with FOhits:
     fTreeJPsiMCRec->Branch("fMatchingSPD", &fMatchingSPD, "fMatchingSPD/O"); // O is for bool
     // Replayed trigger inputs:
@@ -259,17 +280,48 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
     // Counter for events passing each cut
     hCounterCuts = new TH1F("hCounterCuts", "# of events passing each cut", 10, -0.5, 9.5);
     hCounterCuts->GetXaxis()->SetBinLabel(1,"0: non-empty ev");
-    hCounterCuts->GetXaxis()->SetBinLabel(2,"1: vrtx contrib");
-    hCounterCuts->GetXaxis()->SetBinLabel(3,"2: vrtx Z dist");
-    hCounterCuts->GetXaxis()->SetBinLabel(4,"3: two good trks");
-    //hCounterCuts->GetXaxis()->SetBinLabel(5,"4: CCUP31 trigg");
+    hCounterCuts->GetXaxis()->SetBinLabel(2,"1: two good trks");
 
     fOutputList->Add(hCounterCuts);
+
+    hVertexZ = new TH1D("hVertexZ","hVertexZ",600,-30,30);
+    fOutputList->Add(hVertexZ);
+
+    hVertexContrib = new TH1D("hVertexContrib","hVertexContrib",103,-2,100);
+    fOutputList->Add(hVertexContrib);
+
+    hADdecision = new TH2I("hADdecision","hADdecision",7,-2,5,7,-2,5);
+    fOutputList->Add(hADdecision);
+
+    hV0decision = new TH2I("hV0decision","hV0decision",7,-2,5,7,-2,5);
+    fOutputList->Add(hV0decision);
+
+    hTPCdEdx = new TH2D("hTPCdEdx"," ",140,0,140.,140,0,140.);
+    // lepton with a negative charge on a horizontal axis
+    hTPCdEdx->GetXaxis()->SetTitle("dE/dx^{TPC}(l^{-}) (a.u.)");
+    hTPCdEdx->GetYaxis()->SetTitle("dE/dx^{TPC}(l^{+}) (a.u.)");
+    fOutputList->Add(hTPCdEdx);
+
+    hTPCdEdxMuon = new TH2D("hTPCdEdxMuon"," ",140,0,140.,140,0,140.);
+    // muon with a negative charge on a horizontal axis
+    hTPCdEdxMuon->GetXaxis()->SetTitle("dE/dx^{TPC}(#mu^{-}) (a.u.)");
+    hTPCdEdxMuon->GetYaxis()->SetTitle("dE/dx^{TPC}(#mu^{+}) (a.u.)");
+    fOutputList->Add(hTPCdEdxMuon);
+
+    hTPCdEdxElectron = new TH2D("hTPCdEdxElectron"," ",140,0,140.,140,0,140.);
+    // electron with a negative charge on a horizontal axis
+    hTPCdEdxElectron->GetXaxis()->SetTitle("dE/dx^{TPC}(e^{-}) (a.u.)");
+    hTPCdEdxElectron->GetYaxis()->SetTitle("dE/dx^{TPC}(e^{+}) (a.u.)");
+    fOutputList->Add(hTPCdEdxElectron);
 
     Int_t n_bins = 2000;
     // x axis = pt generated, y axis = pt reconstructed
     hPtRecGen = new TH2F("hPtRecGen", "pt rec vs pt gen", n_bins, 0., 2., n_bins, 0., 2.);
     fOutputList->Add(hPtRecGen);
+
+    fTrackCutsBit4->DefineHistograms(kBlue);
+    fTrackCutsBit4->SetName("track_cuts");
+    fOutputList->Add(fTrackCutsBit4);
 
     PostData(3, fOutputList); 
 
@@ -278,36 +330,6 @@ void AliAnalysisTaskJPsiMC_DG::UserCreateOutputObjects()
 void AliAnalysisTaskJPsiMC_DG::SetNeutralPions(Bool_t Neutral)
 {
     isNeutralPions = Neutral;
-}
-//_____________________________________________________________________________
-void AliAnalysisTaskJPsiMC_DG::TrkTrkKinematics(Int_t *fIndicesOfGoodTrks, Double_t fTrkMass)
-{
-    // Get the first track
-    TLorentzVector fTrk1LorVec;
-    AliESDtrack *trk1 = dynamic_cast<AliESDtrack*>(fEvent->GetTrack(fIndicesOfGoodTrks[0]));
-    // Fill its 4-vector in the form: pt, eta, phi, mass
-    fTrk1LorVec.SetPtEtaPhiM(trk1->Pt(), trk1->Eta(), trk1->Phi(), fTrkMass);
-    // Get the second track
-    TLorentzVector fTrk2LorVec;
-    AliESDtrack *trk2 = dynamic_cast<AliESDtrack*>(fEvent->GetTrack(fIndicesOfGoodTrks[1]));
-    // Fill its 4-vector
-    fTrk2LorVec.SetPtEtaPhiM(trk2->Pt(), trk2->Eta(), trk2->Phi(), fTrkMass);
-    // Vector of Trk+Trk: we add up the two
-    TLorentzVector TrkTrk = fTrk1LorVec + fTrk2LorVec;
-
-    // Set tree variables
-    fPt = TrkTrk.Pt(); 
-    fPhi = TrkTrk.Phi();
-    fY = TrkTrk.Rapidity(); 
-    fM = TrkTrk.M();
-    fPt1 = trk1->Pt(); 
-    fPt2 = trk2->Pt();
-    fEta1 = trk1->Eta(); 
-    fEta2 = trk2->Eta();
-    fPhi1 = trk1->Phi();
-    fPhi2 = trk2->Phi();
-    fQ1 = trk1->Charge(); 
-    fQ2 = trk2->Charge();
 }
 //_____________________________________________________________________________
 void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
@@ -360,32 +382,34 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
     // Run analysis on the generated level
     RunMCGenerated();
 
+    // Forward detectors
+    // Save info from these detectors to the analysis tree
+    // and fill the 2D histograms with V0 and AD responses
+    
+    // AD
+    AliVAD *fADdata = fEvent->GetADData();
+    fADA_dec = fADdata->GetADADecision();
+    fADC_dec = fADdata->GetADCDecision();
+    hADdecision->Fill(fADA_dec,fADC_dec);
+
+    // V0
+    AliVVZERO *fV0data = fEvent->GetVZEROData();
+    fV0A_dec = fV0data->GetV0ADecision();
+    fV0C_dec = fV0data->GetV0CDecision();
+    hV0decision->Fill(fV0A_dec,fV0C_dec);
+
+    // Get info about primary vertex
+    const AliVVertex *fVertex = fEvent->GetPrimaryVertex();
+    // Fill the trees and histograms
+    fVertexZ = fVertex->GetZ();
+    hVertexZ->Fill(fVertexZ);
+    fVertexContrib = fVertex->GetNContributors();
+    hVertexContrib->Fill(fVertexContrib);
+    // Cuts on fVertexZ (must be lower than 15 cm) and fVertexContrib (at least two tracks associated with the vertex)
+    // => will be done offline
+
     // ##########################################################
-        // CUT 1 & 2
-        // Check if each event has at maximum 1 vertex within 15 cm from the IP in beam direction
-        const AliVVertex *fVertex = fEvent->GetPrimaryVertex();
-        // At least two tracks associated with the vertex
-        if(fVertex->GetNContributors()<2)
-        {                                          
-            PostData(1, fTreeJPsiMCRec);
-            PostData(2, fTreeJPsiMCGen);
-            PostData(3, fOutputList);
-            return;
-        }
-        hCounterCuts->Fill(iSelectionCounter);
-        iSelectionCounter++;
-        // Distance from the IP lower than 15 cm
-        if(TMath::Abs(fVertex->GetZ())>15)
-        {                                          
-            PostData(1, fTreeJPsiMCRec);
-            PostData(2, fTreeJPsiMCGen);
-            PostData(3, fOutputList);
-            return;
-        }
-        hCounterCuts->Fill(iSelectionCounter);
-        iSelectionCounter++;
-    // ##########################################################
-        // CUT 3 
+        // CUT 1 
         // Select events with two good central tracks
         Int_t nTrks = fEvent->GetNumberOfTracks();
         Int_t nGoodTracksTPC = 0;
@@ -411,12 +435,11 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
             // *********************************************************************
 
             // Count good TPC tracks:
-            if(fTrackCutsBit4->AcceptTrack(trk)){
-                nGoodTracksTPC++;
-            }
+            Bool_t goodTrackTPC = fTrackCutsBit4->AcceptTrack(trk);
+            if(goodTrackTPC) nGoodTracksTPC++;
             
-            // Count good SPD tracks:
-            if(fTrackCutsBit4->AcceptTrack(trk) && trk->HasPointOnITSLayer(0) && trk->HasPointOnITSLayer(1)){
+             // Count good SPD tracks:
+            if(goodTrackTPC && trk->HasPointOnITSLayer(0) && trk->HasPointOnITSLayer(1)){
                 // If the track satisfies both the SPD and TPC criterion, add it to the list:
                 fIndicesOfGoodTracks[nGoodTracksSPD] = iTrk;
                 nGoodTracksSPD++;  
@@ -433,7 +456,7 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
         hCounterCuts->Fill(iSelectionCounter);
         iSelectionCounter++;
     // ##########################################################
-        // CUT 4
+        // CUT 2
         // Central UPC trigger CCUP31
         // skipped for MC
     // ##########################################################
@@ -455,8 +478,54 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
     Double_t isMuonPair = fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu;
     Double_t isElectronPair = fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl;
 
-    if(isMuonPair < isElectronPair) TrkTrkKinematics(fIndicesOfGoodTracks, massMuon);
-    else TrkTrkKinematics(fIndicesOfGoodTracks, massElectron);
+    // Decide if muons/electrons, then assign a proper mass
+    Double_t massTracks = -1;
+    if(isMuonPair < isElectronPair) massTracks = massMuon;
+    else massTracks = massElectron;
+
+    // Track-track kinematics
+    // Fill the 4-vector of the first track
+    TLorentzVector vTrk1;
+    vTrk1.SetPtEtaPhiM(trk1->Pt(), trk1->Eta(), trk1->Phi(), massTracks);
+    // Fill the 4-vector of the second track
+    TLorentzVector vTrk2;
+    vTrk2.SetPtEtaPhiM(trk2->Pt(), trk2->Eta(), trk2->Phi(), massTracks);
+    // Vector of trk+trk: add up the two
+    TLorentzVector vTrkTrk = vTrk1 + vTrk2;
+
+    // Set tree variables
+    fPt = vTrkTrk.Pt(); 
+    fPhi = vTrkTrk.Phi();
+    fY = vTrkTrk.Rapidity(); 
+    fM = vTrkTrk.M();
+    fPt1 = trk1->Pt(); 
+    fPt2 = trk2->Pt();
+    fEta1 = trk1->Eta(); 
+    fEta2 = trk2->Eta();
+    fPhi1 = trk1->Phi();
+    fPhi2 = trk2->Phi();
+    fQ1 = trk1->Charge(); 
+    fQ2 = trk2->Charge();
+
+    // Get dE/dx TPC for both tracks
+    fTrk1dEdx = trk1->GetTPCsignal();
+    fTrk2dEdx = trk2->GetTPCsignal();
+
+    // If opposite sign tracks and mass of a J/psi candidate within (2.2, 5.0) GeV
+    // => fill the histograms with dE/dx
+    if(vTrkTrk.M() > 2.2 && vTrkTrk.M() < 5.0 && (fQ1 * fQ2 < 0)){
+        if(fQ1 < 0) hTPCdEdx->Fill(fTrk1dEdx, fTrk2dEdx);
+        else        hTPCdEdx->Fill(fTrk2dEdx, fTrk1dEdx);
+        // if considered muons
+        if(isMuonPair < isElectronPair){ 
+            if(fQ1 < 0) hTPCdEdxMuon->Fill(fTrk1dEdx, fTrk2dEdx);
+            else        hTPCdEdxMuon->Fill(fTrk2dEdx, fTrk1dEdx);
+        // if considered electrons
+        } else {
+            if(fQ1 < 0) hTPCdEdxElectron->Fill(fTrk1dEdx, fTrk2dEdx);
+            else        hTPCdEdxElectron->Fill(fTrk2dEdx, fTrk1dEdx);
+        }
+    }
 
     // Fill the 2D histogram of pt gen and pt rec
     hPtRecGen->Fill(fPtGen,fPt);
@@ -486,30 +555,11 @@ void AliAnalysisTaskJPsiMC_DG::UserExec(Option_t *)
     delete [] fIndicesOfGoodTracks;
 
     // ##########################################################
-    // Data from the other detectors
 
-    // AD
-    AliVAD *fADdata = fEvent->GetADData();
-    // Store the data to the analysis tree
-    fADA_dec = fADdata->GetADADecision();
-    fADC_dec = fADdata->GetADCDecision();
-    fADA_time = fADdata->GetADATime();
-    fADC_time = fADdata->GetADCTime();
-
-    // V0
-    AliVVZERO *fV0data = fEvent->GetVZEROData();
-    // Store the data to the analysis tree
-    fV0A_dec = fV0data->GetV0ADecision();
-    fV0C_dec = fV0data->GetV0CDecision();
-    fV0A_time = fV0data->GetV0ATime();
-    fV0C_time = fV0data->GetV0CTime();
-
-    // ZDC
+    // Data from the ZDC
   	AliESDZDC *fZDCdata = (AliESDZDC*)fEvent->GetZDCData();
-      // Store the data to the analysis tree
   	fZNA_energy = fZDCdata->GetZNATowerEnergy()[0];
   	fZNC_energy = fZDCdata->GetZNCTowerEnergy()[0];
-
 	Int_t detChZNA  = fZDCdata->GetZNATDCChannel();
     Int_t detChZNC  = fZDCdata->GetZNCTDCChannel();
 	if (fEvent->GetRunNumber() >= 245726 && fEvent->GetRunNumber() <= 245793) detChZNA = 10;
@@ -635,10 +685,10 @@ void AliAnalysisTaskJPsiMC_DG::ReplayTriggersMC(AliVEvent *fEvent)
 //_____________________________________________________________________________
 void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
 {
-    TLorentzVector vGenerated, vDecayProduct;
+    TLorentzVector vGen, vDecayProduct;
     TDatabasePDG *pdgdat = TDatabasePDG::Instance();
 
-    vGenerated.SetPtEtaPhiM(0.,0.,0.,0.);
+    vGen.SetPtEtaPhiM(0.,0.,0.,0.);
 
     AliMCEvent *mc = MCEvent();
     if(!mc){
@@ -650,30 +700,30 @@ void AliAnalysisTaskJPsiMC_DG::RunMCGenerated()
         AliMCParticle *mcPart = (AliMCParticle*) mc->GetTrack(imc);
         if(!mcPart) continue;
     
-        if(TMath::Abs(mcPart->PdgCode()) == 13){ 
-            // if mu+ or mu-
-
-            if(mcPart->GetMother() == -1){
-                // without mother particle
+        // kCohJpsiToMu, kIncohJpsiToMu, kTwoGammaToMuMedium:
+        // if mu+ or mu- without a mother assigned (STARlight) 
+        if(TMath::Abs(mcPart->PdgCode()) == 13 && mcPart->GetMother() == -1){
+            // add its 4-vector to vGen
+            TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
+            vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
+            vGen += vDecayProduct;
+        }
+        // kCohPsi2sToMuPi, kIncohPsi2sToMuPi:
+        // if J/psi with a mother Psi(2s) (STARlight + EvtGen)
+        if(TMath::Abs(mcPart->PdgCode()) == 443){
+            // get its mother
+            AliMCParticle *mcMother = (AliMCParticle*) mc->GetTrack(mcPart->GetMother());
+            // if its mother is Psi(2s)
+            if(TMath::Abs(mcMother->PdgCode()) == 100443){
+                // add its 4-vector to vGen
                 TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
                 vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
-                vGenerated += vDecayProduct;
-            } else { // this branch not needed for kTwoGammaToMuMedium
-                // with J/psi mother particle
-                AliMCParticle *mcMother = (AliMCParticle*) mc->GetTrack(mcPart->GetMother());
-                // Original code (manually selected):
-                    // if(TMath::Abs(mcMother->PdgCode()) != 443) continue;     // for kCohJpsiToMu and kIncohJpsiToMu
-                    // if(TMath::Abs(mcMother->PdgCode()) != 100443) continue;  // for kCohPsi2sToMuPi and kIncohPsi2sToMuPi
-                // Previous two conditions merged (they cannot happen at the same time):
-                    if(TMath::Abs(mcMother->PdgCode()) != 443 && TMath::Abs(mcMother->PdgCode()) != 100443) continue;
-                TParticlePDG *partGen = pdgdat->GetParticle(mcPart->PdgCode());
-                vDecayProduct.SetXYZM(mcPart->Px(),mcPart->Py(), mcPart->Pz(),partGen->Mass());
-                vGenerated += vDecayProduct;
+                vGen += vDecayProduct;
             }
         }
     } // loop over mc particles
 
-    FillMCGenTree(vGenerated);
+    FillMCGenTree(vGen);
 }
 //_____________________________________________________________________________
 void AliAnalysisTaskJPsiMC_DG::FillMCGenTree(TLorentzVector v)
@@ -764,5 +814,23 @@ Bool_t AliAnalysisTaskJPsiMC_DG::IsSTGFired(TBits bits, Int_t dphiMin, Int_t dph
 void AliAnalysisTaskJPsiMC_DG::Terminate(Option_t *)
 {
     // the end
+
+    fOutputList = dynamic_cast<TList*> (GetOutputData(2));
+    if(!fOutputList)
+    {
+        Printf("ERROR: fOutputList not available");
+        return;
+    }
+
+    fTrackCutsBit4 = dynamic_cast<AliESDtrackCuts*> (fOutputList->FindObject("track_cuts"));
+    if(!fTrackCutsBit4)
+    {
+        Printf("ERROR: fTrackCutsBit4 not available");
+        return;
+    }
+
+    TFile* file = TFile::Open("track_cuts.root", "RECREATE");
+    fTrackCutsBit4->SaveHistograms();
+    file->Close();
 }
 //_____________________________________________________________________________

@@ -2,12 +2,12 @@
 // precompiled header files (with extension pcm) are available, so that you do not need to
 // specify includes for those. for your own task however, you (probably) have not generated a
 // pcm file, so we need to include it explicitly
-#include "AliAnalysisTaskJPsi_DG.h"
+#include "AliAnalysisTaskJpsi_DG.h"
 
 void runAnalysis()
 {
     // set if you want to run the analysis locally (kTRUE), or on grid (kFALSE)
-    Bool_t local = kTRUE;
+    Bool_t local = kFALSE;
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
     Bool_t gridTest = kTRUE;
 
@@ -21,7 +21,7 @@ void runAnalysis()
 #endif
      
     // create the analysis manager
-    AliAnalysisManager *mgr = new AliAnalysisManager("AnalysisTaskJPsi_DG");
+    AliAnalysisManager *mgr = new AliAnalysisManager("AnalysisTaskJpsi_DG");
     AliESDInputHandler *esdH = new AliESDInputHandler();
     mgr->SetInputEventHandler(esdH);
 
@@ -30,16 +30,16 @@ void runAnalysis()
     // from root6, or the interpreter of root5
 #if !defined (__CINT__) || defined (__CLING__)
     gInterpreter->ExecuteMacro("$ALICE_ROOT/ANALYSIS/macros/AddTaskPIDResponse.C");
-    gInterpreter->LoadMacro("AliAnalysisTaskJPsi_DG.cxx++g");
+    gInterpreter->LoadMacro("AliAnalysisTaskJpsi_DG.cxx++g");
     char txt_cmd[120];
-    sprintf(txt_cmd,"AddTaskJPsi_DG.C()");
-    AliAnalysisTaskJPsi_DG *task = reinterpret_cast<AliAnalysisTaskJPsi_DG*>(gInterpreter->ExecuteMacro(txt_cmd));
+    sprintf(txt_cmd,"AddTaskJpsi_DG.C()");
+    AliAnalysisTaskJpsi_DG *task = reinterpret_cast<AliAnalysisTaskJpsi_DG*>(gInterpreter->ExecuteMacro(txt_cmd));
 #else
     gROOT->LoadMacro("$ALICE_ROOT/ANALYSIS/macros/AddTaskPIDResponse.C");
     AddTaskPIDResponse();
-    gROOT->LoadMacro("AliAnalysisTaskJPsi_DG.cxx++g");
-    gROOT->LoadMacro("AddTaskJPsi_DG.C");
-    AliAnalysisTaskJPsi_DG *task = AddTaskJPsi_DG();
+    gROOT->LoadMacro("AliAnalysisTaskJpsi_DG.cxx++g");
+    gROOT->LoadMacro("AddTaskJpsi_DG.C");
+    AliAnalysisTaskJpsi_DG *task = AddTaskJpsi_DG();
 #endif
 
     if(!mgr->InitAnalysis()) return;
@@ -66,8 +66,8 @@ void runAnalysis()
         // also specify the include (header) paths on grid
         alienHandler->AddIncludePath("-I. -I$ROOTSYS/include -I$ALICE_ROOT -I$ALICE_ROOT/include -I$ALICE_PHYSICS/include");
         // make sure your source files get copied to grid
-        alienHandler->SetAdditionalLibs("AliAnalysisTaskJPsi_DG.cxx AliAnalysisTaskJPsi_DG.h");
-        alienHandler->SetAnalysisSource("AliAnalysisTaskJPsi_DG.cxx");
+        alienHandler->SetAdditionalLibs("AliAnalysisTaskJpsi_DG.cxx AliAnalysisTaskJpsi_DG.h");
+        alienHandler->SetAnalysisSource("AliAnalysisTaskJpsi_DG.cxx");
         // select the aliphysics version. all other packages
         // are LOADED AUTOMATICALLY!
         alienHandler->SetAliPhysicsVersion("vAN-20200415_ROOT6-1"); // Guillermo: new version might solve a problem with duplicity of some runs

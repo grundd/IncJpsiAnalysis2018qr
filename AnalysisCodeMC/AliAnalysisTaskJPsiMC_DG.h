@@ -31,7 +31,6 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
         virtual void    Terminate(Option_t* option); // usually empty, called at the end
 
         void    SetNeutralPions(Bool_t Neutral);
-        void    TrkTrkKinematics(Int_t *fIndicesOfGoodTrks, Double_t fTrkMass);
         void    FillMCGenTree(TLorentzVector v);
         void    SetCrossed(Int_t spd[4], TBits &crossed);
         Int_t   GetChipId(Int_t index, Int_t &chipId2, Bool_t debug = 0);
@@ -49,13 +48,22 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
         TTree       *fTreeJPsiMCGen;//! analysis tree on MC gen level
         Int_t       fRunNumber;
         // Histograms:
-        TH1F        *hCounterCuts;      //! to count the number of events passing each of the cuts
-        TH2F        *hPtRecGen;
+        TH1F    *hCounterCuts;      //! to count the number of events passing each of the cuts
+        TH1D    *hVertexContrib;
+        TH1D    *hVertexZ;
+        TH2I    *hADdecision;
+        TH2I    *hV0decision;
+        TH2D    *hTPCdEdx;
+        TH2D    *hTPCdEdxMuon;
+        TH2D    *hTPCdEdxElectron;
+        TH2F    *hPtRecGen;
         // PID, sigmas:
-        Double_t    fTrk1SigIfMu;
-        Double_t    fTrk1SigIfEl;
-        Double_t    fTrk2SigIfMu;
-        Double_t    fTrk2SigIfEl;
+        Double_t fTrk1dEdx;
+        Double_t fTrk2dEdx;
+        Double_t fTrk1SigIfMu;
+        Double_t fTrk1SigIfEl;
+        Double_t fTrk2SigIfMu;
+        Double_t fTrk2SigIfEl;
         // Kinematics:
         Double_t fPt;   //! transverse momentum
         Double_t fPhi;  //! azimuthal angle
@@ -70,6 +78,9 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
         Double_t fPhi2;
         Double_t fQ1;   //! charges
         Double_t fQ2;
+        // Vertex info:
+        Double_t fVertexZ;
+        Int_t    fVertexContrib;
         // Info from the detectors:
         // ZDC
         Double_t fZNA_energy;
@@ -80,13 +91,9 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
         // V0:
         Int_t fV0A_dec;
         Int_t fV0C_dec;
-        Double_t fV0A_time;
-        Double_t fV0C_time;
         // AD:
         Int_t fADA_dec;
         Int_t fADC_dec;
-        Double_t fADA_time;
-        Double_t fADC_time;
         // Matching SPD clusters with FOhits
         Bool_t fMatchingSPD;
         TBits fFOCrossFiredChips;
@@ -107,7 +114,7 @@ class AliAnalysisTaskJPsiMC_DG : public AliAnalysisTaskSE
         AliAnalysisTaskJPsiMC_DG(const AliAnalysisTaskJPsiMC_DG&); // not implemented
         AliAnalysisTaskJPsiMC_DG& operator=(const AliAnalysisTaskJPsiMC_DG&); // not implemented
 
-        ClassDef(AliAnalysisTaskJPsiMC_DG, 1);
+        ClassDef(AliAnalysisTaskJPsiMC_DG, 2);
 };
 
 #endif
