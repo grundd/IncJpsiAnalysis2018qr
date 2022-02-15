@@ -1,0 +1,13 @@
+Selection	pass1	pass3	ratio pass1/pass3
+after first 4 cuts:	2134187	2163340	0.987
+5) SPD match FOhits:	766,643	785,549	0.976
+6b) AD offln veto:  	761,713	779,771	0.977
+7b) V0 offln veto:  	602,309	617,394	0.976
+8) dilept rapidity:  	590,901	605,359	0.976
+9) eta of both trks: 	489,008	499,569	0.979
+10) opposite charges: 	399,604	409,711	0.975
+11) muon pairs only: 	349,276	357,241	0.978
+12) mass 2.2 to 4.5: 	16,448		16,788		0.980
+13) dimuon pt > 0.2: 	3,676		3,732		0.985
+14) mass 3.0 to 3.2:	722		736		0.981
+

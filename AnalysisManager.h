@@ -66,8 +66,11 @@ Double_t fV0A_time, fV0C_time, fADA_time, fADC_time;
 Int_t fV0A_dec, fV0C_dec, fADA_dec, fADC_dec;
 Bool_t fMatchingSPD;
 Double_t fPtGen, fYGen, fMGen, fPhiGen;
+// pass3
+Double_t fTrk1dEdx, fTrk2dEdx, fVertexZ;
+Int_t fVertexContrib;
 
-void ConnectTreeVariables(TTree *t){
+void ConnectTreeVariables(TTree *t, Bool_t pass3 = kFALSE){
     // Set branch addresses
     // Basic things:
     t->SetBranchAddress("fRunNumber", &fRunNumber);
@@ -99,21 +102,29 @@ void ConnectTreeVariables(TTree *t){
     // V0:
     t->SetBranchAddress("fV0A_dec", &fV0A_dec);
     t->SetBranchAddress("fV0C_dec", &fV0C_dec);
-    t->SetBranchAddress("fV0A_time", &fV0A_time);
-    t->SetBranchAddress("fV0C_time", &fV0C_time);
     // AD:
     t->SetBranchAddress("fADA_dec", &fADA_dec);
     t->SetBranchAddress("fADC_dec", &fADC_dec);
-    t->SetBranchAddress("fADA_time", &fADA_time);
-    t->SetBranchAddress("fADC_time", &fADC_time);
     // Matching SPD clusters with FOhits:
     t->SetBranchAddress("fMatchingSPD", &fMatchingSPD);
+    // if pass 3
+    if(pass3){
+        t->SetBranchAddress("fVertexZ", &fVertexZ);
+        t->SetBranchAddress("fVertexContrib", &fVertexContrib);
+        t->SetBranchAddress("fTrk1dEdx", &fTrk1dEdx);
+        t->SetBranchAddress("fTrk2dEdx", &fTrk2dEdx);
+    } else {
+        t->SetBranchAddress("fV0A_time", &fV0A_time);
+        t->SetBranchAddress("fV0C_time", &fV0C_time);
+        t->SetBranchAddress("fADA_time", &fADA_time);
+        t->SetBranchAddress("fADC_time", &fADC_time);
+    }
 
     Printf("Variables from %s connected.", t->GetName());
     return;
 }
 
-void ConnectTreeVariablesMCRec(TTree *t){
+void ConnectTreeVariablesMCRec(TTree *t, Bool_t pass3 = kFALSE){
     // Set branch addresses
     // Basic things:
     t->SetBranchAddress("fRunNumber", &fRunNumber);
@@ -145,13 +156,9 @@ void ConnectTreeVariablesMCRec(TTree *t){
     // V0:
     t->SetBranchAddress("fV0A_dec", &fV0A_dec);
     t->SetBranchAddress("fV0C_dec", &fV0C_dec);
-    t->SetBranchAddress("fV0A_time", &fV0A_time);
-    t->SetBranchAddress("fV0C_time", &fV0C_time);
     // AD:
     t->SetBranchAddress("fADA_dec", &fADA_dec);
     t->SetBranchAddress("fADC_dec", &fADC_dec);
-    t->SetBranchAddress("fADA_time", &fADA_time);
-    t->SetBranchAddress("fADC_time", &fADC_time);
     // Matching SPD clusters with FOhits:
     t->SetBranchAddress("fMatchingSPD", &fMatchingSPD);
     // MC kinematics on generated level
@@ -159,6 +166,19 @@ void ConnectTreeVariablesMCRec(TTree *t){
     t->SetBranchAddress("fPhiGen", &fPhiGen);
     t->SetBranchAddress("fYGen", &fYGen);
     t->SetBranchAddress("fMGen", &fMGen);
+    // if pass 3
+    if(pass3){
+        t->SetBranchAddress("fVertexZ", &fVertexZ);
+        t->SetBranchAddress("fVertexContrib", &fVertexContrib);
+        t->SetBranchAddress("fTrk1dEdx", &fTrk1dEdx);
+        t->SetBranchAddress("fTrk2dEdx", &fTrk2dEdx);
+    // if not
+    } else {
+        t->SetBranchAddress("fV0A_time", &fV0A_time);
+        t->SetBranchAddress("fV0C_time", &fV0C_time);
+        t->SetBranchAddress("fADA_time", &fADA_time);
+        t->SetBranchAddress("fADC_time", &fADC_time);
+    }
 
     Printf("Variables from %s connected.", t->GetName());
     return;
@@ -255,9 +275,10 @@ void ConnectTreeVariablesMCGen_AOD_old(TTree *t){ // for other files such as MC_
     return;
 }
 
-Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0){
+Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0, Bool_t pass3 = kFALSE){
 
-    // Selections applied on the GRID:
+    // pass1:
+    // All selections applied on the GRID:
     // 0) fEvent non-empty
     // 1) At least two tracks associated with the vertex
     // 2) Distance from the IP lower than 15 cm
@@ -266,6 +287,19 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0){
     // for fRunNumber < 295881: CCUP31-B-NOPF-CENTNOTRD
     // for fRunNumber >= 295881: CCUP31-B-SPD2-CENTNOTRD
 
+    // pass3:
+    // 0) fEvent non-empty
+    // 1) At least two tracks associated with the vertex
+    // 2) Central UPC trigger CCUP31:
+    // for fRunNumber < 295881: CCUP31-B-NOPF-CENTNOTRD
+    // for fRunNumber >= 295881: CCUP31-B-SPD2-CENTNOTRD   
+    if(pass3){
+        // 3) At least two tracks associated with the vertex
+        if(fVertexContrib < 2) return kFALSE;
+        // 4) Distance from the IP lower than 15 cm
+        if(fVertexZ > 15) return kFALSE;
+    }
+    
     // 5) SPD cluster matches FOhits
     if(!(fMatchingSPD == kTRUE)) return kFALSE;
 
@@ -336,13 +370,24 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0){
     return kTRUE;
 }
 
-Bool_t EventPassedMCRec(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin = -1){
+Bool_t EventPassedMCRec(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin = -1, Bool_t pass3 = kFALSE){
 
-    // Selections applied on the GRID:
+    // pass1:
+    // All selections applied on the GRID:
     // 0) fEvent non-empty
     // 1) At least two tracks associated with the vertex
     // 2) Distance from the IP lower than 15 cm
     // 3) nGoodTracksTPC == 2 && nGoodTracksSPD == 2
+
+    // pass3:
+    // 0) fEvent non-empty
+    // 1) nGoodTracksTPC == 2 && nGoodTracksSPD == 2
+    if(pass3){
+        // 2) At least two tracks associated with the vertex
+        if(fVertexContrib < 2) return kFALSE;
+        // 3) Distance from the IP lower than 15 cm
+        if(fVertexZ > 15) return kFALSE;
+    }
 
     // 4) Central UPC trigger CCUP31:
     // for fRunNumber < 295881: CCUP31-B-NOPF-CENTNOTRD
