@@ -183,13 +183,13 @@ void CountEventsAfterSelections_MC(){
         outfile << "6a) V0A offline veto:\t" << counter_1[4] << "\t" << counter_2[6] << "\t" << std::fixed << std::setprecision(3) << counter_1[4]/(Double_t)counter_2[6] << "\n";
         outfile << "6b) V0C offline veto:\t" << counter_1[5] << "\t" << counter_2[7] << "\t" << std::fixed << std::setprecision(3) << counter_1[5]/(Double_t)counter_2[7] << "\n";
         outfile << "7) SPD match FOhits: \t" << counter_1[6] << "\t" << counter_2[8] << "\t" << std::fixed << std::setprecision(3) << counter_1[6]/(Double_t)counter_2[8] << "\n";
-        outfile << "7) muon pairs only:  \t" << counter_1[7] << "\t" << counter_2[9] << "\t" << std::fixed << std::setprecision(3) << counter_1[7]/(Double_t)counter_2[9] << "\n";
-        outfile << "8) dilept |y| < 0.8: \t" << counter_1[8] << "\t" << counter_2[10] << "\t" << std::fixed << std::setprecision(3) << counter_1[8]/(Double_t)counter_2[10] << "\n";
-        outfile << "9) trks |eta| < 0.8: \t" << counter_1[9] << "\t" << counter_2[11] << "\t" << std::fixed << std::setprecision(3) << counter_1[9]/(Double_t)counter_2[11] << "\n";
-        outfile << "10) opposite charges:\t" << counter_1[10] << "\t" << counter_2[12] << "\t" << std::fixed << std::setprecision(3) << counter_1[10]/(Double_t)counter_2[12] << "\n";
-        outfile << "11) mass 2.2 to 4.5: \t" << counter_1[11] << "\t" << counter_2[13] << "\t" << std::fixed << std::setprecision(3) << counter_1[11]/(Double_t)counter_2[13] << "\n";
-        outfile << "12) p_T 0.2 to 1.0:  \t" << counter_1[12] << "\t" << counter_2[14] << "\t" << std::fixed << std::setprecision(3) << counter_1[12]/(Double_t)counter_2[14] << "\n";
-        outfile << "11) mass 3.0 to 3.2: \t" << counter_1[13] << "\t" << counter_2[15] << "\t" << std::fixed << std::setprecision(3) << counter_1[13]/(Double_t)counter_2[15] << "\n";
+        outfile << "8) muon pairs only:  \t" << counter_1[7] << "\t" << counter_2[9] << "\t" << std::fixed << std::setprecision(3) << counter_1[7]/(Double_t)counter_2[9] << "\n";
+        outfile << "9) dilept |y| < 0.8: \t" << counter_1[8] << "\t" << counter_2[10] << "\t" << std::fixed << std::setprecision(3) << counter_1[8]/(Double_t)counter_2[10] << "\n";
+        outfile << "10) trks |eta| < 0.8: \t" << counter_1[9] << "\t" << counter_2[11] << "\t" << std::fixed << std::setprecision(3) << counter_1[9]/(Double_t)counter_2[11] << "\n";
+        outfile << "11) opposite charges:\t" << counter_1[10] << "\t" << counter_2[12] << "\t" << std::fixed << std::setprecision(3) << counter_1[10]/(Double_t)counter_2[12] << "\n";
+        outfile << "12) mass 2.2 to 4.5: \t" << counter_1[11] << "\t" << counter_2[13] << "\t" << std::fixed << std::setprecision(3) << counter_1[11]/(Double_t)counter_2[13] << "\n";
+        outfile << "13) p_T 0.2 to 1.0:  \t" << counter_1[12] << "\t" << counter_2[14] << "\t" << std::fixed << std::setprecision(3) << counter_1[12]/(Double_t)counter_2[14] << "\n";
+        outfile << "14) mass 3.0 to 3.2: \t" << counter_1[13] << "\t" << counter_2[15] << "\t" << std::fixed << std::setprecision(3) << counter_1[13]/(Double_t)counter_2[15] << "\n";
 
         outfile.close();
     }
