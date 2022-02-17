@@ -1,0 +1,13 @@
+kIncohJpsiToMu:      	ESD 	AOD atio 
+After previous cuts: 	650282	679373
+4) CCUP31 trigger:   	117988	228926
+5a) ADA offline veto:	117988	228926
+5b) ADC offline veto:	117988	228926
+6a) V0A offline veto:	117986	228919
+6b) V0C offline veto:	117979	228906
+7) muon pairs only:  	115989	225018
+8) dilept |y| < 0.8: 	115367	223797
+9) trks |eta| < 0.8: 	102772	199100
+10) opposite charges:	102772	199100
+11) mass 2.2 to 4.5: 	102772	199100
+12) p_T 0.2 to 1.0:  	82090	163797

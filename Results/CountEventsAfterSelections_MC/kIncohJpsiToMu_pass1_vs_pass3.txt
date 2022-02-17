@@ -1,0 +1,15 @@
+kIncohJpsiToMu:      	pass1 	pass3 	ratio 
+After previous cuts: 	650282	671565	0.968
+4) CCUP31 trigger:   	117988	122183	0.966
+5a) ADA offline veto:	117988	122183	0.966
+5b) ADC offline veto:	117988	122183	0.966
+6a) V0A offline veto:	117986	122182	0.966
+6b) V0C offline veto:	117979	122178	0.966
+7) SPD match FOhits: 	116746	120800	0.966
+7) muon pairs only:  	114771	75769	1.515
+8) dilept |y| < 0.8: 	114157	75489	1.512
+9) trks |eta| < 0.8: 	101703	68273	1.490
+10) opposite charges:	101703	68273	1.490
+11) mass 2.2 to 4.5: 	101703	68273	1.490
+12) p_T 0.2 to 1.0:  	81145	54328	1.494
+11) mass 3.0 to 3.2: 	80929	54202	1.493

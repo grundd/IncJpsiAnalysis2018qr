@@ -1,17 +1,17 @@
-0) event non-empty: 	784509376
-1) vert # contribs: 	685344384
-2) vert Z distance: 	670802944
-3) two good tracks: 	3136073
-4) CCUP31 trigger:  	2134187 (check: 2134187)
-5) SPD match FOhits:	766643
-6a) ADA offln veto: 	763675
-6b) ADC offln veto: 	761713
-7a) V0A offln veto: 	666846
-7b) V0C offln veto: 	602309
-8) dilept rapidity: 	590901
-9) eta of both trks:	489008
-10) oposite charges:	399604
-11) muon pairs only:	349276
-12) mass 2.2 to 4.5:	16448
-13) p_T 0.2 to 1.0: 	3676
-14) mass 3.0 to 3.2:	722
+0) event non-empty:  	784509376
+1) vertex # contribs:	685344384
+2) vertex Z distance:	670802944
+3) two good tracks:  	3136073
+4) CCUP31 trigger:   	2134187 (check: 2134187)
+5a) ADA offline veto:	2116432
+5b) ADC offline veto:	2103963
+6a) V0A offline veto:	1680336
+6b) V0C offline veto:	1406433
+7) SPD match FOhits: 	602309
+8) muon pairs only:  	529969
+9) dilept |y| < 0.8: 	519915
+10) trks |eta| < 0.8:	430483
+11) opposite charges:	349276
+12) mass 2.2 to 4.5: 	16448
+13) p_T 0.2 to 1.0:  	3676
+14) mass 3.0 to 3.2: 	722

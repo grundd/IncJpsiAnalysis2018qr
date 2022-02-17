@@ -12,7 +12,7 @@
 // my headers
 #include "AnalysisManager.h"
 
-Int_t counter[15] = {0};
+Int_t counter[15] = { 0 };
 
 Bool_t cuts_pass1 = kTRUE;
 Bool_t cuts_pass3 = kTRUE;
@@ -27,13 +27,13 @@ Bool_t EventPassed_noMatching();
 void CountEventsAfterSelections(){
 
     // pass1 data
-    TFile *f_pass1 = TFile::Open("Trees/AnalysisData/AnalysisResultsLHC18qrMerged.root", "read");
+    TFile *f_pass1 = TFile::Open("Trees/AnalysisData_pass1/AnalysisResultsLHC18qrMerged.root", "read");
     if(f_pass1) Printf("Input data loaded.");
 
     TTree *t_pass1 = dynamic_cast<TTree*> (f_pass1->Get("AnalysisOutput/fTreeJPsi"));
     if(t_pass1) Printf("Input tree loaded.");
 
-    ConnectTreeVariables(t_pass1);
+    ConnectTreeVariables(t_pass1, kFALSE);
 
     TList *l_pass1 = dynamic_cast<TList*> (f_pass1->Get("AnalysisOutput/fOutputList"));
     if(l_pass1) Printf("Input list loaded.");
@@ -41,7 +41,7 @@ void CountEventsAfterSelections(){
     TH1F *hCounterCuts_pass1 = (TH1F*)l_pass1->FindObject("hCounterCuts");
     if(hCounterCuts_pass1) Printf("Input histogram loaded.");
 
-    hCounterCuts_pass1->Draw();
+    //hCounterCuts_pass1->Draw();
 
     // pass3 data
     TFile *f_pass3 = TFile::Open("Trees/AnalysisData_pass3/AnalysisResults.root", "read");
@@ -58,7 +58,7 @@ void CountEventsAfterSelections(){
     TH1F *hCounterCuts_pass3 = (TH1F*)l_pass3->FindObject("hCounterCuts");
     if(hCounterCuts_pass3) Printf("Input histogram loaded.");
 
-    hCounterCuts_pass3->Draw();
+    //hCounterCuts_pass3->Draw();
 
     if(cuts_pass1){
 
@@ -79,23 +79,23 @@ void CountEventsAfterSelections(){
         TString name = "Results/CountEventsAfterSelections/cuts_pass1.txt";
         ofstream outfile (name.Data());
         outfile << std::fixed << std::setprecision(0); // Set the precision to 0 dec places
-        outfile << "0) event non-empty: \t" << hCounterCuts_pass1->GetBinContent(1) << "\n";
-        outfile << "1) vert # contribs: \t" << hCounterCuts_pass1->GetBinContent(2) << "\n";
-        outfile << "2) vert Z distance: \t" << hCounterCuts_pass1->GetBinContent(3) << "\n";
-        outfile << "3) two good tracks: \t" << hCounterCuts_pass1->GetBinContent(4) << "\n";
-        outfile << "4) CCUP31 trigger:  \t" << hCounterCuts_pass1->GetBinContent(5) << " (check: " << counter[0] << ")\n";
-        outfile << "5) SPD match FOhits:\t" << counter[1] << "\n";
-        outfile << "6a) ADA offln veto: \t" << counter[2] << "\n";
-        outfile << "6b) ADC offln veto: \t" << counter[3] << "\n";
-        outfile << "7a) V0A offln veto: \t" << counter[4] << "\n";
-        outfile << "7b) V0C offln veto: \t" << counter[5] << "\n";
-        outfile << "8) dilept rapidity: \t" << counter[6] << "\n";
-        outfile << "9) eta of both trks:\t" << counter[7] << "\n";
-        outfile << "10) oposite charges:\t" << counter[8] << "\n";
-        outfile << "11) muon pairs only:\t" << counter[9] << "\n";
-        outfile << "12) mass 2.2 to 4.5:\t" << counter[10] << "\n";
-        outfile << "13) p_T 0.2 to 1.0: \t" << counter[11] << "\n";
-        outfile << "14) mass 3.0 to 3.2:\t" << counter[12] << "\n";
+        outfile << "0) event non-empty:  \t" << hCounterCuts_pass1->GetBinContent(1) << "\n";
+        outfile << "1) vertex # contribs:\t" << hCounterCuts_pass1->GetBinContent(2) << "\n";
+        outfile << "2) vertex Z distance:\t" << hCounterCuts_pass1->GetBinContent(3) << "\n";
+        outfile << "3) two good tracks:  \t" << hCounterCuts_pass1->GetBinContent(4) << "\n";
+        outfile << "4) CCUP31 trigger:   \t" << hCounterCuts_pass1->GetBinContent(5) << " (check: " << counter[0] << ")\n";
+        outfile << "5a) ADA offline veto:\t" << counter[1] << "\n";
+        outfile << "5b) ADC offline veto:\t" << counter[2] << "\n";
+        outfile << "6a) V0A offline veto:\t" << counter[3] << "\n";
+        outfile << "6b) V0C offline veto:\t" << counter[4] << "\n";
+        outfile << "7) SPD match FOhits: \t" << counter[5] << "\n";
+        outfile << "8) muon pairs only:  \t" << counter[6] << "\n";
+        outfile << "9) dilept |y| < 0.8: \t" << counter[7] << "\n";
+        outfile << "10) trks |eta| < 0.8:\t" << counter[8] << "\n";
+        outfile << "11) opposite charges:\t" << counter[9] << "\n";
+        outfile << "12) mass 2.2 to 4.5: \t" << counter[10] << "\n";
+        outfile << "13) p_T 0.2 to 1.0:  \t" << counter[11] << "\n";
+        outfile << "14) mass 3.0 to 3.2: \t" << counter[12] << "\n";
 
         outfile.close();
         Printf("*** Results printed to %s.***", name.Data());
@@ -125,23 +125,23 @@ void CountEventsAfterSelections(){
         TString name = "Results/CountEventsAfterSelections/cuts_pass3.txt";
         ofstream outfile (name.Data());
         outfile << std::fixed << std::setprecision(0); // Set the precision to 0 dec places
-        outfile << "0) event non-empty: \t" << hCounterCuts_pass3->GetBinContent(1) << "\n";
-        outfile << "1) two good tracks: \t" << hCounterCuts_pass3->GetBinContent(2) << "\n";
-        outfile << "2) CCUP31 trigger:  \t" << hCounterCuts_pass3->GetBinContent(3) << " (check: " << counter[0] << ")\n";
-        outfile << "3) vert # contribs: \t" << counter[1] << "\n";
-        outfile << "4) vert Z distance: \t" << counter[2] << "\n";
-        outfile << "5) SPD match FOhits:\t" << counter[3] << "\n";
-        outfile << "6a) ADA offln veto: \t" << counter[4] << "\n";
-        outfile << "6b) ADC offln veto: \t" << counter[5] << "\n";
-        outfile << "7a) V0A offln veto: \t" << counter[6] << "\n";
-        outfile << "7b) V0C offln veto: \t" << counter[7] << "\n";
-        outfile << "8) dilept rapidity: \t" << counter[8] << "\n";
-        outfile << "9) eta of both trks:\t" << counter[9] << "\n";
-        outfile << "10) oposite charges:\t" << counter[10] << "\n";
-        outfile << "11) muon pairs only:\t" << counter[11] << "\n";
-        outfile << "12) mass 2.2 to 4.5:\t" << counter[12] << "\n";
-        outfile << "13) p_T 0.2 to 1.0: \t" << counter[13] << "\n";
-        outfile << "14) mass 3.0 to 3.2:\t" << counter[14] << "\n";
+        outfile << "0) event non-empty:  \t" << hCounterCuts_pass3->GetBinContent(1) << "\n";
+        outfile << "1) two good tracks:  \t" << hCounterCuts_pass3->GetBinContent(2) << "\n";
+        outfile << "2) CCUP31 trigger:   \t" << hCounterCuts_pass3->GetBinContent(3) << " (check: " << counter[0] << ")\n";
+        outfile << "3) vertex # contribs:\t" << counter[1] << "\n";
+        outfile << "4) vertex Z distance:\t" << counter[2] << "\n";
+        outfile << "5a) ADA offline veto:\t" << counter[3] << "\n";
+        outfile << "5b) ADC offline veto:\t" << counter[4] << "\n";
+        outfile << "6a) V0A offline veto:\t" << counter[5] << "\n";
+        outfile << "6b) V0C offline veto:\t" << counter[6] << "\n";
+        outfile << "7) SPD match FOhits: \t" << counter[7] << "\n";
+        outfile << "8) muon pairs only:  \t" << counter[8] << "\n";
+        outfile << "9) dilept |y| < 0.8: \t" << counter[9] << "\n";
+        outfile << "10) trks |eta| < 0.8:\t" << counter[10] << "\n";
+        outfile << "11) opposite charges:\t" << counter[11] << "\n";
+        outfile << "12) mass 2.2 to 4.5: \t" << counter[12] << "\n";
+        outfile << "13) p_T 0.2 to 1.0:  \t" << counter[13] << "\n";
+        outfile << "14) mass 3.0 to 3.2: \t" << counter[14] << "\n";
 
         outfile.close();
         Printf("*** Results printed to %s.***", name.Data());
@@ -171,23 +171,23 @@ void CountEventsAfterSelections(){
         TString name = "Results/CountEventsAfterSelections/cuts_Roman.txt";
         ofstream outfile (name.Data());
         outfile << std::fixed << std::setprecision(0); // Set the precision to 0 dec places
-        outfile << "0a) event non-empty:\t" << hCounterCuts_pass1->GetBinContent(1) << "\n";
-        outfile << "0b) vert # contribs:\t" << hCounterCuts_pass1->GetBinContent(2) << "\n";
-        outfile << "0c) vert Z distance:\t" << hCounterCuts_pass1->GetBinContent(3) << "\n";
-        outfile << "0d) two good tracks:\t" << hCounterCuts_pass1->GetBinContent(4) << "\n";
-        outfile << "0e) CCUP31 trigger: \t" << hCounterCuts_pass1->GetBinContent(5) << " (check: " << counter[0] << ")\n";
-        outfile << "1) SPD match FOhits:\t" << counter[1] << "\n";
-        outfile << "2) muon pairs only: \t" << counter[2] << "\n";
-        outfile << "3) mass 2.2 to 4.5: \t" << counter[3] << "\n";
-        outfile << "4a) ADA offln veto: \t" << counter[4] << "\n";
-        outfile << "4b) ADC offln veto: \t" << counter[5] << "\n";
-        outfile << "5a) V0A offln veto: \t" << counter[6] << "\n";
-        outfile << "5b) V0C offln veto: \t" << counter[7] << "\n";
-        outfile << "6) dilept rapidity: \t" << counter[8] << "\n";
-        outfile << "7) eta of both trks:\t" << counter[9] << "\n";
-        outfile << "8) oposite charges: \t" << counter[10] << "\n";
-        outfile << "9) dimuon pt < 0.11:\t" << counter[11] << "\n";
-        outfile << "10) mass 3.0 to 3.2:\t" << counter[12] << "\n";
+        outfile << "0a) event non-empty:  \t" << hCounterCuts_pass1->GetBinContent(1) << "\n";
+        outfile << "0b) vertex # contribs:\t" << hCounterCuts_pass1->GetBinContent(2) << "\n";
+        outfile << "0c) vertex Z distance:\t" << hCounterCuts_pass1->GetBinContent(3) << "\n";
+        outfile << "0d) two good tracks:  \t" << hCounterCuts_pass1->GetBinContent(4) << "\n";
+        outfile << "0e) CCUP31 trigger:   \t" << hCounterCuts_pass1->GetBinContent(5) << " (check: " << counter[0] << ")\n";
+        outfile << "1) SPD match FOhits:  \t" << counter[1] << "\n";
+        outfile << "2) muon pairs only:   \t" << counter[2] << "\n";
+        outfile << "3) mass 2.2 to 4.5:   \t" << counter[3] << "\n";
+        outfile << "4a) ADA offline veto: \t" << counter[4] << "\n";
+        outfile << "4b) ADC offline veto: \t" << counter[5] << "\n";
+        outfile << "5a) V0A offline veto: \t" << counter[6] << "\n";
+        outfile << "5b) V0C offline veto: \t" << counter[7] << "\n";
+        outfile << "6) dilepton |y| < 0.8:\t" << counter[8] << "\n";
+        outfile << "7) tracks |eta| < 0.8:\t" << counter[9] << "\n";
+        outfile << "8) opposite charges:  \t" << counter[10] << "\n";
+        outfile << "9) dimuon pt < 0.11:  \t" << counter[11] << "\n";
+        outfile << "10) mass 3.0 to 3.2:  \t" << counter[12] << "\n";
 
         outfile.close();
         Printf("*** Results printed to %s.***", name.Data());
@@ -222,14 +222,14 @@ void CountEventsAfterSelections(){
         outfile << "2) vert Z distance:  \t" << hCounterCuts_pass1->GetBinContent(3) << "\n";
         outfile << "3) two good tracks:  \t" << hCounterCuts_pass1->GetBinContent(4) << "\n";
         outfile << "4) CCUP31 trigger:   \t" << hCounterCuts_pass1->GetBinContent(5) << " (check: " << counter[0] << ")\n";
-        outfile << "5a) ADA offln veto:  \t" << counter[1] << "\n";
-        outfile << "5b) ADC offln veto:  \t" << counter[2] << "\n";
-        outfile << "6a) V0A offln veto:  \t" << counter[3] << "\n";
-        outfile << "6b) V0C offln veto:  \t" << counter[4] << "\n";
-        outfile << "7) dilept rapidity:  \t" << counter[5] << "\n";
-        outfile << "8) eta of both trks: \t" << counter[6] << "\n";
-        outfile << "9) oposite charges:  \t" << counter[7] << "\n";
-        outfile << "10) muon pairs only: \t" << counter[8] << "\n";
+        outfile << "5a) ADA offline veto:\t" << counter[1] << "\n";
+        outfile << "5b) ADC offline veto:\t" << counter[2] << "\n";
+        outfile << "6a) V0A offline veto:\t" << counter[3] << "\n";
+        outfile << "6b) V0C offline veto:\t" << counter[4] << "\n";
+        outfile << "7) muon pairs only:  \t" << counter[5] << "\n";
+        outfile << "8) dilept |y| < 0.8: \t" << counter[6] << "\n";
+        outfile << "9) trks |eta| < 0.8: \t" << counter[7] << "\n";
+        outfile << "10) opposite charges:\t" << counter[8] << "\n";
         outfile << "11) mass 2.2 to 4.5: \t" << counter[9] << "\n";
         outfile << "12) dimuon pt > 0.2: \t" << counter[10] << "\n";
         outfile << "13) SPD match FOhits:\t" << counter[11] << "\n";
@@ -253,40 +253,40 @@ Bool_t EventPassed_pass1(){
     // for fRunNumber >= 295881: CCUP31-B-SPD2-CENTNOTRD
     counter[0]++;
 
-    // 5) SPD cluster matches FOhits
-    if(!(fMatchingSPD == kTRUE)) return kFALSE;
+    // 5a) ADA offline veto (no effect on MC)
+    if(!(fADA_dec == 0)) return kFALSE;
     counter[1]++;
 
-    // 6a) ADA offline veto (no effect on MC)
-    if(!(fADA_dec == 0)) return kFALSE;
+    // 5b) ADC offline veto (no effect on MC)
+    if(!(fADC_dec == 0)) return kFALSE;
     counter[2]++;
 
-    // 6b) ADC offline veto (no effect on MC)
-    if(!(fADC_dec == 0)) return kFALSE;
+    // 6a) V0A offline veto (no effect on MC)
+    if(!(fV0A_dec == 0)) return kFALSE;
     counter[3]++;
 
-    // 7a) V0A offline veto (no effect on MC)
-    if(!(fV0A_dec == 0)) return kFALSE;
+    // 6b) V0C offline veto (no effect on MC)
+    if(!(fV0C_dec == 0)) return kFALSE;
     counter[4]++;
 
-    // 7b) V0C offline veto (no effect on MC)
-    if(!(fV0C_dec == 0)) return kFALSE;
+    // 7) SPD cluster matches FOhits
+    if(!(fMatchingSPD == kTRUE)) return kFALSE;
     counter[5]++;
 
-    // 8) Dilepton rapidity |y| < 0.8
-    if(!(abs(fY) < 0.8)) return kFALSE;
+    // 8) Muon pairs only
+    if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
     counter[6]++;
 
-    // 9) Pseudorapidity of both tracks |eta| < 0.8
-    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
+    // 9) Dilepton rapidity |y| < 0.8
+    if(!(abs(fY) < 0.8)) return kFALSE;
     counter[7]++;
 
-    // 10) Tracks have opposite charges
-    if(!(fQ1 * fQ2 < 0)) return kFALSE;
+    // 10) Pseudorapidity of both tracks |eta| < 0.8
+    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
     counter[8]++;
 
-    // 11) Muon pairs only
-    if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
+    // 11) Tracks have opposite charges
+    if(!(fQ1 * fQ2 < 0)) return kFALSE;
     counter[9]++;
 
     // 12) Invariant mass between 2.2 and 4.5 GeV/c^2
@@ -323,40 +323,40 @@ Bool_t EventPassed_pass3(){
     if(fVertexZ > 15) return kFALSE;
     counter[2]++;
 
-    // 5) SPD cluster matches FOhits
-    if(!(fMatchingSPD == kTRUE)) return kFALSE;
+    // 5a) ADA offline veto (no effect on MC)
+    if(!(fADA_dec == 0)) return kFALSE;
     counter[3]++;
 
-    // 6a) ADA offline veto (no effect on MC)
-    if(!(fADA_dec == 0)) return kFALSE;
+    // 5b) ADC offline veto (no effect on MC)
+    if(!(fADC_dec == 0)) return kFALSE;
     counter[4]++;
 
-    // 6b) ADC offline veto (no effect on MC)
-    if(!(fADC_dec == 0)) return kFALSE;
+    // 6a) V0A offline veto (no effect on MC)
+    if(!(fV0A_dec == 0)) return kFALSE;
     counter[5]++;
 
-    // 7a) V0A offline veto (no effect on MC)
-    if(!(fV0A_dec == 0)) return kFALSE;
+    // 6b) V0C offline veto (no effect on MC)
+    if(!(fV0C_dec == 0)) return kFALSE;
     counter[6]++;
 
-    // 7b) V0C offline veto (no effect on MC)
-    if(!(fV0C_dec == 0)) return kFALSE;
+    // 7) SPD cluster matches FOhits
+    if(!(fMatchingSPD == kTRUE)) return kFALSE;
     counter[7]++;
 
-    // 8) Dilepton rapidity |y| < 0.8
-    if(!(abs(fY) < 0.8)) return kFALSE;
+    // 8) Muon pairs only
+    if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
     counter[8]++;
 
-    // 9) Pseudorapidity of both tracks |eta| < 0.8
-    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
+    // 9) Dilepton rapidity |y| < 0.8
+    if(!(abs(fY) < 0.8)) return kFALSE;
     counter[9]++;
 
-    // 10) Tracks have opposite charges
-    if(!(fQ1 * fQ2 < 0)) return kFALSE;
+    // 10) Pseudorapidity of both tracks |eta| < 0.8
+    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
     counter[10]++;
 
-    // 11) Muon pairs only
-    if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
+    // 11) Tracks have opposite charges
+    if(!(fQ1 * fQ2 < 0)) return kFALSE;
     counter[11]++;
 
     // 12) Invariant mass between 2.2 and 4.5 GeV/c^2
@@ -468,20 +468,20 @@ Bool_t EventPassed_noMatching(){
     if(!(fV0C_dec == 0)) return kFALSE;
     counter[4]++;
 
-    // 7) Dilepton rapidity |y| < 0.8
-    if(!(abs(fY) < 0.8)) return kFALSE;
+    // 7) Muon pairs only
+    if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
     counter[5]++;
 
-    // 8) Pseudorapidity of both tracks |eta| < 0.8
-    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
+    // 8) Dilepton rapidity |y| < 0.8
+    if(!(abs(fY) < 0.8)) return kFALSE;
     counter[6]++;
 
-    // 9) Tracks have opposite charges
-    if(!(fQ1 * fQ2 < 0)) return kFALSE;
+    // 9) Pseudorapidity of both tracks |eta| < 0.8
+    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
     counter[7]++;
 
-    // 10) Muon pairs only
-    if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
+    // 10) Tracks have opposite charges
+    if(!(fQ1 * fQ2 < 0)) return kFALSE;
     counter[8]++;
 
     // 11) Invariant mass between 2.2 and 4.5 GeV/c^2

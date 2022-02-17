@@ -3,14 +3,14 @@
 2) vert Z distance:  	670802944
 3) two good tracks:  	3136073
 4) CCUP31 trigger:   	2134187 (check: 2134187)
-5a) ADA offln veto:  	2116432
-5b) ADC offln veto:  	2103963
-6a) V0A offln veto:  	1680336
-6b) V0C offln veto:  	1406433
-7) dilept rapidity:  	1371139
-8) eta of both trks: 	1105603
-9) oposite charges:  	805160
-10) muon pairs only: 	716898
+5a) ADA offline veto:	2116432
+5b) ADC offline veto:	2103963
+6a) V0A offline veto:	1680336
+6b) V0C offline veto:	1406433
+7) muon pairs only:  	1255511
+8) dilept |y| < 0.8: 	1224425
+9) trks |eta| < 0.8: 	986869
+10) opposite charges:	716898
 11) mass 2.2 to 4.5: 	20191
 12) dimuon pt > 0.2: 	7058
 13) SPD match FOhits:	4547
