@@ -16,12 +16,14 @@ Double_t ptBoundaries1_4bins[5] = {0.200, 0.331, 0.455, 0.608, 1.000};
 Double_t ptBoundaries1_5bins[6] = {0.200, 0.307, 0.404, 0.510, 0.648, 1.000};
 Double_t ptBoundaries2_4bins[5] = {0.200, 0.288, 0.412, 0.621, 1.000};
 Double_t ptBoundaries2_5bins[6] = {0.200, 0.271, 0.356, 0.487, 0.680, 1.000};
-Double_t ptBoundaries3_4bins[5] = {0.200, 0.280, 0.375, 0.569, 1.000};
-Double_t ptBoundaries3_5bins[6] = {0.200, 0.264, 0.335, 0.445, 0.658, 1.000};
+Double_t ptBoundaries3_4bins_pass1[5] = {0.200, 0.280, 0.375, 0.569, 1.000};
+Double_t ptBoundaries3_5bins_pass1[6] = {0.200, 0.264, 0.335, 0.445, 0.658, 1.000};
+Double_t ptBoundaries3_4bins_pass3[5] = {0.200, 0.280, 0.375, 0.569, 1.000};
+Double_t ptBoundaries3_5bins_pass3[6] = {0.200, 0.264, 0.335, 0.445, 0.658, 1.000};
 Double_t ptBoundaries4_4bins[5] = {0.200, 0.286, 0.402, 0.582, 1.000};
 Double_t ptBoundaries4_5bins[6] = {0.200, 0.267, 0.351, 0.463, 0.634, 1.000};
 
-void SetPtBinning(){
+void SetPtBinning(Bool_t pass3 = kFALSE){
     switch(iMethodBinning){
         case 1:
             // PtBinning "Method 1": CalcBinning() in tSlope.c
@@ -34,9 +36,14 @@ void SetPtBinning(){
             if(nPtBins == 5) ptBoundaries = ptBoundaries2_5bins;
             break;
         case 3:
-            // PtBinning "Method 3": BinsThroughMassFit.c
-            if(nPtBins == 4) ptBoundaries = ptBoundaries3_4bins;
-            if(nPtBins == 5) ptBoundaries = ptBoundaries3_5bins;
+            if(!pass3){
+                // PtBinning "Method 3": BinsThroughMassFit.c
+                if(nPtBins == 4) ptBoundaries = ptBoundaries3_4bins_pass1;
+                if(nPtBins == 5) ptBoundaries = ptBoundaries3_5bins_pass1;
+            } else {
+                if(nPtBins == 4) ptBoundaries = ptBoundaries3_4bins_pass3;
+                if(nPtBins == 5) ptBoundaries = ptBoundaries3_5bins_pass3;            
+            }
             break;
         case 4:
             // PtBinning "Method 4": tSlopeWithoutBkg.c
@@ -278,7 +285,7 @@ void ConnectTreeVariablesMCGen_AOD_old(TTree *t){ // for other files such as MC_
 Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0, Bool_t pass3 = kFALSE){
 
     // pass1:
-    // All selections applied on the GRID:
+    // Selections applied on the GRID:
     // 0) fEvent non-empty
     // 1) At least two tracks associated with the vertex
     // 2) Distance from the IP lower than 15 cm
@@ -300,34 +307,34 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0, Bool_t pass3 = kFALSE){
         if(fVertexZ > 15) return kFALSE;
     }
     
-    // 5) SPD cluster matches FOhits
-    if(!(fMatchingSPD == kTRUE)) return kFALSE;
-
-    // 6a) ADA offline veto (no effect on MC)
+    // 5a) ADA offline veto (no effect on MC)
     if(!(fADA_dec == 0)) return kFALSE;
 
-    // 6b) ADC offline veto (no effect on MC)
+    // 5b) ADC offline veto (no effect on MC)
     if(!(fADC_dec == 0)) return kFALSE;
 
-    // 7a) V0A offline veto (no effect on MC)
+    // 6a) V0A offline veto (no effect on MC)
     if(!(fV0A_dec == 0)) return kFALSE;
 
-    // 7b) V0C offline veto (no effect on MC)
+    // 6b) V0C offline veto (no effect on MC)
     if(!(fV0C_dec == 0)) return kFALSE;
 
-    // 8) Dilepton rapidity |y| < 0.8
-    if(!(abs(fY) < 0.8)) return kFALSE;
+    // 7) SPD cluster matches FOhits
+    if(!(fMatchingSPD == kTRUE)) return kFALSE;
 
-    // 9) Pseudorapidity of both tracks |eta| < 0.8
-    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
-
-    // 10) Tracks have opposite charges
-    if(!(fQ1 * fQ2 < 0)) return kFALSE;
-
-    // 11) Muon pairs only
+    // 8) Muon pairs only
     if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
 
-    // 12) Invariant mass between 2.2 and 4.5 GeV/c^2
+    // 9) Dilepton rapidity |y| < 0.8
+    if(!(abs(fY) < 0.8)) return kFALSE;
+
+    // 10) Pseudorapidity of both tracks |eta| < 0.8
+    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
+
+    // 11) Tracks have opposite charges
+    if(!(fQ1 * fQ2 < 0)) return kFALSE;
+
+    // 12) Invariant mass cut (default: m between 2.2 and 4.5 GeV/c^2)
     Bool_t bMassCut = kFALSE;
     switch(iMassCut){
         case -1: // No inv mass cut
@@ -345,7 +352,7 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0, Bool_t pass3 = kFALSE){
     }
     if(!bMassCut) return kFALSE;
 
-    // 13) Transverse momentum cut
+    // 13) Transverse momentum cut (default: pT > 0.2 GeV/c)
     Bool_t bPtCut = kFALSE;
     switch(iPtCut){
         case -1: // No pt cut
@@ -403,34 +410,34 @@ Bool_t EventPassedMCRec(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin = -
     ) CCUP31 = kTRUE;
     if(!CCUP31) return kFALSE;
 
-    // 5) SPD cluster matches FOhits
-    if(!(fMatchingSPD == kTRUE)) return kFALSE;
-
-    // 6a) ADA offline veto (no effect on MC)
+    // 5a) ADA offline veto (no effect on MC)
     if(!(fADA_dec == 0)) return kFALSE;
 
-    // 6b) ADC offline veto (no effect on MC)
+    // 5b) ADC offline veto (no effect on MC)
     if(!(fADC_dec == 0)) return kFALSE;
 
-    // 7a) V0A offline veto (no effect on MC)
+    // 6a) V0A offline veto (no effect on MC)
     if(!(fV0A_dec == 0)) return kFALSE;
 
-    // 7b) V0C offline veto (no effect on MC)
+    // 6b) V0C offline veto (no effect on MC)
     if(!(fV0C_dec == 0)) return kFALSE;
 
-    // 8) Dilepton rapidity |y| < 0.8
-    if(!(abs(fY) < 0.8)) return kFALSE;
+    // 7) SPD cluster matches FOhits
+    if(!(fMatchingSPD == kTRUE)) return kFALSE;
 
-    // 9) Pseudorapidity of both tracks |eta| < 0.8
-    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
-
-    // 10) Tracks have opposite charges
-    if(!(fQ1 * fQ2 < 0)) return kFALSE;
-
-    // 11) Muon pairs only
+    // 8) Muon pairs only
     if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
 
-    // 12) Invariant mass between 2.2 and 4.5 GeV/c^2
+    // 9) Dilepton rapidity |y| < 0.8
+    if(!(abs(fY) < 0.8)) return kFALSE;
+
+    // 10) Pseudorapidity of both tracks |eta| < 0.8
+    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
+
+    // 11) Tracks have opposite charges
+    if(!(fQ1 * fQ2 < 0)) return kFALSE;
+
+    // 12) Invariant mass cut (default: none)
     Bool_t bMassCut = kFALSE;
     switch(iMassCut){
         case -1: // No inv mass cut
@@ -445,7 +452,7 @@ Bool_t EventPassedMCRec(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin = -
     }
     if(!bMassCut) return kFALSE;
 
-    // 13) Transverse momentum cut
+    // 13) Transverse momentum cut (default: none)
     Bool_t bPtCut = kFALSE;
     switch(iPtCut){
         case -1: // No pt cut
@@ -495,34 +502,34 @@ Bool_t EventPassedMCRec_AOD(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin
     ) CCUP31 = kTRUE;
     if(!CCUP31) return kFALSE;
 
-    // 5) SPD cluster matches FOhits
-    // (...)
-
-    // 6a) ADA offline veto (no effect on MC)
+    // 5a) ADA offline veto (no effect on MC)
     if(!(fADA_dec == 0)) return kFALSE;
 
-    // 6b) ADC offline veto (no effect on MC)
+    // 5b) ADC offline veto (no effect on MC)
     if(!(fADC_dec == 0)) return kFALSE;
 
-    // 7a) V0A offline veto (no effect on MC)
+    // 6a) V0A offline veto (no effect on MC)
     if(!(fV0A_dec == 0)) return kFALSE;
 
-    // 7b) V0C offline veto (no effect on MC)
+    // 6b) V0C offline veto (no effect on MC)
     if(!(fV0C_dec == 0)) return kFALSE;
 
-    // 8) Dilepton rapidity |y| < 0.8
-    if(!(abs(fY) < 0.8)) return kFALSE;
+    // 7) SPD cluster matches FOhits
+    // (...)
 
-    // 9) Pseudorapidity of both tracks |eta| < 0.8
-    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
-
-    // 10) Tracks have opposite charges
-    if(!(fQ1 * fQ2 < 0)) return kFALSE;
-
-    // 11) Muon pairs only
+    // 8) Muon pairs only
     if(!(fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu < fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl)) return kFALSE;
 
-    // 12) Invariant mass between 2.2 and 4.5 GeV/c^2
+    // 9) Dilepton rapidity |y| < 0.8
+    if(!(abs(fY) < 0.8)) return kFALSE;
+
+    // 10) Pseudorapidity of both tracks |eta| < 0.8
+    if(!(abs(fEta1) < 0.8 && abs(fEta2) < 0.8)) return kFALSE;
+
+    // 11) Tracks have opposite charges
+    if(!(fQ1 * fQ2 < 0)) return kFALSE;
+
+    // 12) Invariant mass cut (default: none)
     Bool_t bMassCut = kFALSE;
     switch(iMassCut){
         case -1: // No inv mass cut
@@ -537,7 +544,7 @@ Bool_t EventPassedMCRec_AOD(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin
     }
     if(!bMassCut) return kFALSE;
 
-    // 13) Transverse momentum cut
+    // 13) Transverse momentum cut (default: none)
     Bool_t bPtCut = kFALSE;
     switch(iPtCut){
         case -1: // No pt cut
@@ -566,10 +573,11 @@ Bool_t EventPassedMCRec_AOD(Int_t iMassCut = -1, Int_t iPtCut = -1, Int_t iPtBin
 }
 
 Bool_t EventPassedMCGen(Int_t iPtCut = -1, Int_t iPtBin = -1){
+
     // 1) Dilepton rapidity |y| < 0.8
     if(!(abs(fYGen) < 0.8)) return kFALSE;
 
-    // 2) Transverse momentum cut
+    // 2) Transverse momentum cut (default: none)
     Bool_t bPtCut = kFALSE;
     switch(iPtCut){
         case -1: // No pt cut

@@ -18,6 +18,7 @@ Int_t counter_2[16] = { 0 };
 
 Bool_t cuts_AOD_vs_ESD = kFALSE;
 Bool_t cuts_pass1_vs_pass3 = kTRUE;
+Bool_t PID_calibrated = kTRUE;
 
 Bool_t EventPassed_MC_noSPDmatch(Bool_t isESD);
 Bool_t EventPassed_MC_pass1();
@@ -26,34 +27,55 @@ Bool_t EventPassed_MC_pass3();
 void CountEventsAfterSelections_MC(){
 
     // pass1
-    TFile *f_pass1 = TFile::Open("Trees/AnalysisDataMC_pass1/AnalysisResults_MC_kIncohJpsiToMu.root", "read");
+    TString str_file_pass1, str_file_pass3, str_tree_pass1, str_tree_pass3;
+    if(!PID_calibrated){
+        str_file_pass1 = "Trees/AnalysisDataMC_pass1/AnalysisResults_MC_kIncohJpsiToMu.root";
+        str_tree_pass1 = "AnalysisOutput/fTreeJPsiMCRec";
+        str_file_pass3 = "Trees/AnalysisDataMC_pass3/AnalysisResults_MC_kIncohJpsiToMu.root";
+        str_tree_pass3 = "AnalysisOutput/fTreeJpsi";
+    } else {
+        str_file_pass1 = "Trees/AnalysisDataMC_pass1/kIncohJpsiToMu_calibSigmasTPC.root";
+        str_tree_pass1 = "fTreeJpsi";
+        str_file_pass3 = "Trees/AnalysisDataMC_pass3/kIncohJpsiToMu_calibSigmasTPC.root";
+        str_tree_pass3 = "fTreeJpsi";
+    }
+
+    TFile *f_pass1 = TFile::Open(str_file_pass1.Data(), "read");
     if(f_pass1) Printf("Input data loaded.");
 
-    TTree *t_pass1 = dynamic_cast<TTree*> (f_pass1->Get("AnalysisOutput/fTreeJPsiMCRec"));
+    TTree *t_pass1 = dynamic_cast<TTree*> (f_pass1->Get(str_tree_pass1.Data()));
     if(t_pass1) Printf("Input tree loaded.");
 
     ConnectTreeVariablesMCRec(t_pass1, kFALSE);
 
-    TList *l_pass1 = dynamic_cast<TList*> (f_pass1->Get("AnalysisOutput/fOutputList"));
-    if(l_pass1) Printf("Input list loaded.");
+    TList *l_pass1 = NULL;
+    TH1F *hCounterCuts_pass1 = NULL;
+    if(!PID_calibrated){
+        l_pass1 = dynamic_cast<TList*> (f_pass1->Get("AnalysisOutput/fOutputList"));
+        if(l_pass1) Printf("Input list loaded.");
 
-    TH1F *hCounterCuts_pass1 = (TH1F*)l_pass1->FindObject("hCounterCuts");
-    if(hCounterCuts_pass1) Printf("Input histogram loaded.");
+        hCounterCuts_pass1 = (TH1F*)l_pass1->FindObject("hCounterCuts");
+        if(hCounterCuts_pass1) Printf("Input histogram loaded.");
+    }
 
     // pass3
-    TFile *f_pass3 = TFile::Open("Trees/AnalysisDataMC_pass3/AnalysisResults_MC_kIncohJpsiToMu.root", "read");
+    TFile *f_pass3 = TFile::Open(str_file_pass3.Data(), "read");
     if(f_pass3) Printf("Input data loaded.");
 
-    TTree *t_pass3 = dynamic_cast<TTree*> (f_pass3->Get("AnalysisOutput/fTreeJpsi"));
+    TTree *t_pass3 = dynamic_cast<TTree*> (f_pass3->Get(str_tree_pass3.Data()));
     if(t_pass3) Printf("Input tree loaded.");
 
     ConnectTreeVariablesMCRec(t_pass3, kTRUE);
 
-    TList *l_pass3 = dynamic_cast<TList*> (f_pass3->Get("AnalysisOutput/fOutputList"));
-    if(l_pass3) Printf("Input list loaded.");
+    TList *l_pass3 = NULL;
+    TH1F *hCounterCuts_pass3 = NULL;
+    if(!PID_calibrated){
+        l_pass3 = dynamic_cast<TList*> (f_pass3->Get("AnalysisOutput/fOutputList"));
+        if(l_pass3) Printf("Input list loaded.");
 
-    TH1F *hCounterCuts_pass3 = (TH1F*)l_pass3->FindObject("hCounterCuts");
-    if(hCounterCuts_pass3) Printf("Input histogram loaded.");
+        hCounterCuts_pass3 = (TH1F*)l_pass3->FindObject("hCounterCuts");
+        if(hCounterCuts_pass3) Printf("Input histogram loaded.");
+    }
 
     // AOD
     TFile *f_AOD = TFile::Open("Trees/AnalysisDataAOD/MC_rec_18qr_kIncohJpsiToMu_migr.root", "read");
@@ -120,7 +142,7 @@ void CountEventsAfterSelections_MC(){
         outfile << "9) trks |eta| < 0.8: \t" << counter_1[8] << "\t" << counter_2[8] << "\n";
         outfile << "10) opposite charges:\t" << counter_1[9] << "\t" << counter_2[9] << "\n";
         outfile << "11) mass 2.2 to 4.5: \t" << counter_1[10] << "\t" << counter_2[10] << "\n";
-        outfile << "12) p_T 0.2 to 1.0:  \t" << counter_1[11] << "\t" << counter_2[11] << "\n";
+        outfile << "12) dimuon pt > 0.2: \t" << counter_1[11] << "\t" << counter_2[11] << "\n";
 
         outfile.close();
     }
@@ -172,7 +194,9 @@ void CountEventsAfterSelections_MC(){
         }
 
         // Print the numbers:
-        TString name = "Results/CountEventsAfterSelections_MC/kIncohJpsiToMu_pass1_vs_pass3.txt";
+        TString name;
+        if(!PID_calibrated) name = "Results/CountEventsAfterSelections_MC/kIncohJpsiToMu_pass1_vs_pass3.txt";
+        else                name = "Results/CountEventsAfterSelections_MC/kIncohJpsiToMu_pass1_vs_pass3_PIDcalibrated.txt";
         ofstream outfile (name.Data());
         outfile << std::fixed << std::setprecision(0); // Set the precision to 0 dec places
         outfile << "kIncohJpsiToMu:      \tpass1 \tpass3 \tratio \n";
@@ -188,7 +212,7 @@ void CountEventsAfterSelections_MC(){
         outfile << "10) trks |eta| < 0.8: \t" << counter_1[9] << "\t" << counter_2[11] << "\t" << std::fixed << std::setprecision(3) << counter_1[9]/(Double_t)counter_2[11] << "\n";
         outfile << "11) opposite charges:\t" << counter_1[10] << "\t" << counter_2[12] << "\t" << std::fixed << std::setprecision(3) << counter_1[10]/(Double_t)counter_2[12] << "\n";
         outfile << "12) mass 2.2 to 4.5: \t" << counter_1[11] << "\t" << counter_2[13] << "\t" << std::fixed << std::setprecision(3) << counter_1[11]/(Double_t)counter_2[13] << "\n";
-        outfile << "13) p_T 0.2 to 1.0:  \t" << counter_1[12] << "\t" << counter_2[14] << "\t" << std::fixed << std::setprecision(3) << counter_1[12]/(Double_t)counter_2[14] << "\n";
+        outfile << "13) dimuon pt > 0.2: \t" << counter_1[12] << "\t" << counter_2[14] << "\t" << std::fixed << std::setprecision(3) << counter_1[12]/(Double_t)counter_2[14] << "\n";
         outfile << "14) mass 3.0 to 3.2: \t" << counter_1[13] << "\t" << counter_2[15] << "\t" << std::fixed << std::setprecision(3) << counter_1[13]/(Double_t)counter_2[15] << "\n";
 
         outfile.close();
