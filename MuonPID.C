@@ -7,6 +7,7 @@
 // root headers
 #include "TFile.h"
 #include "TTree.h"
+#include "TLorentzVector.h"
 #include "TH1.h"
 #include "TF1.h"
 #include "TCanvas.h"
@@ -25,7 +26,7 @@ void MuonPID(){
     //PlotAndFitHistograms(kTRUE);
 
     // pass1
-    //ShiftPIDSignal(kFALSE);
+    ShiftPIDSignal(kFALSE);
 
     // pass3
     ShiftPIDSignal(kTRUE);
@@ -53,6 +54,13 @@ void ShiftPIDSignal(Bool_t pass3){
     if(t_in) Printf("Input tree loaded.");
 
     ConnectTreeVariablesMCRec(t_in, pass3);
+
+    // histograms where the differences will be stored
+    Double_t range = 0.02;
+    TH1D *hPt = new TH1D("hPt", "hPt", 100, -range, range);
+    TH1D *hPhi = new TH1D("hPhi", "hPhi", 100, -range, range);
+    TH1D *hY = new TH1D("hY", "hY", 100, -range, range);
+    TH1D *hM = new TH1D("hM", "hM", 100, -range, range);
 
     // create new file
     TString str_f_out = "";
@@ -137,9 +145,44 @@ void ShiftPIDSignal(Bool_t pass3){
         t_in->GetEntry(iEntry);
 
         fTrk1SigIfMu = fTrk1SigIfMu - fShiftMu;
-        fTrk1SigIfEl = fTrk1SigIfEl - fShiftEl;
+        fTrk1SigIfEl = fTrk1SigIfEl - fShiftMu;
         fTrk2SigIfMu = fTrk2SigIfMu - fShiftMu;
-        fTrk2SigIfEl = fTrk2SigIfEl - fShiftEl;
+        fTrk2SigIfEl = fTrk2SigIfEl - fShiftMu;
+
+        // store the old values of J/psi kinematic variables
+        Double_t fPt_old = fPt;
+        Double_t fPhi_old = fPhi;
+        Double_t fY_old = fY;
+        Double_t fM_old = fM;
+
+        // recalculate J/psi kinematics after assigning a proper mass to tracks
+        Double_t isMuonPair = fTrk1SigIfMu*fTrk1SigIfMu + fTrk2SigIfMu*fTrk2SigIfMu;
+        Double_t isElectronPair = fTrk1SigIfEl*fTrk1SigIfEl + fTrk2SigIfEl*fTrk2SigIfEl;
+        Double_t massTracks = -1;
+        if(isMuonPair < isElectronPair) massTracks = 0.105658; // GeV/c^2
+        else                            massTracks = 0.000511; // GeV/c^2
+
+        TLorentzVector vTrk1, vTrk2;
+        vTrk1.SetPtEtaPhiM(fPt1, fEta1, fPhi1, massTracks);
+        vTrk2.SetPtEtaPhiM(fPt2, fEta2, fPhi2, massTracks);
+        TLorentzVector vTrkTrk = vTrk1 + vTrk2;
+
+        // set tree variables
+        fPt = vTrkTrk.Pt(); 
+        fPhi = vTrkTrk.Phi();
+        fY = vTrkTrk.Rapidity(); 
+        fM = vTrkTrk.M();
+
+        // calculate the differences
+        Double_t Delta_pt = fPt_old - fPt;
+        Double_t Delta_phi = fPhi_old - fPhi;
+        Double_t Delta_y = fY_old - fY;
+        Double_t Delta_m = fM_old - fM;
+        // fill the histograms
+        hPt->Fill(Delta_pt);
+        hPhi->Fill(Delta_phi);
+        hY->Fill(Delta_y);
+        hM->Fill(Delta_m);
 
         fTreeJpsi->Fill();
 
@@ -151,6 +194,20 @@ void ShiftPIDSignal(Bool_t pass3){
     }
 
     f_out->Write("",TObject::kWriteDelete);
+
+    // plot histograms
+    TCanvas *c = new TCanvas("c","c",900,700);
+    c->Divide(2,2,0,0);
+    c->cd(1); hPt->Draw();
+    c->cd(2); hPhi->Draw();
+    c->cd(3); hY->Draw();
+    c->cd(4); hM->Draw();
+
+    TString str_file_out = "";
+    if(!pass3)  str_file_out = "Results/MuonPID/differences_pass1";
+    else        str_file_out = "Results/MuonPID/differences_pass3";
+    c->Print((str_file_out + ".png").Data());
+    c->Print((str_file_out + ".pdf").Data());
 
     return;
 }
@@ -200,12 +257,12 @@ void PlotAndFitHistograms(Bool_t MC){
 
     // histograms
     Int_t nBins = 100;
-    Double_t low(-5.), high(5.);
+    Double_t range(15.);
     TH1D *hSigmaTPC[4] = { NULL };
-    hSigmaTPC[0] = new TH1D("pass1_SigIfMu", "pass1_SigIfMu", nBins, low, high);
-    hSigmaTPC[1] = new TH1D("pass1_SigIfEl", "pass1_SigIfEl", nBins, low, high);
-    hSigmaTPC[2] = new TH1D("pass3_SigIfMu", "pass3_SigIfMu", nBins, low, high);
-    hSigmaTPC[3] = new TH1D("pass3_SigIfEl", "pass3_SigIfEl", nBins, low, high);
+    hSigmaTPC[0] = new TH1D("pass1_SigIfMu", "pass1_SigIfMu", nBins, -range, range);
+    hSigmaTPC[1] = new TH1D("pass1_SigIfEl", "pass1_SigIfEl", nBins, -range, range);
+    hSigmaTPC[2] = new TH1D("pass3_SigIfMu", "pass3_SigIfMu", nBins, -range, range);
+    hSigmaTPC[3] = new TH1D("pass3_SigIfEl", "pass3_SigIfEl", nBins, -range, range);
 
     Printf("%lli entries found in the tree.", t_pass1->GetEntries());
     Int_t nEntriesAnalysed = 0;
@@ -311,7 +368,7 @@ void PlotAndFitHistograms(Bool_t MC){
     TF1 *fGauss[4] = { 0 };
     if(MC){
         for(Int_t i = 0; i < 4; i++){
-            fGauss[i] = new TF1(Form("fGauss%i", i+1), "gaus", low, high);
+            fGauss[i] = new TF1(Form("fGauss%i", i+1), "gaus", -range, range);
             hSigmaTPC[i]->Fit(fGauss[i]);
         }
     }
