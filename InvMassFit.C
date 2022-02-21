@@ -38,25 +38,25 @@ void InvMassFit(){
     //PrepareDataTree(kFALSE);
     //PrepareDataTree(kTRUE);
 
-    Bool_t isPass3 = kTRUE;
+    Bool_t pass3 = kTRUE;
 
     Bool_t main_fits = kTRUE;
     if(main_fits){
-        DoInvMassFitMain(0, isPass3);
-        DoInvMassFitMain(1, isPass3);
-        DoInvMassFitMain(2, isPass3);
-        DoInvMassFitMain(3, isPass3);
+        DoInvMassFitMain(0, pass3);
+        DoInvMassFitMain(1, pass3);
+        DoInvMassFitMain(2, pass3);
+        DoInvMassFitMain(3, pass3);
     }
     // bins:
     Bool_t bins = kTRUE;
     if(bins){
         SetPtBinning(); // PtBinning method must be chosen in PtBinsManager.h
-        DoInvMassFitMain(4, isPass3);
-        DoInvMassFitMain(5, isPass3);
-        DoInvMassFitMain(6, isPass3);
-        DoInvMassFitMain(7, isPass3);
+        DoInvMassFitMain(4, pass3);
+        DoInvMassFitMain(5, pass3);
+        DoInvMassFitMain(6, pass3);
+        DoInvMassFitMain(7, pass3);
         if(nPtBins == 5){
-            DoInvMassFitMain(8, isPass3);
+            DoInvMassFitMain(8, pass3);
         }
     }
 

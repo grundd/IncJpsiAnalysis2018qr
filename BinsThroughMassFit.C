@@ -30,7 +30,7 @@ using namespace std::this_thread;
 using namespace std::chrono; 
 
 // Main function
-void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save = kFALSE, Int_t bin = -1);
+void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t pass3, Bool_t save = kFALSE, Int_t bin = -1);
 // Support functions
 void SetCanvas(TCanvas *c, Bool_t bLogScale);
 
@@ -41,6 +41,8 @@ Double_t ptBoundariesNew_4bins[5] = {0.2, 0., 0., 0., 1.0};
 Double_t ptBoundariesNew_5bins[6] = {0.2, 0., 0., 0., 0., 1.0};
 
 void BinsThroughMassFit(){
+
+    Bool_t pass3 = kFALSE;
 
     // PtBinning "Method 3"
     // Adding ptStep = 0.01 GeV/c until a bin with sufficient signal (EvPerBin) is found
@@ -54,7 +56,10 @@ void BinsThroughMassFit(){
     Double_t EvTotal, EvTotalErr;
     // Load the total number of signal events
     ifstream infile;
-    infile.open("Results/InvMassFit/allbins/allbins_signal.txt");   
+    TString str_f = "";
+    if(!pass3)  str_f = "Results/InvMassFit/pass1/allbins/allbins_signal.txt";
+    else        str_f = "Results/InvMassFit/pass3/allbins/allbins_signal.txt";
+    infile.open(str_f.Data());   
     while(!infile.eof()){
         infile >> EvTotal >> EvTotalErr;
     }
@@ -68,19 +73,17 @@ void BinsThroughMassFit(){
     sleep_until(system_clock::now() + seconds(2));
 
     //Print the results
-    TString name;
-    if(nPtBins == 4){
-        name = "PtBinning/BinsThroughMassFit/output_4bins.txt";
-    } else if(nPtBins == 5){
-        name = "PtBinning/BinsThroughMassFit/output_5bins.txt";
-    }
-    ofstream outfile(name.Data());
+    TString folder = "PtBinning/BinsThroughMassFit/";
+    TString pass = "";
+    if(!pass3)  pass = "pass1";
+    else        pass = "pass3";
+    ofstream outfile((folder + pass + Form("_%ibins", nPtBins)).Data());
 
     outfile << Form("Using pt step %.3f GeV/c.\n", ptStep);
     for(Int_t i = 0; i < nPtBins-1; i++){
         while(YieldJpsi <= EvPerBin){
             CurrPtCutUpp += ptStep;
-            DoInvMassFitMain(ptBoundariesNew[i], CurrPtCutUpp);
+            DoInvMassFitMain(ptBoundariesNew[i], CurrPtCutUpp, pass3);
             outfile << Form("(%.3f, %.3f): %.0f\n", ptBoundariesNew[i], CurrPtCutUpp, YieldJpsi);
         }
         ptBoundariesNew[i+1] = CurrPtCutUpp;
@@ -91,21 +94,15 @@ void BinsThroughMassFit(){
     outfile << Form("Bin %i defined as (%.3f, %.3f)\n", nPtBins, ptBoundariesNew[nPtBins-1], ptBoundariesNew[nPtBins]);
 
     outfile.close();
-    Printf("*** Results printed to %s.***", name.Data());
+    Printf("*** Results printed to %s.***", (folder + pass + Form("_%ibins", nPtBins)).Data());
 
-    // Do fits in the four calculated bins
-    for(Int_t i = 0; i < nPtBins; i++){
-        if(nPtBins == 4){
-            DoInvMassFitMain(ptBoundariesNew[i], ptBoundariesNew[i+1], kTRUE, i+1);
-        } else if(nPtBins == 5){
-            DoInvMassFitMain(ptBoundariesNew[i], ptBoundariesNew[i+1], kTRUE, i+1);
-        }
-    }
+    // Do fits in the four/five calculated bins
+    for(Int_t i = 0; i < nPtBins; i++) DoInvMassFitMain(ptBoundariesNew[i], ptBoundariesNew[i+1], pass3, kTRUE, i+1);
         
     return;
 }
 
-void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t bin){
+void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t pass3, Bool_t save, Int_t bin){
     // Fit the invariant mass distribution using Double-sided CB function
     // Fix the values of the tail parameters to MC values
     // Peak corresponding to psi(2s) excluded
@@ -138,7 +135,10 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     //fM.setBinning(binM);
 
     // Get the data trees
-    TFile *fFileIn = new TFile("Trees/InvMassFit/InvMassFit.root"); // created in InvMassFit.c
+    TString str_f = "";
+    if(!pass3)  str_f = "Trees/InvMassFit/InvMassFit_pass1.root";
+    else        str_f = "Trees/InvMassFit/InvMassFit_pass3.root";
+    TFile *fFileIn = new TFile(str_f.Data()); // created in InvMassFit.c
     TTree *fTreeIn = NULL;
     fFileIn->GetObject("tIncEnrSample",fTreeIn);
         
@@ -159,23 +159,23 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     Double_t values[4];
     Double_t errors[4];
 
-    TString* path = new TString("Results/InvMassFitMC/");
-    path->Append("inc_doubleCB.txt");
+    TString path = "Results/InvMassFitMC/";
+    path.Append("inc_doubleCB.txt");
 
-    ifstream fTxtFileIn;
-    fTxtFileIn.open(path->Data());
-    if(fTxtFileIn.fail()){
+    ifstream f_text_in;
+    f_text_in.open(path.Data());
+    if(f_text_in.fail()){
         Printf("\n");
         Printf("*** Warning! ***");
         Printf("*** MC values for tail parameters not found. Terminating... *** \n");
         return;
     } else {
         Int_t i_line = 0;
-        while(!fTxtFileIn.eof()){
-            fTxtFileIn >> name >> values[i_line] >> errors[i_line];
+        while(!f_text_in.eof()){
+            f_text_in >> name >> values[i_line] >> errors[i_line];
             i_line++;
         }
-        fTxtFileIn.close();
+        f_text_in.close();
     }
     fAlpha_L = values[0];
     fAlpha_R = values[1];
@@ -232,82 +232,81 @@ void DoInvMassFitMain(Double_t fPtCutLow, Double_t fPtCutUpp, Bool_t save, Int_t
     // ##########################################################
     // Plot the results
     // Draw histogram with fit results
-    TCanvas *cHist = new TCanvas("cHist","cHist",800,600);
-    SetCanvas(cHist,kFALSE);
-
-    RooPlot* fFrameM = fM.frame(Title("Mass fit")); 
-    fDataSet->plotOn(fFrameM,Name("fDataSet"),Binning(binM),MarkerStyle(20),MarkerSize(1.));
-    DSCBAndBkgPdf.plotOn(fFrameM,Name("DoubleSidedCB"),Components(DoubleSidedCB),LineColor(kBlack),LineStyle(kDashed),LineWidth(3));
-    DSCBAndBkgPdf.plotOn(fFrameM,Name("BkgPdf"),Components(BkgPdf),LineColor(kRed),LineStyle(kDashed),LineWidth(3));
-    DSCBAndBkgPdf.plotOn(fFrameM,Name("DSCBAndBkgPdf"),LineColor(215),LineWidth(3));
-    // Vertical axis
-    fFrameM->GetYaxis()->SetTitle(Form("Counts per %i MeV/#it{c}^{2}", BinSize));
-    fFrameM->GetYaxis()->SetTitleSize(0.05);
-    fFrameM->GetYaxis()->SetTitleOffset(1.1);
-    fFrameM->GetYaxis()->SetLabelSize(0.05);
-    fFrameM->GetYaxis()->SetLabelOffset(0.01);
-    fFrameM->GetYaxis()->SetMaxDigits(3);
-    // Horizontal axis
-    fFrameM->GetXaxis()->SetTitle("#it{m}_{#mu#mu} (GeV/#it{c}^{2})");
-    fFrameM->GetXaxis()->SetTitleSize(0.05);
-    fFrameM->GetXaxis()->SetLabelSize(0.05);
-    fFrameM->GetXaxis()->SetDecimals(1);
-    fFrameM->Draw();
-
-    // Get chi2 
-    Double_t chi2 = fFrameM->chiSquare("DSCBAndBkgPdf","data",fResFit->floatParsFinal().getSize());
-
-    // -------------------------------------------------------------------------------- 
-    // Legend1
-    TLegend *l1 = new TLegend(0.09,0.76,0.3,0.935);
-    //l1->SetHeader("ALICE, PbPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
-    l1->AddEntry((TObject*)0,Form("J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
-    l1->AddEntry((TObject*)0,Form("|#it{y}| < %.1f", fYCut),"");
-    // Print the pt cut
-    l1->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.2f,%.2f) GeV/#it{c}", fPtCutLow,fPtCutUpp),"");
-    l1->SetTextSize(0.042);
-    l1->SetBorderSize(0); // no border
-    l1->SetFillStyle(0);  // legend is transparent
-    l1->Draw();
-
-    TLegend *lTitle = new TLegend(0.325,0.88,0.95,0.935);
-    lTitle->AddEntry((TObject*)0,"ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","");
-    lTitle->SetTextSize(0.05);
-    lTitle->SetBorderSize(0);
-    lTitle->SetFillStyle(0);
-    lTitle->Draw();
-
-    // Legend2
-    TLegend *l2 = new TLegend(0.465,0.29,0.95,0.87);
-    //l2->SetHeader("ALICE, PbPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
-    l2->AddEntry("DSCBAndBkgPdf","sum","L");
-    //l2->AddEntry((TObject*)0,Form("#chi^{2}/NDF = %.3f",chi2),"");
-    l2->AddEntry("DoubleSidedCB","J/#psi signal","L");
-    l2->AddEntry((TObject*)0,Form("#it{N}_{J/#psi} = %.0f #pm %.0f",N_Jpsi_out[0],N_Jpsi_out[1]),"");
-    l2->AddEntry((TObject*)0,Form("#it{M}_{J/#psi} = %.3f #pm %.3f GeV/#it{c}^{2}", mass_Jpsi.getVal(), mass_Jpsi.getError()),"");
-    l2->AddEntry((TObject*)0,Form("#sigma = %.3f #pm %.3f GeV/#it{c}^{2}", sigma_Jpsi.getVal(), sigma_Jpsi.getError()),"");
-    l2->AddEntry((TObject*)0,Form("#alpha_{L} = %.3f", alpha_L.getVal()),"");
-    l2->AddEntry((TObject*)0,Form("#alpha_{R} = %.3f", (-1)*(alpha_R.getVal())),"");
-    l2->AddEntry((TObject*)0,Form("#it{n}_{L} = %.2f", n_L.getVal()),"");
-    l2->AddEntry((TObject*)0,Form("#it{n}_{R} = %.2f", n_R.getVal()),"");
-    l2->AddEntry("BkgPdf","background","L");
-    l2->AddEntry((TObject*)0,Form("#lambda = %.3f #pm %.3f GeV^{-1}#it{c}^{2}",lambda.getVal(), lambda.getError()),"");
-    l2->SetTextSize(0.042);
-    l2->SetBorderSize(0);
-    l2->SetFillStyle(0);
-    l2->Draw();
-
+    TCanvas *cHist = NULL;
+    
     if(save){
+        cHist = new TCanvas("cHist","cHist",800,600);
+        SetCanvas(cHist,kFALSE);
+
+        RooPlot* fFrameM = fM.frame(Title("Mass fit")); 
+        fDataSet->plotOn(fFrameM,Name("fDataSet"),Binning(binM),MarkerStyle(20),MarkerSize(1.));
+        DSCBAndBkgPdf.plotOn(fFrameM,Name("DoubleSidedCB"),Components(DoubleSidedCB),LineColor(kBlack),LineStyle(kDashed),LineWidth(3));
+        DSCBAndBkgPdf.plotOn(fFrameM,Name("BkgPdf"),Components(BkgPdf),LineColor(kRed),LineStyle(kDashed),LineWidth(3));
+        DSCBAndBkgPdf.plotOn(fFrameM,Name("DSCBAndBkgPdf"),LineColor(215),LineWidth(3));
+        // Vertical axis
+        fFrameM->GetYaxis()->SetTitle(Form("Counts per %i MeV/#it{c}^{2}", BinSize));
+        fFrameM->GetYaxis()->SetTitleSize(0.05);
+        fFrameM->GetYaxis()->SetTitleOffset(1.1);
+        fFrameM->GetYaxis()->SetLabelSize(0.05);
+        fFrameM->GetYaxis()->SetLabelOffset(0.01);
+        fFrameM->GetYaxis()->SetMaxDigits(3);
+        // Horizontal axis
+        fFrameM->GetXaxis()->SetTitle("#it{m}_{#mu#mu} (GeV/#it{c}^{2})");
+        fFrameM->GetXaxis()->SetTitleSize(0.05);
+        fFrameM->GetXaxis()->SetLabelSize(0.05);
+        fFrameM->GetXaxis()->SetDecimals(1);
+        fFrameM->Draw();
+
+        // Get chi2 
+        Double_t chi2 = fFrameM->chiSquare("DSCBAndBkgPdf","data",fResFit->floatParsFinal().getSize());
+
+        // -------------------------------------------------------------------------------- 
+        // Legend1
+        TLegend *l1 = new TLegend(0.09,0.76,0.3,0.935);
+        //l1->SetHeader("ALICE, PbPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
+        l1->AddEntry((TObject*)0,Form("J/#psi #rightarrow #mu^{+}#mu^{-}"),"");
+        l1->AddEntry((TObject*)0,Form("|#it{y}| < %.1f", fYCut),"");
+        // Print the pt cut
+        l1->AddEntry((TObject*)0,Form("#it{p}_{T} #in (%.2f,%.2f) GeV/#it{c}", fPtCutLow,fPtCutUpp),"");
+        l1->SetTextSize(0.042);
+        l1->SetBorderSize(0); // no border
+        l1->SetFillStyle(0);  // legend is transparent
+        l1->Draw();
+
+        TLegend *lTitle = new TLegend(0.325,0.88,0.95,0.935);
+        lTitle->AddEntry((TObject*)0,"ALICE, Pb#minusPb #sqrt{#it{s}_{NN}} = 5.02 TeV","");
+        lTitle->SetTextSize(0.05);
+        lTitle->SetBorderSize(0);
+        lTitle->SetFillStyle(0);
+        lTitle->Draw();
+
+        // Legend2
+        TLegend *l2 = new TLegend(0.465,0.29,0.95,0.87);
+        //l2->SetHeader("ALICE, PbPb #sqrt{#it{s}_{NN}} = 5.02 TeV","r"); 
+        l2->AddEntry("DSCBAndBkgPdf","sum","L");
+        //l2->AddEntry((TObject*)0,Form("#chi^{2}/NDF = %.3f",chi2),"");
+        l2->AddEntry("DoubleSidedCB","J/#psi signal","L");
+        l2->AddEntry((TObject*)0,Form("#it{N}_{J/#psi} = %.0f #pm %.0f",N_Jpsi_out[0],N_Jpsi_out[1]),"");
+        l2->AddEntry((TObject*)0,Form("#it{M}_{J/#psi} = %.3f #pm %.3f GeV/#it{c}^{2}", mass_Jpsi.getVal(), mass_Jpsi.getError()),"");
+        l2->AddEntry((TObject*)0,Form("#sigma = %.3f #pm %.3f GeV/#it{c}^{2}", sigma_Jpsi.getVal(), sigma_Jpsi.getError()),"");
+        l2->AddEntry((TObject*)0,Form("#alpha_{L} = %.3f", alpha_L.getVal()),"");
+        l2->AddEntry((TObject*)0,Form("#alpha_{R} = %.3f", (-1)*(alpha_R.getVal())),"");
+        l2->AddEntry((TObject*)0,Form("#it{n}_{L} = %.2f", n_L.getVal()),"");
+        l2->AddEntry((TObject*)0,Form("#it{n}_{R} = %.2f", n_R.getVal()),"");
+        l2->AddEntry("BkgPdf","background","L");
+        l2->AddEntry((TObject*)0,Form("#lambda = %.3f #pm %.3f GeV^{-1}#it{c}^{2}",lambda.getVal(), lambda.getError()),"");
+        l2->SetTextSize(0.042);
+        l2->SetBorderSize(0);
+        l2->SetFillStyle(0);
+        l2->Draw();
+
         // Prepare path
-        TString *str = NULL;
-        if(nPtBins == 4){
-            str = new TString(Form("PtBinning/BinsThroughMassFit/4bins/bin%i", bin));
-        } else if(nPtBins == 5){
-            str = new TString(Form("PtBinning/BinsThroughMassFit/5bins/bin%i", bin));
-        }
+        TString str;
+        if(!pass3)  str = Form("PtBinning/BinsThroughMassFit/pass1/%ibins/bin%i", nPtBins, bin);
+        else        str = Form("PtBinning/BinsThroughMassFit/pass3/%ibins/bin%i", nPtBins, bin);
         // Print the plots
-        cHist->Print((*str + ".pdf").Data());
-        cHist->Print((*str + ".png").Data()); 
+        cHist->Print((str + ".pdf").Data());
+        cHist->Print((str + ".png").Data()); 
     }
 
     return;
