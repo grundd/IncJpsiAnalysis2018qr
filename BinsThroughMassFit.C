@@ -42,7 +42,7 @@ Double_t ptBoundariesNew_5bins[6] = {0.2, 0., 0., 0., 0., 1.0};
 
 void BinsThroughMassFit(){
 
-    Bool_t pass3 = kFALSE;
+    Bool_t pass3 = kTRUE;
 
     // PtBinning "Method 3"
     // Adding ptStep = 0.01 GeV/c until a bin with sufficient signal (EvPerBin) is found
@@ -66,7 +66,9 @@ void BinsThroughMassFit(){
     infile.close();
     Printf("Total number of events loaded: %.3f", EvTotal);
 
-    Double_t EvPerBin = (EvTotal / (Double_t)nPtBins) - 1;
+    Double_t EvPerBin = -1;
+    if(!pass3)  EvPerBin = (EvTotal / (Double_t)nPtBins) - 1.0;
+    else        EvPerBin = (EvTotal / (Double_t)nPtBins) - 0.8;
     Printf("Optimal number of ev per bin: %.3f", EvPerBin);
 
     // Small delay to be able to read the console
