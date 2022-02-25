@@ -18,7 +18,7 @@
 
 // ***************
 // Options to set:
-Int_t opt = 5;
+Int_t opt = 7;
 Bool_t write_to_txt = kTRUE;
 // ***************
 
@@ -33,6 +33,8 @@ void ReadKinematicsTree()
     if(opt == 3){ dir = "officialALICE_kCohPsi2sToMuPi"; FD = kTRUE; }
     if(opt == 4){ dir = "officialALICE_kCohJpsiToMu"; }
     if(opt == 5){ dir = "officialALICE_kTwoGammaToMuMedium"; }
+    if(opt == 6){ dir = "officialALICE_kCohJpsiToElRad"; }
+    if(opt == 7){ dir = "officialALICE_kCohJpsiToEl"; }
     // Get the directory
     TString gAliceFile = dir.Data();
     gAliceFile += "/";

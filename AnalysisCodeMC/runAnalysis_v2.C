@@ -11,12 +11,13 @@ void runAnalysis_v2(Bool_t Neutral = kFALSE)
     // if you run on grid, specify test mode (kTRUE) or full grid model (kFALSE)
     Bool_t gridTest = kTRUE;
 
-    Int_t DatasetMC = 1;
+    Int_t DatasetMC = 6;
     // DatasetMC == 1   => kCohJpsiToMu
     // DatasetMC == 2   => kIncohJpsiToMu
     // DatasetMC == 3   => kCohPsi2sToMuPi
     // DatasetMC == 4   => kIncohPsi2sToMuPi
     // DatasetMC == 5   => kTwoGammaToMuMedium // inv mass from 1.8 to 15 GeV
+    // DatasetMC == 6   => kCohJpsiToElRad 
 
     // since we will compile a class, tell root where to look for headers  
 #if !defined (__CINT__) || defined (__CLING__)
@@ -64,10 +65,11 @@ void runAnalysis_v2(Bool_t Neutral = kFALSE)
         TChain* chain = new TChain("esdTree"); // !!!
         // add a few files to the chain (change this so that your local files are added)
         //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohJpsiToMu_295585_001/AliESDs.root"); 
-        chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohPsi2sToMuPi_295585_001/AliESDs.root"); 
+        //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kIncohPsi2sToMuPi_295585_001/AliESDs.root"); 
         //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohJpsiToMu_295585_001/AliESDs.root"); 
         //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohPsi2sToMuPi_295585_001/AliESDs.root"); 
         //chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kTwoGammaToMuMedium_295585_001/AliESDs.root"); 
+        chain->Add("/home/david/alice/IncJpsiAnalysis2018qr/Data/MC_kCohJpsiToElRad_295588_001/AliESDs.root"); 
 
         // start the analysis locally, reading the events from the tchain
         mgr->StartAnalysis("local", chain);
@@ -133,6 +135,13 @@ void runAnalysis_v2(Bool_t Neutral = kFALSE)
             alienHandler->SetGridWorkingDir("ESDs_MC_kTwoGammaToMuMedium");
             alienHandler->SetExecutable(    "ESDs_MC_kTwoGammaToMuMedium.sh");
             alienHandler->SetJDLName(       "ESDs_MC_kTwoGammaToMuMedium.jdl");
+        } else if(DatasetMC == 6 && Neutral == kFALSE){
+            // kTwoGammaToMuMedium
+            alienHandler->SetGridDataDir("/alice/sim/2020/LHC20g1/kCohJpsiToElRad");
+            // working directory
+            alienHandler->SetGridWorkingDir("ESDs_MC_kCohJpsiToElRad");
+            alienHandler->SetExecutable(    "ESDs_MC_kCohJpsiToElRad.sh");
+            alienHandler->SetJDLName(       "ESDs_MC_kCohJpsiToElRad.jdl");
         } else if(DatasetMC == 3 && Neutral == kTRUE){
             // kCohPsi2sToMuPi, neutral
             alienHandler->SetGridDataDir("/alice/sim/2019/LHC19k1/kCohPsi2sToMuPi");
@@ -157,6 +166,7 @@ void runAnalysis_v2(Bool_t Neutral = kFALSE)
         // run numbers
         // LHC18q
         alienHandler->AddRunNumber(	295585	); // 1
+        /*
         alienHandler->AddRunNumber(	295586	); // 2
         alienHandler->AddRunNumber(	295588	); // 3
         alienHandler->AddRunNumber(	295589	); // 4
@@ -377,6 +387,7 @@ void runAnalysis_v2(Bool_t Neutral = kFALSE)
         alienHandler->AddRunNumber(	297588	); // 94
         alienHandler->AddRunNumber(	297590	); // 95
         alienHandler->AddRunNumber(	297595	); // 96
+        */
 
         // number of files per subjob
         alienHandler->SetSplitMaxInputFileNumber(40);

@@ -18,8 +18,8 @@ Double_t ptBoundaries2_4bins[5] = {0.200, 0.288, 0.412, 0.621, 1.000};
 Double_t ptBoundaries2_5bins[6] = {0.200, 0.271, 0.356, 0.487, 0.680, 1.000};
 Double_t ptBoundaries3_4bins_pass1[5] = {0.200, 0.280, 0.375, 0.569, 1.000};
 Double_t ptBoundaries3_5bins_pass1[6] = {0.200, 0.264, 0.335, 0.445, 0.658, 1.000};
-Double_t ptBoundaries3_4bins_pass3[5] = {0.200, 0.280, 0.375, 0.569, 1.000};
-Double_t ptBoundaries3_5bins_pass3[6] = {0.200, 0.264, 0.335, 0.445, 0.658, 1.000};
+Double_t ptBoundaries3_4bins_pass3[5] = {0.200, 0.283, 0.390, 0.572, 1.000};
+Double_t ptBoundaries3_5bins_pass3[6] = {0.200, 0.265, 0.336, 0.453, 0.659, 1.000};
 Double_t ptBoundaries4_4bins[5] = {0.200, 0.286, 0.402, 0.582, 1.000};
 Double_t ptBoundaries4_5bins[6] = {0.200, 0.267, 0.351, 0.463, 0.634, 1.000};
 
@@ -296,7 +296,7 @@ Bool_t EventPassed(Int_t iMassCut = 0, Int_t iPtCut = 0, Bool_t pass3 = kFALSE){
 
     // pass3:
     // 0) fEvent non-empty
-    // 1) At least two tracks associated with the vertex
+    // 1) nGoodTracksTPC == 2 && nGoodTracksSPD == 2
     // 2) Central UPC trigger CCUP31:
     // for fRunNumber < 295881: CCUP31-B-NOPF-CENTNOTRD
     // for fRunNumber >= 295881: CCUP31-B-SPD2-CENTNOTRD   

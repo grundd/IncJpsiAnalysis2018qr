@@ -28,7 +28,7 @@
 using namespace RooFit;
 
 // Main functions
-void DoInvMassFitMainMC(Int_t opt);
+void DoInvMassFitMainMC(Int_t opt, Bool_t pass3);
 // Support functions
 void DrawCorrelationMatrix(TCanvas *cCorrMat, RooFitResult* fResFit);
 void SetCanvas(TCanvas *c, Bool_t bLogScale);
@@ -36,31 +36,31 @@ void PrepareMCTree(Bool_t pass3);
 
 void InvMassFit_MC(){
 
-    PrepareMCTree(kFALSE);
-    PrepareMCTree(kTRUE);
+    //PrepareMCTree(kFALSE);
+    //PrepareMCTree(kTRUE);
 
-    /*
-    DoInvMassFitMainMC(1);
+    Bool_t pass3 = kFALSE;
 
     Bool_t main_fits = kFALSE;
     if(main_fits){
-        DoInvMassFitMainMC(0);
-        DoInvMassFitMainMC(1);
-        DoInvMassFitMainMC(2);
-        DoInvMassFitMainMC(3);
+        DoInvMassFitMainMC(0, pass3);
+        DoInvMassFitMainMC(1, pass3);
+        DoInvMassFitMainMC(2, pass3);
+        DoInvMassFitMainMC(3, pass3);
     }
     // bins:
-    Bool_t bins = kFALSE;
+    Bool_t bins = kTRUE;
     if(bins){
         SetPtBinning(); // PtBinning method must be chosen in PtBinsManager.h
-        DoInvMassFitMainMC(4);
-        DoInvMassFitMainMC(5);
-        DoInvMassFitMainMC(6);
-        DoInvMassFitMainMC(7);
+        DoInvMassFitMainMC(4, pass3);
+        DoInvMassFitMainMC(5, pass3);
+        DoInvMassFitMainMC(6, pass3);
+        DoInvMassFitMainMC(7, pass3);
         if(nPtBins == 5){
-            DoInvMassFitMainMC(8);
+            DoInvMassFitMainMC(8, pass3);
         }
     }
+    /*
     // debug bin 3 (value of n_R)
     Bool_t debug = kFALSE;
     if(debug){
@@ -68,12 +68,13 @@ void InvMassFit_MC(){
         DoInvMassFitMainMC(6);
     }
     */
+
     Printf("Done.");
 
     return;
 }
 
-void DoInvMassFitMainMC(Int_t opt = 0){
+void DoInvMassFitMainMC(Int_t opt, Bool_t pass3){
     // Fit the invariant mass distribution using Double-sided CB function
     // Peak corresponding to psi(2s) excluded
 
@@ -124,7 +125,7 @@ void DoInvMassFitMainMC(Int_t opt = 0){
             fPtCutUpp = ptBoundaries[4];
             sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
             break;
-        case 8:
+        case 8: // pt bin 5
             fPtCutLow = ptBoundaries[4];
             fPtCutUpp = ptBoundaries[5];
             sprintf(fStrReduce,"abs(fY)<%f && fPt>%f && fPt<%f && fM>%f && fM<%f",fYCut,fPtCutLow,fPtCutUpp,fMCutLow,fMCutUpp);
@@ -151,17 +152,20 @@ void DoInvMassFitMainMC(Int_t opt = 0){
     //fM.setBinning(binM);
 
     // Get the data trees
-    TFile *fFileIn = new TFile("Trees/InvMassFitMC/InvMassFitMC.root"); 
-    TTree *fTreeIn = NULL;
+    TString str_file = "";
+    if(!pass3)  str_file = "Trees/InvMassFit_MC/InvMassFit_MC_pass1.root";
+    else        str_file = "Trees/InvMassFit_MC/InvMassFit_MC_pass3.root";
+    TFile *f_in = new TFile(str_file.Data()); 
+    TTree *t_in = NULL;
     if(opt == 0 || opt == 3 || opt == 4 || opt == 5 || opt == 6 || opt == 7 || opt == 8){
-        fFileIn->GetObject("tIncEnrSample",fTreeIn);
+        f_in->GetObject("tIncEnrSample",t_in);
     } else if(opt == 1){
-        fFileIn->GetObject("tCohEnrSample",fTreeIn);
+        f_in->GetObject("tCohEnrSample",t_in);
     } else if(opt == 2){
-        fFileIn->GetObject("tMixedSample",fTreeIn);
+        f_in->GetObject("tMixedSample",t_in);
     }
 
-    RooDataSet *fDataIn = new RooDataSet("fDataIn", "fDataIn", RooArgSet(fM,fY,fPt), Import(*fTreeIn));
+    RooDataSet *fDataIn = new RooDataSet("fDataIn", "fDataIn", RooArgSet(fM,fY,fPt), Import(*t_in));
     RooAbsData* fDataSet = fDataIn->reduce(fStrReduce);
 
     // Print the number of entries in the dataset
@@ -264,57 +268,59 @@ void DoInvMassFitMainMC(Int_t opt = 0){
     leg2->Draw();
 
     // Prepare path
-    TString *str = NULL;
+    TString str = "";
+    if(!pass3)  str = "Results/InvMassFit_MC/pass1/";
+    else        str = "Results/InvMassFit_MC/pass3/";
 
     switch(opt){
         case 0:
-            str = new TString("Results/InvMassFitMC/inc/inc");
+            str = str + "inc/inc";
             break;
         case 1:
-            str = new TString("Results/InvMassFitMC/coh/coh");
+            str = str + "coh/coh";
             break;
         case 2:
-            str = new TString("Results/InvMassFitMC/all/all");
+            str = str + "all/all";
             break;
         case 3:
-            str = new TString("Results/InvMassFitMC/allbins/allbins");
+            str = str + "allbins/allbins";
             break;
         case 4:
-            if(nPtBins == 4) str = new TString("Results/InvMassFitMC/4bins/bin1");
-            if(nPtBins == 5) str = new TString("Results/InvMassFitMC/5bins/bin1");
+            if(nPtBins == 4) str = str + "4bins/bin1"; 
+            if(nPtBins == 5) str = str + "5bins/bin1"; 
             break;
         case 5:
-            if(nPtBins == 4) str = new TString("Results/InvMassFitMC/4bins/bin2");
-            if(nPtBins == 5) str = new TString("Results/InvMassFitMC/5bins/bin2");
+            if(nPtBins == 4) str = str + "4bins/bin2"; 
+            if(nPtBins == 5) str = str + "5bins/bin2"; 
             break;
         case 6:
-            if(nPtBins == 4) str = new TString("Results/InvMassFitMC/4bins/bin3");
-            if(nPtBins == 5) str = new TString("Results/InvMassFitMC/5bins/bin3");
+            if(nPtBins == 4) str = str + "4bins/bin3"; 
+            if(nPtBins == 5) str = str + "5bins/bin3"; 
             break;
         case 7:
-            if(nPtBins == 4) str = new TString("Results/InvMassFitMC/4bins/bin4");
-            if(nPtBins == 5) str = new TString("Results/InvMassFitMC/5bins/bin4");
+            if(nPtBins == 4) str = str + "4bins/bin4"; 
+            if(nPtBins == 5) str = str + "5bins/bin4"; 
             break;
         case 8:
-            if(nPtBins == 5) str = new TString("Results/InvMassFitMC/5bins/bin5");
+            if(nPtBins == 5) str = str + "5bins/bin5"; 
             break;
     }
     // Print the plots
-    cHist->Print((*str + ".pdf").Data());
-    cHist->Print((*str + ".png").Data());
-    cHistLog->Print((*str + "_log.pdf").Data());
-    cHistLog->Print((*str + "_log.png").Data());
-    cCorrMat->Print((*str + "_cm.pdf").Data());
-    cCorrMat->Print((*str + "_cm.png").Data());
+    cHist->Print((str + ".pdf").Data());
+    cHist->Print((str + ".png").Data());
+    cHistLog->Print((str + "_log.pdf").Data());
+    cHistLog->Print((str + "_log.png").Data());
+    cCorrMat->Print((str + "_cm.pdf").Data());
+    cCorrMat->Print((str + "_cm.png").Data());  
     
     // Print the values of alpha and n to txt output files
-    ofstream outfile((*str + ".txt").Data());
+    ofstream outfile((str + ".txt").Data());
     outfile << "alpha_L \t" << alpha_L.getVal() << "\t" << alpha_L.getError() << "\n";
     outfile << "alpha_R \t" << alpha_R.getVal() << "\t" << alpha_R.getError() << "\n";
     outfile << "n_L \t" << n_L.getVal() << "\t" << n_L.getError() << "\n";
     outfile << "n_R \t" << n_R.getVal() << "\t" << n_R.getError() << "\n";
     outfile.close();
-    Printf("*** Results printed to %s.***", (*str + ".txt").Data());
+    Printf("*** Results printed to %s.***", (str + ".txt").Data());
 
     return;
 }

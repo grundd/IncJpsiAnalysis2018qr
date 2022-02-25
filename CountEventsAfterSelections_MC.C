@@ -18,7 +18,7 @@ Int_t counter_2[16] = { 0 };
 
 Bool_t cuts_AOD_vs_ESD = kFALSE;
 Bool_t cuts_pass1_vs_pass3 = kTRUE;
-Bool_t PID_calibrated = kTRUE;
+Bool_t PID_calibrated = kFALSE;
 
 Bool_t EventPassed_MC_noSPDmatch(Bool_t isESD);
 Bool_t EventPassed_MC_pass1();

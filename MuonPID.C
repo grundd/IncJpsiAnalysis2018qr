@@ -14,22 +14,22 @@
 // my headers
 #include "AnalysisManager.h"
 
-void PlotAndFitHistograms(Bool_t MC);
+void PlotAndFitHistograms(Bool_t MC, Int_t iMC = -1);
 void ShiftPIDSignal(Bool_t pass3);
 
 void MuonPID(){
 
-    // pass1
-    //PlotAndFitHistograms(kFALSE);
+    // data
+    PlotAndFitHistograms(kFALSE);
     
-    // pass3
-    //PlotAndFitHistograms(kTRUE);
+    // MC
+    for(Int_t i = 0; i < 5; i++) PlotAndFitHistograms(kTRUE, i);
 
     // pass1
-    ShiftPIDSignal(kFALSE);
+    //ShiftPIDSignal(kFALSE);
 
     // pass3
-    ShiftPIDSignal(kTRUE);
+    //ShiftPIDSignal(kTRUE);
 
     return;
 }
@@ -132,10 +132,8 @@ void ShiftPIDSignal(Bool_t pass3){
     Double_t fShiftEl = 0;
     if(!pass3){
         fShiftMu = 0.350;
-        fShiftEl = -2.628;
     } else {
         fShiftMu = 1.404;
-        fShiftEl = -1.797;
     }
 
     Printf("%lli entries found in the tree.", t_in->GetEntries());
@@ -145,9 +143,9 @@ void ShiftPIDSignal(Bool_t pass3){
         t_in->GetEntry(iEntry);
 
         fTrk1SigIfMu = fTrk1SigIfMu - fShiftMu;
-        fTrk1SigIfEl = fTrk1SigIfEl - fShiftMu;
+        //fTrk1SigIfEl = fTrk1SigIfEl;
         fTrk2SigIfMu = fTrk2SigIfMu - fShiftMu;
-        fTrk2SigIfEl = fTrk2SigIfEl - fShiftMu;
+        //fTrk2SigIfEl = fTrk2SigIfEl;
 
         // store the old values of J/psi kinematic variables
         Double_t fPt_old = fPt;
@@ -203,23 +201,27 @@ void ShiftPIDSignal(Bool_t pass3){
     c->cd(3); hY->Draw();
     c->cd(4); hM->Draw();
 
-    TString str_file_out = "";
-    if(!pass3)  str_file_out = "Results/MuonPID/differences_pass1";
-    else        str_file_out = "Results/MuonPID/differences_pass3";
-    c->Print((str_file_out + ".png").Data());
-    c->Print((str_file_out + ".pdf").Data());
+    TString str_diff = "";
+    if(!pass3)  str_diff = "Results/MuonPID/differences_pass1";
+    else        str_diff = "Results/MuonPID/differences_pass3";
+    c->Print((str_diff + ".png").Data());
+    c->Print((str_diff + ".pdf").Data());
 
     return;
 }
 
-void PlotAndFitHistograms(Bool_t MC){
+void PlotAndFitHistograms(Bool_t MC, Int_t iMC){
     // if MC, fit histograms with gaussian
 
     // pass1
     TString str_file_pass1 = "";
     TString str_tree_pass1 = "";
     if(MC){
-        str_file_pass1 = "Trees/AnalysisDataMC_pass1/AnalysisResults_MC_kIncohJpsiToMu.root";
+        if(iMC == 0) str_file_pass1 = "Trees/AnalysisDataMC_pass1/AnalysisResults_MC_kCohJpsiToMu.root";
+        if(iMC == 1) str_file_pass1 = "Trees/AnalysisDataMC_pass1/AnalysisResults_MC_kCohPsi2sToMuPi.root";
+        if(iMC == 2) str_file_pass1 = "Trees/AnalysisDataMC_pass1/AnalysisResults_MC_kIncohJpsiToMu.root";
+        if(iMC == 3) str_file_pass1 = "Trees/AnalysisDataMC_pass1/AnalysisResults_MC_kIncohPsi2sToMuPi.root";
+        if(iMC == 4) str_file_pass1 = "Trees/AnalysisDataMC_pass1/AnalysisResults_MC_kTwoGammaToMuMedium.root";
         str_tree_pass1 = "AnalysisOutput/fTreeJPsiMCRec";
     } else {
         str_file_pass1 = "Trees/AnalysisData_pass1/AnalysisResultsLHC18qrMerged.root";
@@ -239,7 +241,11 @@ void PlotAndFitHistograms(Bool_t MC){
     TString str_file_pass3 = "";
     TString str_tree_pass3 = "";
     if(MC){
-        str_file_pass3 = "Trees/AnalysisDataMC_pass3/AnalysisResults_MC_kIncohJpsiToMu.root";
+        if(iMC == 0) str_file_pass3 = "Trees/AnalysisDataMC_pass3/AnalysisResults_MC_kCohJpsiToMu.root";
+        if(iMC == 1) str_file_pass3 = "Trees/AnalysisDataMC_pass3/AnalysisResults_MC_kCohPsi2sToMuPi.root";
+        if(iMC == 2) str_file_pass3 = "Trees/AnalysisDataMC_pass3/AnalysisResults_MC_kIncohJpsiToMu.root";
+        if(iMC == 3) str_file_pass3 = "Trees/AnalysisDataMC_pass3/AnalysisResults_MC_kIncohPsi2sToMuPi.root";
+        if(iMC == 4) str_file_pass3 = "Trees/AnalysisDataMC_pass3/AnalysisResults_MC_kTwoGammaToMuMedium.root";
         str_tree_pass3 = "AnalysisOutput/fTreeJpsi";
     } else {
         str_file_pass3 = "Trees/AnalysisData_pass3/AnalysisResults.root";
@@ -364,6 +370,14 @@ void PlotAndFitHistograms(Bool_t MC){
         hSigmaTPC[3]->Fill(fTrk2SigIfEl);  
     }
 
+    // plot histograms
+    TCanvas *c = new TCanvas("c","c",900,700);
+    c->Divide(2,2,0,0);
+    for(Int_t i = 0; i < 4; i++){
+        c->cd(i+1);
+        hSigmaTPC[i]->Draw();
+    }
+
     // fit histograms
     TF1 *fGauss[4] = { 0 };
     if(MC){
@@ -373,33 +387,27 @@ void PlotAndFitHistograms(Bool_t MC){
         }
     }
 
-    // plot histograms
-    TCanvas *c = new TCanvas("c","c",900,700);
-    c->Divide(2,2,0,0);
-
-    for(Int_t i = 0; i < 4; i++){
-        c->cd(i+1);
-        hSigmaTPC[i]->Draw();
-    }
-
-    // print the means
+    // print the plots and (if MC) print the values of the fitted means
+    TString str_f_out = "";
     if(MC){
-        TString str_f_out = "Results/MuonPID/fitted_means.txt";
-        ofstream f_out(str_f_out.Data());
+        if(iMC == 0) str_f_out = "MC_kCohJpsiToMu";
+        if(iMC == 1) str_f_out = "MC_kCohPsi2sToMuPi";
+        if(iMC == 2) str_f_out = "MC_kIncohJpsiToMu";
+        if(iMC == 3) str_f_out = "MC_kIncohPsi2sToMuPi";
+        if(iMC == 4) str_f_out = "MC_kTwoGammaToMuMedium";
+
+        ofstream f_out(("Results/MuonPID/means_" + str_f_out + ".txt").Data());
         f_out << std::fixed << std::setprecision(3);
         for(Int_t i = 0; i < 4; i++){
             f_out << fGauss[i]->GetParameter(1) << endl;
         }
         f_out.close();
-        Printf("*** Results printed to %s.***", str_f_out.Data());
-    }
+        Printf("*** Results printed to %s.***", ("means_" + str_f_out + ".txt").Data());
 
+    } else str_f_out = "data_pass1_vs_pass3";
 
-    TString str_file_out = "";
-    if(MC)  str_file_out = "Results/MuonPID/MC_muons_pass1_vs_pass3";
-    else    str_file_out = "Results/MuonPID/data_muons_pass1_vs_pass3";
-    c->Print((str_file_out + ".png").Data());
-    c->Print((str_file_out + ".pdf").Data());
+    c->Print(("Results/MuonPID/" + str_f_out + ".png").Data());
+    c->Print(("Results/MuonPID/" + str_f_out + ".pdf").Data());
 
     return;
 }
